@@ -284,6 +284,46 @@ public class EquipmentController : MonoBehaviour
         }
     }
 
+    // 装備枠から、指定した同じアイテムを取り外す。
+    // インベントリへ戻さず、地面ドロップ用に使う。
+    public bool TryRemoveEquippedItem(
+        EquipmentSlotType slotType,
+        InventoryItem expectedItem,
+        out EquipmentResult result)
+    {
+        result = EquipmentResult.InvalidSlot;
+
+        if (slotType == EquipmentSlotType.None)
+        {
+            return false;
+        }
+
+        InventoryItem equippedItem = GetEquippedItem(slotType);
+
+        if (equippedItem == null ||
+            equippedItem.ItemData == null)
+        {
+            result = EquipmentResult.NothingEquipped;
+            return false;
+        }
+
+        // 右クリックした時の武器と、
+        // 現在装備中の武器が違う場合は取り外さない
+        if (expectedItem != null &&
+            equippedItem != expectedItem)
+        {
+            result = EquipmentResult.InvalidItem;
+            return false;
+        }
+
+        SetEquippedItem(slotType, null);
+
+        result = EquipmentResult.Success;
+        OnEquipmentChanged?.Invoke();
+
+        return true;
+    }
+
     private bool HasEquippedItem(EquipmentSlotType slotType)
     {
         InventoryItem equippedItem = GetEquippedItem(slotType);

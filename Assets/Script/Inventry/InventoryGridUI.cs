@@ -57,11 +57,15 @@ public class InventoryGridUI : MonoBehaviour
     {
         SubscribeToInventory();
         FindContextMenuUI();
+
+        // Tabでインベントリを開いた瞬間に、
+        // 現在の所持数・残弾表示などを最新状態へ更新する
+        RefreshInventoryUI();
     }
 
     private void Start()
     {
-        RebuildGridUI();
+        RefreshInventoryUI();
     }
 
     private void OnDisable()
@@ -117,6 +121,28 @@ public class InventoryGridUI : MonoBehaviour
         builtWidth = grid.Width;
         builtHeight = grid.Height;
 
+        RefreshItemsUI();
+    }
+
+    public void RefreshInventoryUI()
+    {
+        if (!TryGetInventoryController())
+        {
+            return;
+        }
+
+        InventoryGrid grid = inventoryController.Grid;
+
+        // 初回表示時、またはグリッドサイズが変わっている時は
+        // マス目ごと作り直す
+        if (grid.Width != builtWidth ||
+            grid.Height != builtHeight)
+        {
+            RebuildGridUI();
+            return;
+        }
+
+        // アイテム数、弾数などの表示だけ最新化する
         RefreshItemsUI();
     }
 

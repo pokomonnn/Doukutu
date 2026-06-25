@@ -23,7 +23,7 @@ MonoBehaviour:
   purchasePrice: 1000
   sellPrice: 500
   canSellToShop: 1
-  weight: 5
+  weight: 7.2
   canDiscard: 1
   weaponPrefab: {fileID: 4584479946820505900, guid: 3d41a99aaca964e4c90238f398af13b3, type: 3}
   compatibleAmmo: {fileID: 11400000, guid: fb52aa05e33bca54e9a1f901280855d0, type: 2}

@@ -23,6 +23,10 @@ public class InventoryContextMenuUI : MonoBehaviour
     [Header("装備")]
     [SerializeField] private EquipmentController equipmentController;
 
+    [Header("アイテムを捨てる処理")]
+    [Tooltip("Playerに付けたPlayerItemDropper。未設定なら自動検索します。")]
+    [SerializeField] private PlayerItemDropper playerItemDropper;
+
     [Header("表示位置")]
     [SerializeField]
     private Vector2 cursorOffset = new Vector2(12f, -12f);
@@ -35,10 +39,14 @@ public class InventoryContextMenuUI : MonoBehaviour
     private InventoryItem selectedItem;
     private InventoryController inventoryController;
 
+    private EquipmentSlotUI selectedEquipmentSlotUI;
+
     [SerializeField] private InventorySoundPlayer soundPlayer;
 
     [Header("通知UI")]
     [SerializeField] private InventoryToastUI healthFullToastUI;
+
+    
 
     private bool buttonsRegistered;
     private int openedFrame = -1;
@@ -52,6 +60,7 @@ public class InventoryContextMenuUI : MonoBehaviour
         EnsureReferences();
         FindSoundPlayer();
         FindEquipmentController();
+        FindPlayerItemDropper();
         FindHealthFullToastUI();
         RegisterButtons();
     }
@@ -70,6 +79,7 @@ public class InventoryContextMenuUI : MonoBehaviour
     {
         selectedItem = null;
         inventoryController = null;
+        selectedEquipmentSlotUI = null;
     }
 
     private void OnDestroy()
@@ -120,10 +130,12 @@ public class InventoryContextMenuUI : MonoBehaviour
 
         bool wasOpen = IsOpen;
 
+        selectedEquipmentSlotUI = null;
         selectedItem = item;
         inventoryController = controller;
 
         FindEquipmentController();
+        FindPlayerItemDropper();
 
         gameObject.SetActive(true);
 
@@ -139,6 +151,44 @@ public class InventoryContextMenuUI : MonoBehaviour
         }
     }
 
+    public void ShowEquippedItem(
+    InventoryItem item,
+    EquipmentSlotUI equipmentSlotUI,
+    Vector2 screenPosition)
+    {
+        if (item == null ||
+            item.ItemData == null ||
+            equipmentSlotUI == null ||
+            equipmentSlotUI.GetEquippedItem() != item)
+        {
+            return;
+        }
+
+        bool wasOpen = IsOpen;
+
+        selectedItem = item;
+        inventoryController =
+            equipmentSlotUI.InventoryController;
+
+        selectedEquipmentSlotUI =
+            equipmentSlotUI;
+
+        FindEquipmentController();
+        FindPlayerItemDropper();
+
+        gameObject.SetActive(true);
+
+        RefreshMenu();
+        SetMenuPosition(screenPosition);
+
+        openedFrame = Time.frameCount;
+
+        if (!wasOpen)
+        {
+            soundPlayer?.PlayContextMenuOpen();
+        }
+    }
+
     public void Hide()
     {
         // 実際に開いていた場合だけ閉じる音を鳴らす
@@ -148,7 +198,7 @@ public class InventoryContextMenuUI : MonoBehaviour
         {
             soundPlayer?.PlayContextMenuClose();
         }
-
+        selectedEquipmentSlotUI = null;
         selectedItem = null;
         inventoryController = null;
 
@@ -183,7 +233,6 @@ public class InventoryContextMenuUI : MonoBehaviour
 
         if (equipped)
         {
-            // 既存のPlace音を装備成功音として使う
             soundPlayer?.PlayPlace();
 
             Hide();
@@ -206,7 +255,6 @@ public class InventoryContextMenuUI : MonoBehaviour
             return;
         }
 
-        // 使用前に、このアイテムに設定されているUse Soundを取得しておく
         ConsumableItemData consumableData =
             selectedItem.ItemData as ConsumableItemData;
 
@@ -252,7 +300,6 @@ public class InventoryContextMenuUI : MonoBehaviour
 
         ItemData itemData = selectedItem.ItemData;
 
-        // Information用パネルを作成済みなら、そこへ表示
         if (informationPanel != null)
         {
             if (informationTitleText != null)
@@ -270,7 +317,6 @@ public class InventoryContextMenuUI : MonoBehaviour
         }
         else
         {
-            // InformationPanelをまだ作っていない間の確認用
             Debug.Log(
                 $"【{itemData.DisplayName}】\n{itemData.Description}",
                 this
@@ -295,11 +341,11 @@ public class InventoryContextMenuUI : MonoBehaviour
         Hide();
     }
 
+    // Trashボタンから呼ばれる
     public void TrashSelectedItem()
     {
         if (selectedItem == null ||
-            selectedItem.ItemData == null ||
-            inventoryController == null)
+            selectedItem.ItemData == null)
         {
             Hide();
             return;
@@ -307,16 +353,66 @@ public class InventoryContextMenuUI : MonoBehaviour
 
         if (!CanDiscard(selectedItem.ItemData))
         {
+            soundPlayer?.PlayFailed();
             return;
         }
 
-        // 現在はスタック全体を削除する仕様
-        if (inventoryController.RemoveItem(selectedItem))
+        if (!FindPlayerItemDropper())
         {
-            soundPlayer?.PlayTrash();
+            soundPlayer?.PlayFailed();
 
-            Hide();
+            Debug.LogWarning(
+                "PlayerItemDropper が見つかりません。",
+                this
+            );
+
+            return;
         }
+
+        bool dropped;
+
+        // 装備枠から開いたメニューの場合
+        if (selectedEquipmentSlotUI != null)
+        {
+            EquipmentController controller =
+                selectedEquipmentSlotUI.EquipmentControllerRef;
+
+            if (controller == null ||
+                selectedEquipmentSlotUI.GetEquippedItem() !=
+                    selectedItem)
+            {
+                soundPlayer?.PlayFailed();
+                Hide();
+                return;
+            }
+
+            dropped =
+                playerItemDropper.TryDropEquippedItem(
+                    controller,
+                    selectedEquipmentSlotUI.SlotType
+                );
+        }
+        else
+        {
+            // 通常インベントリから開いたメニューの場合
+            if (inventoryController == null)
+            {
+                Hide();
+                return;
+            }
+
+            dropped =
+                playerItemDropper.TryDropItem(selectedItem);
+        }
+
+        if (!dropped)
+        {
+            soundPlayer?.PlayFailed();
+            return;
+        }
+
+        soundPlayer?.PlayTrash();
+        Hide();
     }
 
     private void RefreshMenu()
@@ -334,15 +430,20 @@ public class InventoryContextMenuUI : MonoBehaviour
             itemNameText.text = itemData.DisplayName;
         }
 
-        // 銃・防具だけEquipを表示
-        bool canEquip = CanEquip(itemData);
+        bool isEquippedItem =
+    selectedEquipmentSlotUI != null &&
+    selectedEquipmentSlotUI.GetEquippedItem() ==
+        selectedItem;
+
+        bool canEquip =
+            !isEquippedItem &&
+            CanEquip(itemData);
 
         if (equipButton != null)
         {
             equipButton.gameObject.SetActive(canEquip);
         }
 
-        // 回復アイテムだけUseを表示
         bool canUse = itemData is ConsumableItemData;
 
         if (useButton != null)
@@ -350,13 +451,11 @@ public class InventoryContextMenuUI : MonoBehaviour
             useButton.gameObject.SetActive(canUse);
         }
 
-        // Informationは全アイテムで表示
         if (informationButton != null)
         {
             informationButton.gameObject.SetActive(true);
         }
 
-        // QuestだけTrashを非表示
         if (trashButton != null)
         {
             trashButton.gameObject.SetActive(
@@ -372,7 +471,6 @@ public class InventoryContextMenuUI : MonoBehaviour
             return false;
         }
 
-        // EquipmentControllerが見つかれば、実際の装備可能枠で判定
         if (equipmentController != null)
         {
             return equipmentController.TryGetEquipmentSlot(
@@ -381,7 +479,6 @@ public class InventoryContextMenuUI : MonoBehaviour
             );
         }
 
-        // 起動順などでEquipmentControllerがまだ見つからない時の保険
         return itemData is WeaponItemData ||
                itemData is ArmorItemData;
     }
@@ -393,8 +490,13 @@ public class InventoryContextMenuUI : MonoBehaviour
             return false;
         }
 
-        // QuestItemDataを作る前でも、
-        // Item Type が Quest なら捨てられない
+        // ItemData側でCan Discardがオフなら捨てられない
+        if (!itemData.CanDiscard)
+        {
+            return false;
+        }
+
+        // Questアイテムも捨てられない
         return itemData.ItemType != InventoryItemType.Quest;
     }
 
@@ -564,10 +666,8 @@ public class InventoryContextMenuUI : MonoBehaviour
             return;
         }
 
-        // 親オブジェクトに付いている場合
         soundPlayer = GetComponentInParent<InventorySoundPlayer>();
 
-        // InventoryGridなど別の場所に付いている場合の保険
         if (soundPlayer == null)
         {
             soundPlayer = FindAnyObjectByType<InventorySoundPlayer>(
@@ -583,14 +683,12 @@ public class InventoryContextMenuUI : MonoBehaviour
             return true;
         }
 
-        // 通常インベントリと同じオブジェクトに付いている場合
         if (inventoryController != null)
         {
             equipmentController =
                 inventoryController.GetComponent<EquipmentController>();
         }
 
-        // シーン内のどこかにある場合の保険
         if (equipmentController == null)
         {
             equipmentController =
@@ -600,6 +698,44 @@ public class InventoryContextMenuUI : MonoBehaviour
         }
 
         return equipmentController != null;
+    }
+
+    private bool FindPlayerItemDropper()
+    {
+        if (playerItemDropper != null)
+        {
+            return true;
+        }
+
+        // InventoryControllerとPlayerItemDropperが
+        // 同じPlayerに付いている場合
+        if (inventoryController != null)
+        {
+            playerItemDropper =
+                inventoryController.GetComponent<PlayerItemDropper>();
+        }
+
+        if (playerItemDropper == null)
+        {
+            GameObject player =
+                GameObject.FindGameObjectWithTag("Player");
+
+            if (player != null)
+            {
+                playerItemDropper =
+                    player.GetComponent<PlayerItemDropper>();
+            }
+        }
+
+        if (playerItemDropper == null)
+        {
+            playerItemDropper =
+                FindAnyObjectByType<PlayerItemDropper>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        return playerItemDropper != null;
     }
 
     private void FindHealthFullToastUI()

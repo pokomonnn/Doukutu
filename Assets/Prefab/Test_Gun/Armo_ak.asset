@@ -23,6 +23,6 @@ MonoBehaviour:
   purchasePrice: 0
   sellPrice: 0
   canSellToShop: 1
-  weight: 0
+  weight: 0.012
   canDiscard: 1
   ammoTypeName: 7.62mm

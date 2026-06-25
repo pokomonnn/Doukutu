@@ -66,6 +66,19 @@ public class EquipmentSlotUI : MonoBehaviour
         }
     }
 
+    public EquipmentController EquipmentControllerRef
+{
+    get
+    {
+        if (!FindEquipmentController())
+        {
+            return null;
+        }
+
+        return equipmentController;
+    }
+}
+
     public InventoryItem GetEquippedItem()
     {
         if (!FindEquipmentController())

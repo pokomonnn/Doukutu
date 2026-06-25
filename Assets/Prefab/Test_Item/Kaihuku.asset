@@ -23,7 +23,7 @@ MonoBehaviour:
   purchasePrice: 0
   sellPrice: 0
   canSellToShop: 1
-  weight: 0
+  weight: 10
   canDiscard: 1
   healAmount: 20
   curedConditions: 0

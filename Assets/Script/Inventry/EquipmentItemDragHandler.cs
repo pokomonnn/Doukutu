@@ -7,7 +7,8 @@ using UnityEngine.EventSystems;
 public class EquipmentItemDragHandler : MonoBehaviour,
     IBeginDragHandler,
     IDragHandler,
-    IEndDragHandler
+    IEndDragHandler,
+    IPointerClickHandler
 {
     [Header("ドラッグ中の見た目")]
     [SerializeField, Range(0.1f, 1f)]
@@ -31,6 +32,8 @@ public class EquipmentItemDragHandler : MonoBehaviour,
     private bool isDragging;
     private bool dragIsRotated;
 
+    private InventoryContextMenuUI contextMenuUI;
+
     private void Awake()
     {
         itemRect = GetComponent<RectTransform>();
@@ -51,6 +54,48 @@ public class EquipmentItemDragHandler : MonoBehaviour,
         {
             TryRotateDuringDrag();
         }
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData.button !=
+                PointerEventData.InputButton.Right ||
+            isDragging)
+        {
+            return;
+        }
+
+        if (!FindEquipmentSlotUI())
+        {
+            return;
+        }
+
+        InventoryItem item =
+            equipmentSlotUI.GetEquippedItem();
+
+        if (item == null || item.ItemData == null)
+        {
+            return;
+        }
+
+        if (!FindContextMenuUI())
+        {
+            soundPlayer?.PlayFailed();
+
+            Debug.LogWarning(
+                "EquipmentItemDragHandler: " +
+                "InventoryContextMenuUI が見つかりません。",
+                this
+            );
+
+            return;
+        }
+
+        contextMenuUI.ShowEquippedItem(
+            item,
+            equipmentSlotUI,
+            eventData.position
+        );
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -409,5 +454,34 @@ public class EquipmentItemDragHandler : MonoBehaviour,
                     InventorySoundPlayer
                 >(FindObjectsInactive.Include);
         }
+    }
+
+    private bool FindContextMenuUI()
+    {
+        if (contextMenuUI != null)
+        {
+            return true;
+        }
+
+        Canvas canvas =
+            GetComponentInParent<Canvas>()?.rootCanvas;
+
+        if (canvas != null)
+        {
+            contextMenuUI =
+                canvas.GetComponentInChildren<
+                    InventoryContextMenuUI
+                >(true);
+        }
+
+        if (contextMenuUI == null)
+        {
+            contextMenuUI =
+                Object.FindAnyObjectByType<
+                    InventoryContextMenuUI
+                >(FindObjectsInactive.Include);
+        }
+
+        return contextMenuUI != null;
     }
 }

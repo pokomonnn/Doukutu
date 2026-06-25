@@ -13,16 +13,27 @@ public class PlayerFootsteps : MonoBehaviour
     [SerializeField] private AudioSource footstepAudioSource;
 
     [Header("歩行判定")]
-    [SerializeField, Min(0.05f)] private float stepInterval = 0.35f;
+    [Tooltip("通常速度時の足音間隔")]
+    [SerializeField, Min(0.05f)]
+    private float stepInterval = 0.35f;
+
+    [Tooltip(
+        "重量なし時のPlayerMoveのMove Speed。\n" +
+        "PlayerWeightControllerで速度が変わっても、この値は通常速度のまま設定します。"
+    )]
+    [SerializeField, Min(0.01f)]
+    private float normalMoveSpeed = 5f;
 
     [Tooltip("この速度未満なら足音を鳴らさない")]
-    [SerializeField, Min(0f)] private float minimumMoveSpeed = 0.1f;
+    [SerializeField, Min(0f)]
+    private float minimumMoveSpeed = 0.1f;
 
     [Header("地面にFootstepSurfaceがない場合の足音")]
     [SerializeField] private AudioClip[] defaultFirstStepClips;
     [SerializeField] private AudioClip[] defaultSecondStepClips;
 
-    [SerializeField, Range(0f, 1f)] private float defaultVolume = 0.8f;
+    [SerializeField, Range(0f, 1f)]
+    private float defaultVolume = 0.8f;
 
     [SerializeField, Range(0.5f, 1.5f)]
     private float defaultPitchMin = 0.95f;
@@ -30,7 +41,9 @@ public class PlayerFootsteps : MonoBehaviour
     [SerializeField, Range(0.5f, 1.5f)]
     private float defaultPitchMax = 1.05f;
 
-    private float stepTimer;
+    // 前回の足音から歩いた距離
+    private float movedDistanceSinceLastStep;
+
     private bool wasWalking;
 
     // true = 1歩目、false = 2歩目
@@ -67,35 +80,57 @@ public class PlayerFootsteps : MonoBehaviour
             return;
         }
 
+        float horizontalSpeed = Mathf.Abs(rb.linearVelocity.x);
+
         bool isWalking =
             playerMove.IsGrounded &&
-            Mathf.Abs(rb.linearVelocity.x) >= minimumMoveSpeed;
+            horizontalSpeed >= minimumMoveSpeed;
 
         if (!isWalking)
         {
             wasWalking = false;
-            stepTimer = 0f;
+
+            // 次に歩き始めた時は、すぐ1歩目を鳴らす
+            movedDistanceSinceLastStep = GetStepDistance();
+
             return;
         }
 
+        float stepDistance = GetStepDistance();
+
         if (!wasWalking)
         {
-            stepTimer = 0f;
+            movedDistanceSinceLastStep = stepDistance;
         }
 
-        stepTimer -= Time.deltaTime;
+        // 実際に進んだ距離を加算する。
+        // 重量で移動速度が下がるほど、
+        // 次の足音までに必要な時間も長くなる。
+        movedDistanceSinceLastStep +=
+            horizontalSpeed * Time.deltaTime;
 
-        if (stepTimer <= 0f)
+        while (movedDistanceSinceLastStep >= stepDistance)
         {
             PlayFootstep();
 
-            stepTimer = stepInterval;
+            movedDistanceSinceLastStep -= stepDistance;
 
             // 次の足音は反対の足にする
             isFirstStep = !isFirstStep;
         }
 
         wasWalking = true;
+    }
+
+    private float GetStepDistance()
+    {
+        // 通常時：
+        // normalMoveSpeed 5 × stepInterval 0.35
+        // = 1.75ユニットごとに足音を鳴らす
+        return Mathf.Max(
+            0.01f,
+            normalMoveSpeed * stepInterval
+        );
     }
 
     private void PlayFootstep()
@@ -107,17 +142,21 @@ public class PlayerFootsteps : MonoBehaviour
 
         AudioClip clip = null;
         float volume = defaultVolume;
+
         float pitch = Random.Range(
             defaultPitchMin,
             defaultPitchMax
         );
 
-        Collider2D groundCollider = playerMove.CurrentGroundCollider;
+        Collider2D groundCollider =
+            playerMove.CurrentGroundCollider;
 
         if (groundCollider != null)
         {
             FootstepSurface surface =
-                groundCollider.GetComponentInParent<FootstepSurface>();
+                groundCollider.GetComponentInParent<
+                    FootstepSurface
+                >();
 
             if (surface != null &&
                 surface.TryGetFootstep(
@@ -172,7 +211,10 @@ public class PlayerFootsteps : MonoBehaviour
             return null;
         }
 
-        int selectedIndex = Random.Range(0, validClipCount);
+        int selectedIndex = Random.Range(
+            0,
+            validClipCount
+        );
 
         foreach (AudioClip clip in clips)
         {
@@ -195,6 +237,7 @@ public class PlayerFootsteps : MonoBehaviour
     private void OnValidate()
     {
         stepInterval = Mathf.Max(0.05f, stepInterval);
+        normalMoveSpeed = Mathf.Max(0.01f, normalMoveSpeed);
         minimumMoveSpeed = Mathf.Max(0f, minimumMoveSpeed);
 
         defaultVolume = Mathf.Clamp01(defaultVolume);
