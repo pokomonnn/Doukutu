@@ -170,8 +170,6 @@ public class EquipmentController : MonoBehaviour
             return false;
         }
 
-
-
         // 武器・ヘルメットはMax Stackを1にして使う前提
         if (equippedItem.Amount != 1)
         {
@@ -179,14 +177,25 @@ public class EquipmentController : MonoBehaviour
             return false;
         }
 
-        bool addedAll = inventoryController.TryAddItem(
-            equippedItem.ItemData,
-            equippedItem.Amount,
-            out int remainingAmount
+        // 新しいInventoryItemを作らず、今装備している同じ個体を戻す。
+        // これで武器に保存しているStoredMagazineAmmoも失われない。
+        if (!inventoryController.Grid.FindSpaceForItem(
+                equippedItem.ItemData,
+                out Vector2Int position,
+                out bool isRotated))
+        {
+            result = EquipmentResult.InventoryFull;
+            return false;
+        }
+
+        bool moved = inventoryController.TryMoveItem(
+            equippedItem,
+            position.x,
+            position.y,
+            isRotated
         );
 
-        // 通常インベントリが満杯なら装備解除しない
-        if (!addedAll || remainingAmount > 0)
+        if (!moved)
         {
             result = EquipmentResult.InventoryFull;
             return false;
@@ -198,8 +207,6 @@ public class EquipmentController : MonoBehaviour
         OnEquipmentChanged?.Invoke();
 
         return true;
-
-
     }
 
 

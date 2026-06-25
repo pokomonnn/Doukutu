@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -13,6 +14,13 @@ public class GunShooter : MonoBehaviour
     [Tooltip("Tabで表示・非表示にしているインベントリの親Panelを設定")]
     [SerializeField] private GameObject inventoryPanel;
 
+    [Header("弾薬連携")]
+    [Tooltip("装備時にPlayerEquipmentVisualControllerから設定されます。Prefab側では未設定でOKです。")]
+    [SerializeField] private WeaponItemData weaponItemData;
+
+    [Tooltip("装備時にPlayerEquipmentVisualControllerから設定されます。")]
+    [SerializeField] private InventoryController inventoryController;
+
     [Header("射撃設定")]
     [SerializeField] private float bulletSpeed = 20f;
     [SerializeField] private float fireInterval = 0.15f;
@@ -23,10 +31,10 @@ public class GunShooter : MonoBehaviour
     [SerializeField, Min(1)] private int magazineSize = 10;
 
     [Tooltip("現在マガジンに入っている弾数")]
-    [SerializeField, Min(0)] private int currentAmmo = 10;
+    [SerializeField, Min(0)] private int currentAmmo = 0;
 
-    [Tooltip("ゲーム開始時にマガジンを満タンにする")]
-    [SerializeField] private bool fillMagazineOnStart = true;
+    [Tooltip("単体テスト用です。通常の装備武器ではオフにしてください。")]
+    [SerializeField] private bool fillMagazineOnStart = false;
 
     [Header("リロード設定")]
     [Tooltip("リロードにかかる秒数")]
@@ -62,12 +70,39 @@ public class GunShooter : MonoBehaviour
     private float nextFireTime;
     private float nextEmptySoundTime;
     private bool isReloading;
+    private int reloadToken;
+
+    // 残弾が変化した瞬間に、装備しているInventoryItemへ保存するためのイベント
+    public event Action<int> OnMagazineAmmoChanged;
 
     public int CurrentAmmo => currentAmmo;
     public int MagazineSize => magazineSize;
     public bool IsEmpty => currentAmmo <= 0;
     public bool IsReloading => isReloading;
     public bool IsGunEquipped => isGunEquipped;
+
+    public AmmoItemData CompatibleAmmo =>
+        weaponItemData != null
+            ? weaponItemData.CompatibleAmmo
+            : null;
+
+    public int ReserveAmmoCount
+    {
+        get
+        {
+            if (inventoryController == null ||
+                CompatibleAmmo == null)
+            {
+                return 0;
+            }
+
+            return inventoryController.GetTotalAmount(
+                CompatibleAmmo
+            );
+        }
+    }
+
+    public bool HasReserveAmmo => ReserveAmmoCount > 0;
 
     private bool IsInventoryOpen =>
         inventoryPanel != null && inventoryPanel.activeInHierarchy;
@@ -79,14 +114,14 @@ public class GunShooter : MonoBehaviour
             gunAudioSource = GetComponent<AudioSource>();
         }
 
-        if (fillMagazineOnStart)
-        {
-            currentAmmo = magazineSize;
-        }
-        else
-        {
-            currentAmmo = Mathf.Clamp(currentAmmo, 0, magazineSize);
-        }
+        currentAmmo = fillMagazineOnStart
+            ? magazineSize
+            : Mathf.Clamp(currentAmmo, 0, magazineSize);
+    }
+
+    private void OnDisable()
+    {
+        CancelReload();
     }
 
     private void Update()
@@ -102,7 +137,6 @@ public class GunShooter : MonoBehaviour
             return;
         }
 
-        // Rキーでリロード開始
         if (Keyboard.current != null &&
             Keyboard.current.rKey.wasPressedThisFrame)
         {
@@ -110,12 +144,7 @@ public class GunShooter : MonoBehaviour
         }
 
         // リロード中は発射不可
-        if (isReloading)
-        {
-            return;
-        }
-
-        if (Mouse.current == null)
+        if (isReloading || Mouse.current == null)
         {
             return;
         }
@@ -129,11 +158,13 @@ public class GunShooter : MonoBehaviour
 
     private void Shoot()
     {
-        if (isReloading || IsInventoryOpen)
+        if (!isGunEquipped || isReloading || IsInventoryOpen)
         {
             return;
         }
 
+        // マガジンが空なら、予備弾が残っていても発射しない。
+        // Rでリロードして初めて撃てるようになる。
         if (currentAmmo <= 0)
         {
             PlayEmptySound();
@@ -149,7 +180,7 @@ public class GunShooter : MonoBehaviour
         }
 
         nextFireTime = Time.time + fireInterval;
-        currentAmmo--;
+        SetCurrentAmmo(currentAmmo - 1);
 
         if (gunAudioSource != null && shotSound != null)
         {
@@ -178,20 +209,42 @@ public class GunShooter : MonoBehaviour
 
     public void StartReload()
     {
-        if (IsInventoryOpen)
+        if (!isGunEquipped ||
+            IsInventoryOpen ||
+            isReloading ||
+            currentAmmo >= magazineSize)
         {
             return;
         }
 
-        if (isReloading || currentAmmo >= magazineSize)
+        if (!TryGetAmmoContext(
+                out AmmoItemData requiredAmmo,
+                out InventoryController inventory))
         {
+            Debug.LogWarning(
+                "GunShooter：WeaponItemDataのCompatible Ammo、またはInventoryControllerが設定されていません。",
+                this
+            );
+
+            PlayEmptySound();
             return;
         }
 
-        StartCoroutine(ReloadRoutine());
+        // 予備弾が0ならリロードを開始しない
+        if (inventory.GetTotalAmount(requiredAmmo) <= 0)
+        {
+            PlayEmptySound();
+            return;
+        }
+
+        int token = ++reloadToken;
+        StartCoroutine(ReloadRoutine(requiredAmmo, inventory, token));
     }
 
-    private IEnumerator ReloadRoutine()
+    private IEnumerator ReloadRoutine(
+        AmmoItemData requiredAmmo,
+        InventoryController inventory,
+        int token)
     {
         isReloading = true;
 
@@ -202,7 +255,84 @@ public class GunShooter : MonoBehaviour
 
         yield return new WaitForSeconds(reloadDuration);
 
-        currentAmmo = magazineSize;
+        // 死亡・武器を外すなどでリロードが中断された時は消費しない
+        if (token != reloadToken || !isGunEquipped)
+        {
+            yield break;
+        }
+
+        int neededAmmo = magazineSize - currentAmmo;
+
+        // ここで必要な分だけ、複数スタックもまたいで消費する。
+        // 13発しかなければ13発だけ装填される。
+        int loadedAmmo = inventory.RemoveAmountByItemData(
+            requiredAmmo,
+            neededAmmo
+        );
+
+        if (loadedAmmo > 0)
+        {
+            SetCurrentAmmo(currentAmmo + loadedAmmo);
+        }
+
+        isReloading = false;
+    }
+
+    public void ConfigureAmmoSystem(
+        WeaponItemData weaponData,
+        InventoryController controller)
+    {
+        weaponItemData = weaponData;
+        inventoryController = controller;
+    }
+
+    public void SetGunEquipped(bool equipped)
+    {
+        isGunEquipped = equipped;
+
+        if (!equipped)
+        {
+            CancelReload();
+        }
+    }
+
+    public void SetInventoryPanel(GameObject panel)
+    {
+        inventoryPanel = panel;
+    }
+
+    public void SetCurrentAmmo(int ammo)
+    {
+        int clampedAmmo = Mathf.Clamp(ammo, 0, magazineSize);
+
+        if (currentAmmo == clampedAmmo)
+        {
+            return;
+        }
+
+        currentAmmo = clampedAmmo;
+        OnMagazineAmmoChanged?.Invoke(currentAmmo);
+    }
+
+    private bool TryGetAmmoContext(
+        out AmmoItemData requiredAmmo,
+        out InventoryController inventory)
+    {
+        requiredAmmo = CompatibleAmmo;
+        inventory = inventoryController;
+
+        if (inventory == null)
+        {
+            inventory = FindAnyObjectByType<InventoryController>();
+            inventoryController = inventory;
+        }
+
+        return requiredAmmo != null && inventory != null;
+    }
+
+    private void CancelReload()
+    {
+        reloadToken++;
         isReloading = false;
     }
 
@@ -221,23 +351,11 @@ public class GunShooter : MonoBehaviour
         }
     }
 
-    public void SetGunEquipped(bool equipped)
+    private void OnValidate()
     {
-        isGunEquipped = equipped;
+        magazineSize = Mathf.Max(1, magazineSize);
+        currentAmmo = Mathf.Clamp(currentAmmo, 0, magazineSize);
+        reloadDuration = Mathf.Max(0f, reloadDuration);
+        emptySoundInterval = Mathf.Max(0f, emptySoundInterval);
     }
-
-    public void SetInventoryPanel(GameObject panel)
-    {
-        inventoryPanel = panel;
-    }
-
-    public void SetCurrentAmmo(int ammo)
-    {
-        currentAmmo = Mathf.Clamp(
-            ammo,
-            0,
-            magazineSize
-        );
-    }
-
 }

@@ -10,6 +10,10 @@ public class WeaponItemData : ItemData
     [Tooltip("この武器を装備した時に使う武器Prefab")]
     [SerializeField] private GameObject weaponPrefab;
 
+    [Header("弾薬設定")]
+    [Tooltip("この銃がリロード時に消費するAmmo Item Data")]
+    [SerializeField] private AmmoItemData compatibleAmmo;
+
     public override InventoryItemType ItemType =>
         InventoryItemType.Weapon;
 
@@ -17,4 +21,5 @@ public class WeaponItemData : ItemData
         EquipmentSlotType.PrimaryWeapon;
 
     public GameObject WeaponPrefab => weaponPrefab;
+    public AmmoItemData CompatibleAmmo => compatibleAmmo;
 }

@@ -50,12 +50,14 @@ MonoBehaviour:
   muzzlePoint: {fileID: 8653183065145409809}
   bulletPrefab: {fileID: 508504824892919759, guid: f2e8d3a50dd391f4282b4ec4e89a3260, type: 3}
   inventoryPanel: {fileID: 0}
+  weaponItemData: {fileID: 0}
+  inventoryController: {fileID: 0}
   bulletSpeed: 20
   fireInterval: 0.05
   bulletLifeTime: 3
   magazineSize: 20
-  currentAmmo: 10
-  fillMagazineOnStart: 1
+  currentAmmo: 0
+  fillMagazineOnStart: 0
   reloadDuration: 1.5
   gunAudioSource: {fileID: 0}
   shotSound: {fileID: 8300000, guid: e2cf685d55897b44eacf868b1d5a21e5, type: 3}

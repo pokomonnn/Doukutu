@@ -231,6 +231,76 @@ public class InventoryController : MonoBehaviour
         return inventoryGrid.GetItemAt(x, y);
     }
 
+    // 指定ItemDataの所持数を、全スタック合計で返す
+    public int GetTotalAmount(ItemData itemData)
+    {
+        if (itemData == null || inventoryGrid == null)
+        {
+            return 0;
+        }
+
+        int totalAmount = 0;
+
+        foreach (InventoryItem item in inventoryGrid.Items)
+        {
+            if (item == null || item.ItemData != itemData)
+            {
+                continue;
+            }
+
+            totalAmount += item.Amount;
+        }
+
+        return totalAmount;
+    }
+
+    // 指定ItemDataを複数スタックにまたがって消費し、実際に消費した数を返す
+    public int RemoveAmountByItemData(ItemData itemData, int amount)
+    {
+        if (itemData == null || amount <= 0 || inventoryGrid == null)
+        {
+            return 0;
+        }
+
+        // RemoveAmount中に空スタックがリストから消えるので、先に対象だけ複製する
+        List<InventoryItem> matchingItems =
+            new List<InventoryItem>();
+
+        foreach (InventoryItem item in inventoryGrid.Items)
+        {
+            if (item != null && item.ItemData == itemData)
+            {
+                matchingItems.Add(item);
+            }
+        }
+
+        int remainingAmount = amount;
+        int removedTotal = 0;
+
+        foreach (InventoryItem item in matchingItems)
+        {
+            if (remainingAmount <= 0)
+            {
+                break;
+            }
+
+            int removed = inventoryGrid.RemoveAmount(
+                item,
+                remainingAmount
+            );
+
+            removedTotal += removed;
+            remainingAmount -= removed;
+        }
+
+        if (removedTotal > 0)
+        {
+            NotifyInventoryChanged();
+        }
+
+        return removedTotal;
+    }
+
     // 消耗品を使用する
     public bool TryUseItem(
         InventoryItem item,

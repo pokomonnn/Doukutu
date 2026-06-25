@@ -73,6 +73,13 @@ public class ReloadPromptUI : MonoBehaviour
             currentGunShooter.IsEmpty &&
             !currentGunShooter.IsReloading;
 
+        if (shouldShow && promptText != null)
+        {
+            promptText.text = currentGunShooter.HasReserveAmmo
+                ? "Reload \"R\""
+                : "NoAmmo";
+        }
+
         float targetAlpha = shouldShow ? 1f : 0f;
 
         currentAlpha = Mathf.MoveTowards(

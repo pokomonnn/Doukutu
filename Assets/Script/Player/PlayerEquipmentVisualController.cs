@@ -187,6 +187,14 @@ public class PlayerEquipmentVisualController : MonoBehaviour
                 inventoryPanel
             );
 
+            currentGunShooter.ConfigureAmmoSystem(
+                currentWeaponData,
+                equipmentController.InventoryController
+            );
+
+            currentGunShooter.OnMagazineAmmoChanged +=
+                HandleMagazineAmmoChanged;
+
             RestoreWeaponAmmo();
         }
 
@@ -232,11 +240,20 @@ public class PlayerEquipmentVisualController : MonoBehaviour
             return;
         }
 
-        // 初めて装備した銃は、PrefabのGunShooterに設定した
-        // 初期弾数を保存する
-        currentWeaponItem.SetStoredMagazineAmmo(
-            currentGunShooter.CurrentAmmo
-        );
+        // 初めて装備した銃は空マガジンから開始。
+        // これにより、最初の装填もインベントリ内の弾薬を消費する。
+        currentGunShooter.SetCurrentAmmo(0);
+        currentWeaponItem.SetStoredMagazineAmmo(0);
+    }
+
+    private void HandleMagazineAmmoChanged(int ammo)
+    {
+        if (currentWeaponItem == null)
+        {
+            return;
+        }
+
+        currentWeaponItem.SetStoredMagazineAmmo(ammo);
     }
 
     private void SaveCurrentWeaponAmmo()
@@ -256,6 +273,12 @@ public class PlayerEquipmentVisualController : MonoBehaviour
     {
         // 銃を消す直前に残弾を保存する
         SaveCurrentWeaponAmmo();
+
+        if (currentGunShooter != null)
+        {
+            currentGunShooter.OnMagazineAmmoChanged -=
+                HandleMagazineAmmoChanged;
+        }
 
         bool hadWeapon =
             activeWeaponObject != null ||

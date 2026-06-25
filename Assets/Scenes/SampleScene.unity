@@ -24806,8 +24806,12 @@ MonoBehaviour:
     amount: 3
   - itemData: {fileID: 11400000, guid: 2b60fd6427fa5ab4ab064bb948ca1ea0, type: 2}
     amount: 1
+  - itemData: {fileID: 11400000, guid: fb52aa05e33bca54e9a1f901280855d0, type: 2}
+    amount: 60
   - itemData: {fileID: 11400000, guid: 51f09557e6ec64a46ab2cd2b208c73ad, type: 2}
     amount: 1
+  - itemData: {fileID: 11400000, guid: a3b808ca916280a46816c5033eac419a, type: 2}
+    amount: 60
   playerHealth: {fileID: 0}
   playerTag: Player
   inventoryGrid:
