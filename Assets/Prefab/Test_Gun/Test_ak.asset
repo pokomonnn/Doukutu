@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1086a85c47509214a9c55f32cfb8431e, type: 3}
+  m_Name: Test_ak
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponItemData
+  itemId: Gun_001
+  displayName: AK-558
+  description: this is AK
+  icon: {fileID: -198929506401869900, guid: 7f1b2f9b41ae6294ca7ef19ef4de9241, type: 3}
+  width: 5
+  height: 2
+  canRotate: 1
+  maxStack: 1
+  purchasePrice: 1000
+  sellPrice: 500
+  canSellToShop: 1
+  weight: 5
+  canDiscard: 1
+  weaponPrefab: {fileID: 4584479946820505900, guid: 3d41a99aaca964e4c90238f398af13b3, type: 3}

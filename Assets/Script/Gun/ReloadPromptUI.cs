@@ -5,15 +5,22 @@ using UnityEngine;
 public class ReloadPromptUI : MonoBehaviour
 {
     [Header("参照")]
-    [SerializeField] private GunShooter gunShooter;
+    [SerializeField]
+    private PlayerEquipmentVisualController
+        equipmentVisualController;
+
     [SerializeField] private TextMeshPro promptText;
 
     [Header("フェード設定")]
     [Tooltip("表示・非表示が切り替わるまでの秒数")]
-    [SerializeField, Min(0.01f)] private float fadeDuration = 0.25f;
+    [SerializeField, Min(0.01f)]
+    private float fadeDuration = 0.25f;
+
+    private GunShooter currentGunShooter;
 
     private Color originalColor;
     private float currentAlpha;
+    private bool isSubscribed;
 
     private void Awake()
     {
@@ -28,26 +35,43 @@ public class ReloadPromptUI : MonoBehaviour
             return;
         }
 
-        // Inspectorで設定した文字色を保存
         originalColor = promptText.color;
 
-        // 開始時は透明
         currentAlpha = 0f;
         SetTextAlpha(0f);
     }
 
+    private void OnEnable()
+    {
+        SubscribeToEquipmentVisualController();
+    }
+
+    private void Start()
+    {
+        // 実行順の違いでOnEnable時に見つからなかった場合の保険
+        SubscribeToEquipmentVisualController();
+
+        if (equipmentVisualController != null)
+        {
+            SetCurrentGun(
+                equipmentVisualController.CurrentGunShooter
+            );
+        }
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeFromEquipmentVisualController();
+    }
+
     private void Update()
     {
-        if (gunShooter == null || promptText == null)
-        {
-            return;
-        }
-
-        // 弾切れ・装備中・リロード中ではない時に表示
         bool shouldShow =
-            gunShooter.IsGunEquipped &&
-            gunShooter.IsEmpty &&
-            !gunShooter.IsReloading;
+            currentGunShooter != null &&
+            currentGunShooter.isActiveAndEnabled &&
+            currentGunShooter.IsGunEquipped &&
+            currentGunShooter.IsEmpty &&
+            !currentGunShooter.IsReloading;
 
         float targetAlpha = shouldShow ? 1f : 0f;
 
@@ -60,8 +84,82 @@ public class ReloadPromptUI : MonoBehaviour
         SetTextAlpha(currentAlpha);
     }
 
+    private void HandleActiveGunChanged(
+        GunShooter newGunShooter)
+    {
+        SetCurrentGun(newGunShooter);
+    }
+
+    private void SetCurrentGun(GunShooter newGunShooter)
+    {
+        currentGunShooter = newGunShooter;
+
+        // 銃を外した瞬間は、表示を消す
+        if (currentGunShooter == null)
+        {
+            currentAlpha = 0f;
+            SetTextAlpha(0f);
+        }
+    }
+
+    private void SubscribeToEquipmentVisualController()
+    {
+        if (isSubscribed)
+        {
+            return;
+        }
+
+        if (!FindEquipmentVisualController())
+        {
+            return;
+        }
+
+        equipmentVisualController.OnActiveGunChanged +=
+            HandleActiveGunChanged;
+
+        isSubscribed = true;
+
+        SetCurrentGun(
+            equipmentVisualController.CurrentGunShooter
+        );
+    }
+
+    private void UnsubscribeFromEquipmentVisualController()
+    {
+        if (!isSubscribed ||
+            equipmentVisualController == null)
+        {
+            return;
+        }
+
+        equipmentVisualController.OnActiveGunChanged -=
+            HandleActiveGunChanged;
+
+        isSubscribed = false;
+    }
+
+    private bool FindEquipmentVisualController()
+    {
+        if (equipmentVisualController != null)
+        {
+            return true;
+        }
+
+        equipmentVisualController =
+            FindAnyObjectByType<
+                PlayerEquipmentVisualController
+            >(FindObjectsInactive.Include);
+
+        return equipmentVisualController != null;
+    }
+
     private void SetTextAlpha(float alpha)
     {
+        if (promptText == null)
+        {
+            return;
+        }
+
         Color color = originalColor;
         color.a = originalColor.a * alpha;
 

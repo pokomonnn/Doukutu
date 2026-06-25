@@ -10,8 +10,13 @@ public class PlayerDeathHandler : MonoBehaviour
     [SerializeField] private Rigidbody2D rb;
     [SerializeField] private Animator animator;
 
+    [Header("装備・銃操作")]
+    [Tooltip("Playerに付いているPlayerEquipmentVisualController")]
+    [SerializeField]
+    private PlayerEquipmentVisualController equipmentVisualController;
+
     [Header("Death Settings")]
-    [Tooltip("死亡時に止めたいスクリプトを入れる（移動・射撃など）")]
+    [Tooltip("死亡時に止めたいスクリプトを入れる（移動など）")]
     [SerializeField] private Behaviour[] scriptsToDisableOnDeath;
 
     [Tooltip("死亡時にRigidbody2Dの物理演算を止める")]
@@ -45,6 +50,12 @@ public class PlayerDeathHandler : MonoBehaviour
         {
             animator = GetComponent<Animator>();
         }
+
+        if (equipmentVisualController == null)
+        {
+            equipmentVisualController =
+                GetComponent<PlayerEquipmentVisualController>();
+        }
     }
 
     private void OnEnable()
@@ -72,11 +83,14 @@ public class PlayerDeathHandler : MonoBehaviour
 
         IsDead = true;
 
+        // WeaponHolder内に生成されている銃の
+        // 射撃・リロード・照準操作を止める
+        equipmentVisualController?.SetWeaponControlsEnabled(false);
+
         StopPlayerScripts();
         StopPhysics();
         PlayDeathAnimation();
 
-        // GameManagerへ「プレイヤーが死んだ」と伝える
         onPlayerDied?.Invoke();
     }
 
@@ -91,7 +105,6 @@ public class PlayerDeathHandler : MonoBehaviour
                 continue;
             }
 
-            // もともと有効だったスクリプトだけ、復活時に戻せるよう記録する
             if (script.enabled)
             {
                 script.enabled = false;
@@ -120,20 +133,19 @@ public class PlayerDeathHandler : MonoBehaviour
 
     private void PlayDeathAnimation()
     {
-        if (animator != null && !string.IsNullOrEmpty(deathTriggerName))
+        if (animator != null &&
+            !string.IsNullOrEmpty(deathTriggerName))
         {
             animator.SetTrigger(deathTriggerName);
         }
     }
 
-    // GameManagerから、リスポーン時に呼ぶ
     public void ReviveAt(Vector3 respawnPosition)
     {
         transform.position = respawnPosition;
         Revive();
     }
 
-    // 現在位置のまま復活したい時に使う
     public void Revive()
     {
         if (!IsDead)
@@ -159,6 +171,9 @@ public class PlayerDeathHandler : MonoBehaviour
         }
 
         disabledScripts.Clear();
+
+        // 復活時、装備している銃だけ再び操作可能にする
+        equipmentVisualController?.SetWeaponControlsEnabled(true);
 
         health.ResetHealth();
     }

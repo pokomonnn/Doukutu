@@ -99,4 +99,9 @@ public class WeaponAim : MonoBehaviour
     {
         isGunEquipped = equipped;
     }
+
+    public void SetInventoryPanel(GameObject panel)
+    {
+        inventoryPanel = panel;
+    }
 }

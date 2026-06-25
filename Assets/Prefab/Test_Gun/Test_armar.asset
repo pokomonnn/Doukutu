@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d20d489e6c3213488951a095d0facdf, type: 3}
+  m_Name: Test_armar
+  m_EditorClassIdentifier: Assembly-CSharp::ArmorItemData
+  itemId: Armar_001
+  displayName: Armar
+  description: 
+  icon: {fileID: 878130953088834983, guid: caf5e6c356cafb34b9f75240b2f7ae3e, type: 3}
+  width: 2
+  height: 2
+  canRotate: 0
+  maxStack: 1
+  purchasePrice: 0
+  sellPrice: 0
+  canSellToShop: 1
+  weight: 0
+  canDiscard: 1
+  equipmentSlot: 2
+  damageReductionPercent: 3.5210564
+  equippedVisualPrefab: {fileID: 0}

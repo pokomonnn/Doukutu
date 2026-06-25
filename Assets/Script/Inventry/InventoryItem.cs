@@ -14,6 +14,24 @@ public class InventoryItem
     [SerializeField] private bool isRotated;
     [SerializeField, Min(1)] private int amount = 1;
 
+    [Header("武器の残弾")]
+    [SerializeField] private bool hasStoredMagazineAmmo;
+
+    [SerializeField, Min(0)]
+    private int storedMagazineAmmo;
+
+    public bool HasStoredMagazineAmmo =>
+        hasStoredMagazineAmmo;
+
+    public int StoredMagazineAmmo =>
+        storedMagazineAmmo;
+
+    public void SetStoredMagazineAmmo(int ammo)
+    {
+        storedMagazineAmmo = Mathf.Max(0, ammo);
+        hasStoredMagazineAmmo = true;
+    }
+
     public ItemData ItemData => itemData;
 
     public int GridX => gridX;

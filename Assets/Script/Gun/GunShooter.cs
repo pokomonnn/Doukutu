@@ -225,4 +225,19 @@ public class GunShooter : MonoBehaviour
     {
         isGunEquipped = equipped;
     }
+
+    public void SetInventoryPanel(GameObject panel)
+    {
+        inventoryPanel = panel;
+    }
+
+    public void SetCurrentAmmo(int ammo)
+    {
+        currentAmmo = Mathf.Clamp(
+            ammo,
+            0,
+            magazineSize
+        );
+    }
+
 }

@@ -1,8 +1,8 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
-using System.Collections.Generic;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(RectTransform))]
@@ -10,6 +10,7 @@ public class InventoryContextMenuUI : MonoBehaviour
 {
     [Header("メニューUI")]
     [SerializeField] private TMP_Text itemNameText;
+    [SerializeField] private Button equipButton;
     [SerializeField] private Button useButton;
     [SerializeField] private Button informationButton;
     [SerializeField] private Button trashButton;
@@ -19,12 +20,12 @@ public class InventoryContextMenuUI : MonoBehaviour
     [SerializeField] private TMP_Text informationTitleText;
     [SerializeField] private TMP_Text informationDescriptionText;
 
-
+    [Header("装備")]
+    [SerializeField] private EquipmentController equipmentController;
 
     [Header("表示位置")]
     [SerializeField]
-    private Vector2 cursorOffset =
-        new Vector2(12f, -12f);
+    private Vector2 cursorOffset = new Vector2(12f, -12f);
 
     [SerializeField] private bool closeWhenClickOutside = true;
 
@@ -33,6 +34,7 @@ public class InventoryContextMenuUI : MonoBehaviour
 
     private InventoryItem selectedItem;
     private InventoryController inventoryController;
+
     [SerializeField] private InventorySoundPlayer soundPlayer;
 
     [Header("通知UI")]
@@ -49,9 +51,11 @@ public class InventoryContextMenuUI : MonoBehaviour
     {
         EnsureReferences();
         FindSoundPlayer();
+        FindEquipmentController();
         FindHealthFullToastUI();
         RegisterButtons();
     }
+
     private void OnEnable()
     {
         // 親のInventoryPanelを閉じてから再度開いた時に、
@@ -119,6 +123,8 @@ public class InventoryContextMenuUI : MonoBehaviour
         selectedItem = item;
         inventoryController = controller;
 
+        FindEquipmentController();
+
         gameObject.SetActive(true);
 
         RefreshMenu();
@@ -147,6 +153,49 @@ public class InventoryContextMenuUI : MonoBehaviour
         inventoryController = null;
 
         gameObject.SetActive(false);
+    }
+
+    // Equipボタンから呼ぶ
+    public void EquipSelectedItem()
+    {
+        if (selectedItem == null || inventoryController == null)
+        {
+            Hide();
+            return;
+        }
+
+        if (!FindEquipmentController())
+        {
+            soundPlayer?.PlayFailed();
+
+            Debug.LogWarning(
+                "EquipmentController が見つかりません。",
+                this
+            );
+
+            return;
+        }
+
+        bool equipped = equipmentController.TryEquipItem(
+            selectedItem,
+            out EquipmentResult result
+        );
+
+        if (equipped)
+        {
+            // 既存のPlace音を装備成功音として使う
+            soundPlayer?.PlayPlace();
+
+            Hide();
+            return;
+        }
+
+        soundPlayer?.PlayFailed();
+
+        Debug.Log(
+            $"アイテムを装備できません：{result}",
+            this
+        );
     }
 
     public void UseSelectedItem()
@@ -285,6 +334,14 @@ public class InventoryContextMenuUI : MonoBehaviour
             itemNameText.text = itemData.DisplayName;
         }
 
+        // 銃・防具だけEquipを表示
+        bool canEquip = CanEquip(itemData);
+
+        if (equipButton != null)
+        {
+            equipButton.gameObject.SetActive(canEquip);
+        }
+
         // 回復アイテムだけUseを表示
         bool canUse = itemData is ConsumableItemData;
 
@@ -299,13 +356,34 @@ public class InventoryContextMenuUI : MonoBehaviour
             informationButton.gameObject.SetActive(true);
         }
 
-        // 現段階ではQuestだけTrashを非表示
+        // QuestだけTrashを非表示
         if (trashButton != null)
         {
             trashButton.gameObject.SetActive(
                 CanDiscard(itemData)
             );
         }
+    }
+
+    private bool CanEquip(ItemData itemData)
+    {
+        if (itemData == null)
+        {
+            return false;
+        }
+
+        // EquipmentControllerが見つかれば、実際の装備可能枠で判定
+        if (equipmentController != null)
+        {
+            return equipmentController.TryGetEquipmentSlot(
+                itemData,
+                out _
+            );
+        }
+
+        // 起動順などでEquipmentControllerがまだ見つからない時の保険
+        return itemData is WeaponItemData ||
+               itemData is ArmorItemData;
     }
 
     private bool CanDiscard(ItemData itemData)
@@ -426,6 +504,11 @@ public class InventoryContextMenuUI : MonoBehaviour
             return;
         }
 
+        if (equipButton != null)
+        {
+            equipButton.onClick.AddListener(EquipSelectedItem);
+        }
+
         if (useButton != null)
         {
             useButton.onClick.AddListener(UseSelectedItem);
@@ -449,6 +532,11 @@ public class InventoryContextMenuUI : MonoBehaviour
         if (!buttonsRegistered)
         {
             return;
+        }
+
+        if (equipButton != null)
+        {
+            equipButton.onClick.RemoveListener(EquipSelectedItem);
         }
 
         if (useButton != null)
@@ -483,9 +571,35 @@ public class InventoryContextMenuUI : MonoBehaviour
         if (soundPlayer == null)
         {
             soundPlayer = FindAnyObjectByType<InventorySoundPlayer>(
-    FindObjectsInactive.Include
-);
+                FindObjectsInactive.Include
+            );
         }
+    }
+
+    private bool FindEquipmentController()
+    {
+        if (equipmentController != null)
+        {
+            return true;
+        }
+
+        // 通常インベントリと同じオブジェクトに付いている場合
+        if (inventoryController != null)
+        {
+            equipmentController =
+                inventoryController.GetComponent<EquipmentController>();
+        }
+
+        // シーン内のどこかにある場合の保険
+        if (equipmentController == null)
+        {
+            equipmentController =
+                FindAnyObjectByType<EquipmentController>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        return equipmentController != null;
     }
 
     private void FindHealthFullToastUI()

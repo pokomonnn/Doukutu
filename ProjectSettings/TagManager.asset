@@ -15,7 +15,7 @@ TagManager:
   - Ground
   - Player
   - Gun
-  - 
+  - Helmet
   - 
   - 
   - 
@@ -44,6 +44,9 @@ TagManager:
     locked: 0
   - name: Player
     uniqueID: 3943371885
+    locked: 0
+  - name: Helmet
+    uniqueID: 4006534229
     locked: 0
   - name: Gun
     uniqueID: 939989353

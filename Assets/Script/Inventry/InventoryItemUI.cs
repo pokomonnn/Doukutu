@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(RectTransform))]
@@ -262,6 +263,31 @@ public class InventoryItemUI : MonoBehaviour,
             return;
         }
 
+        // 先に装備スロットへのドロップを判定する
+        if (TryDropToEquipmentSlot(
+                eventData,
+                out bool wasOverEquipmentSlot))
+        {
+            soundPlayer?.PlayPlace();
+
+            Log(
+                $"装備成功：{inventoryItem.ItemData.DisplayName}"
+            );
+
+            FinishDrag();
+            return;
+        }
+
+        // 装備スロットの上にはいたが、
+        // 種類違い・枠が埋まっているなどで失敗した場合
+        if (wasOverEquipmentSlot)
+        {
+            soundPlayer?.PlayFailed();
+
+            FinishDrag();
+            return;
+        }
+
         bool moved = false;
 
         if (gridUI != null &&
@@ -271,8 +297,6 @@ public class InventoryItemUI : MonoBehaviour,
                 eventData.pressEventCamera,
                 out Vector2Int pointerGridPosition))
         {
-            // 掴んだマスのズレを引いて
-            // アイテム左上を置くグリッド座標を決める
             Vector2Int targetPosition =
                 pointerGridPosition - dragCellOffset;
 
@@ -289,8 +313,7 @@ public class InventoryItemUI : MonoBehaviour,
 
                 Log(
                     $"ドロップ成功：{inventoryItem.ItemData.DisplayName} / " +
-                    $"位置={targetPosition.x},{targetPosition.y} / " +
-                    $"向き={(dragIsRotated ? "回転" : "通常")}"
+                    $"位置={targetPosition.x},{targetPosition.y}"
                 );
             }
             else
@@ -298,9 +321,7 @@ public class InventoryItemUI : MonoBehaviour,
                 soundPlayer?.PlayFailed();
 
                 Log(
-                    $"ドロップ失敗：{inventoryItem.ItemData.DisplayName} / " +
-                    $"位置={targetPosition.x},{targetPosition.y} / " +
-                    $"重なり・グリッド外の可能性があります。"
+                    $"ドロップ失敗：{inventoryItem.ItemData.DisplayName}"
                 );
             }
         }
@@ -313,6 +334,68 @@ public class InventoryItemUI : MonoBehaviour,
 
         FinishDrag();
     }
+
+
+
+    private bool TryDropToEquipmentSlot(
+    PointerEventData eventData,
+    out bool wasOverEquipmentSlot)
+    {
+        wasOverEquipmentSlot = false;
+
+        if (EventSystem.current == null)
+        {
+            return false;
+        }
+
+        List<RaycastResult> results =
+            new List<RaycastResult>();
+
+        EventSystem.current.RaycastAll(
+            eventData,
+            results
+        );
+
+        foreach (RaycastResult raycastResult in results)
+        {
+            if (raycastResult.gameObject == null)
+            {
+                continue;
+            }
+
+            EquipmentSlotUI equipmentSlotUI =
+                raycastResult.gameObject
+                    .GetComponentInParent<EquipmentSlotUI>();
+
+            if (equipmentSlotUI == null)
+            {
+                continue;
+            }
+
+            wasOverEquipmentSlot = true;
+
+            bool equipped =
+                equipmentSlotUI.TryEquipDroppedItem(
+                    inventoryItem,
+                    dragIsRotated,
+                    out EquipmentResult result
+                );
+
+            if (!equipped)
+            {
+                Log(
+                    $"装備スロットへのドロップ失敗：" +
+                    $"{inventoryItem.ItemData.DisplayName} / {result}"
+                );
+            }
+
+            return equipped;
+        }
+
+        return false;
+    }
+
+
 
     private void TryRotateDuringDrag()
     {
