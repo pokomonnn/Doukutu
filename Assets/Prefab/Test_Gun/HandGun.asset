@@ -25,5 +25,5 @@ MonoBehaviour:
   canSellToShop: 1
   weight: 0
   canDiscard: 1
-  weaponPrefab: {fileID: 4584479946820505900, guid: b4468ad0456639f49abeac0724157b21, type: 3}
+  weaponPrefab: {fileID: 4584479946820505900, guid: a00fe7959b989b24793faefc86b56177, type: 3}
   compatibleAmmo: {fileID: 11400000, guid: a3b808ca916280a46816c5033eac419a, type: 2}

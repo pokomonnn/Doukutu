@@ -27,7 +27,7 @@ Transform:
   m_GameObject: {fileID: 590387895468571227}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.103, y: 0.144, z: 0}
+  m_LocalPosition: {x: -0.133, y: 0.134, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4865,7 +4865,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: -1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8653183065145409809}
@@ -4890,9 +4890,9 @@ MonoBehaviour:
   weaponItemData: {fileID: 0}
   inventoryController: {fileID: 0}
   bulletSpeed: 20
-  fireInterval: 0.05
+  fireInterval: 0.5
   bulletLifeTime: 3
-  magazineSize: 20
+  magazineSize: 10
   currentAmmo: 0
   fillMagazineOnStart: 0
   reloadDuration: 1.5
@@ -4955,7 +4955,7 @@ SpriteRenderer:
   m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -198929506401869900, guid: 7f1b2f9b41ae6294ca7ef19ef4de9241, type: 3}
+  m_Sprite: {fileID: -1461178650845398902, guid: 2e61c1ab57359924bbe7987a54b25956, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -5074,7 +5074,7 @@ GameObject:
   - component: {fileID: 3006224865479806908}
   - component: {fileID: 3783060676390865692}
   m_Layer: 3
-  m_Name: AK556
+  m_Name: HandGun001
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5235,7 +5235,7 @@ Transform:
   m_GameObject: {fileID: 8019550305541348133}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.41, y: 0.091, z: 0}
+  m_LocalPosition: {x: 0.329, y: 0.116, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

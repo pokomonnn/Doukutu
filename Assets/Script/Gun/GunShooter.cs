@@ -67,6 +67,10 @@ public class GunShooter : MonoBehaviour
     [Header("状態")]
     [SerializeField] private bool isGunEquipped = true;
 
+    [Header("薬きょう")]
+    [SerializeField] private ParticleSystem casingParticleSystem;
+
+
     private float nextFireTime;
     private float nextEmptySoundTime;
     private bool isReloading;
@@ -185,6 +189,11 @@ public class GunShooter : MonoBehaviour
         if (gunAudioSource != null && shotSound != null)
         {
             gunAudioSource.PlayOneShot(shotSound, shotVolume);
+        }
+
+        if (casingParticleSystem != null)
+        {
+            casingParticleSystem.Emit(1);
         }
 
         GameObject bullet = Instantiate(
