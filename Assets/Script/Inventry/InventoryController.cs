@@ -9,8 +9,16 @@ public enum ItemUseResult
     NotConsumable,
     PlayerNotFound,
     PlayerIsDead,
+
     HealthIsFull,
-    NoUsableEffect
+    FoodIsFull,
+    WaterIsFull,
+    FoodAndWaterAreFull,
+
+    NoUsableEffect,
+
+    StatusConditionControllerNotFound,
+    SurvivalControllerNotFound
 }
 
 public class InventoryController : MonoBehaviour
@@ -31,13 +39,34 @@ public class InventoryController : MonoBehaviour
 
     [Header("開始時に入れるアイテム（テスト用）")]
     [SerializeField] private bool addStartingItemsOnAwake = true;
+
     [SerializeField]
     private List<StartingItem> startingItems =
         new List<StartingItem>();
 
     [Header("使用対象")]
-    [Tooltip("プレイヤーのCharacterHealth。未設定ならPlayerタグから自動取得します。")]
-    [SerializeField] private CharacterHealth playerHealth;
+    [Tooltip(
+        "プレイヤーのCharacterHealth。" +
+        "未設定ならPlayerタグから自動取得します。"
+    )]
+    [SerializeField]
+    private CharacterHealth playerHealth;
+
+    [Tooltip(
+        "プレイヤーの状態異常管理。" +
+        "未設定ならPlayerタグから自動取得します。"
+    )]
+    [SerializeField]
+    private PlayerStatusConditionController
+        playerStatusConditions;
+
+    [Tooltip(
+        "プレイヤーの食料・水分管理。" +
+        "未設定ならPlayerタグから自動取得します。"
+    )]
+    [SerializeField]
+    private PlayerSurvivalController
+        playerSurvivalController;
 
     [SerializeField] private string playerTag = "Player";
 
@@ -55,7 +84,10 @@ public class InventoryController : MonoBehaviour
     private void Awake()
     {
         InitializeInventory();
+
         FindPlayerHealth();
+        FindPlayerStatusConditions();
+        FindPlayerSurvivalController();
     }
 
     public void InitializeInventory()
@@ -117,7 +149,10 @@ public class InventoryController : MonoBehaviour
     }
 
     // 通常の向きのまま移動
-    public bool TryMoveItem(InventoryItem item, int targetX, int targetY)
+    public bool TryMoveItem(
+        InventoryItem item,
+        int targetX,
+        int targetY)
     {
         if (item == null)
         {
@@ -165,14 +200,21 @@ public class InventoryController : MonoBehaviour
         return moved;
     }
 
-    public bool CanMoveItemTo(InventoryItem item, int targetX, int targetY)
+    public bool CanMoveItemTo(
+        InventoryItem item,
+        int targetX,
+        int targetY)
     {
         if (item == null)
         {
             return false;
         }
 
-        return inventoryGrid.CanPlaceItem(item, targetX, targetY);
+        return inventoryGrid.CanPlaceItem(
+            item,
+            targetX,
+            targetY
+        );
     }
 
     public bool TryRotateItem(InventoryItem item)
@@ -209,14 +251,19 @@ public class InventoryController : MonoBehaviour
         return removed;
     }
 
-    public int RemoveItemAmount(InventoryItem item, int amount)
+    public int RemoveItemAmount(
+        InventoryItem item,
+        int amount)
     {
         if (item == null || amount <= 0)
         {
             return 0;
         }
 
-        int removedAmount = inventoryGrid.RemoveAmount(item, amount);
+        int removedAmount = inventoryGrid.RemoveAmount(
+            item,
+            amount
+        );
 
         if (removedAmount > 0)
         {
@@ -254,15 +301,19 @@ public class InventoryController : MonoBehaviour
         return totalAmount;
     }
 
-    // 指定ItemDataを複数スタックにまたがって消費し、実際に消費した数を返す
-    public int RemoveAmountByItemData(ItemData itemData, int amount)
+    // 指定ItemDataを複数スタックにまたがって消費し、
+    // 実際に消費した数を返す
+    public int RemoveAmountByItemData(
+        ItemData itemData,
+        int amount)
     {
-        if (itemData == null || amount <= 0 || inventoryGrid == null)
+        if (itemData == null ||
+            amount <= 0 ||
+            inventoryGrid == null)
         {
             return 0;
         }
 
-        // RemoveAmount中に空スタックがリストから消えるので、先に対象だけ複製する
         List<InventoryItem> matchingItems =
             new List<InventoryItem>();
 
@@ -336,31 +387,121 @@ public class InventoryController : MonoBehaviour
             return false;
         }
 
+        bool needsStatusConditionController =
+            consumableData.CuredConditions !=
+            StatusConditionType.None;
+
+        bool needsSurvivalController =
+            consumableData.CanRestoreFood ||
+            consumableData.CanRestoreWater;
+
+        // 状態異常回復アイテムなのにControllerが無い場合、
+        // アイテムが消費されないようにする
+        if (needsStatusConditionController &&
+            !FindPlayerStatusConditions())
+        {
+            result =
+                ItemUseResult.StatusConditionControllerNotFound;
+
+            Debug.LogWarning(
+                "InventoryController：" +
+                "PlayerStatusConditionControllerが" +
+                "Playerに見つかりません。",
+                this
+            );
+
+            return false;
+        }
+
+        // 食料・水分を回復するアイテムなのにControllerが無い場合も、
+        // アイテムだけ消費されないようにする
+        if (needsSurvivalController &&
+            !FindPlayerSurvivalController())
+        {
+            result =
+                ItemUseResult.SurvivalControllerNotFound;
+
+            Debug.LogWarning(
+                "InventoryController：" +
+                "PlayerSurvivalControllerが" +
+                "Playerに見つかりません。",
+                this
+            );
+
+            return false;
+        }
+
         bool usedEffect = false;
 
+        bool healthIsFull =
+            consumableData.HealAmount > 0 &&
+            playerHealth.CurrentHealth >=
+            playerHealth.MaxHealth;
+
+        bool foodIsFull =
+            consumableData.CanRestoreFood &&
+            playerSurvivalController.IsFoodFull;
+
+        bool waterIsFull =
+            consumableData.CanRestoreWater &&
+            playerSurvivalController.IsWaterFull;
+
         // HP回復
-        if (consumableData.HealAmount > 0)
+        if (consumableData.HealAmount > 0 &&
+            !healthIsFull)
         {
-            if (playerHealth.CurrentHealth >= playerHealth.MaxHealth)
+            playerHealth.Heal(consumableData.HealAmount);
+            usedEffect = true;
+        }
+
+        // 食料回復
+        if (consumableData.CanRestoreFood &&
+            !foodIsFull)
+        {
+            float restoredFood =
+                playerSurvivalController.RestoreFood(
+                    consumableData.FoodRestoreAmount
+                );
+
+            if (restoredFood > 0f)
             {
-                result = ItemUseResult.HealthIsFull;
-            }
-            else
-            {
-                playerHealth.Heal(consumableData.HealAmount);
                 usedEffect = true;
             }
         }
 
-        // 出血・骨折などの状態異常回復は、
-        // 状態異常システムを作成する時にここへ追加する。
+        // 水分回復
+        if (consumableData.CanRestoreWater &&
+            !waterIsFull)
+        {
+            float restoredWater =
+                playerSurvivalController.RestoreWater(
+                    consumableData.WaterRestoreAmount
+                );
 
+            if (restoredWater > 0f)
+            {
+                usedEffect = true;
+            }
+        }
+
+        // 骨折・出血などの状態異常回復
+        if (needsStatusConditionController &&
+            playerStatusConditions.CureConditions(
+                consumableData.CuredConditions
+            ))
+        {
+            usedEffect = true;
+        }
+
+        // 回復できるものが何も無い場合は消費しない
         if (!usedEffect)
         {
-            if (result != ItemUseResult.HealthIsFull)
-            {
-                result = ItemUseResult.NoUsableEffect;
-            }
+            result = GetNoUsableEffectResult(
+                consumableData,
+                healthIsFull,
+                foodIsFull,
+                waterIsFull
+            );
 
             return false;
         }
@@ -390,6 +531,45 @@ public class InventoryController : MonoBehaviour
         NotifyInventoryChanged();
     }
 
+    private ItemUseResult GetNoUsableEffectResult(
+        ConsumableItemData consumableData,
+        bool healthIsFull,
+        bool foodIsFull,
+        bool waterIsFull)
+    {
+        bool restoresFood =
+            consumableData.CanRestoreFood;
+
+        bool restoresWater =
+            consumableData.CanRestoreWater;
+
+        if (restoresFood &&
+            restoresWater &&
+            foodIsFull &&
+            waterIsFull)
+        {
+            return ItemUseResult.FoodAndWaterAreFull;
+        }
+
+        if (restoresWater && waterIsFull)
+        {
+            return ItemUseResult.WaterIsFull;
+        }
+
+        if (restoresFood && foodIsFull)
+        {
+            return ItemUseResult.FoodIsFull;
+        }
+
+        if (consumableData.HealAmount > 0 &&
+            healthIsFull)
+        {
+            return ItemUseResult.HealthIsFull;
+        }
+
+        return ItemUseResult.NoUsableEffect;
+    }
+
     private bool FindPlayerHealth()
     {
         if (playerHealth != null)
@@ -397,7 +577,8 @@ public class InventoryController : MonoBehaviour
             return true;
         }
 
-        GameObject player = GameObject.FindGameObjectWithTag(playerTag);
+        GameObject player =
+            GameObject.FindGameObjectWithTag(playerTag);
 
         if (player == null)
         {
@@ -409,11 +590,56 @@ public class InventoryController : MonoBehaviour
         return playerHealth != null;
     }
 
+    private bool FindPlayerStatusConditions()
+    {
+        if (playerStatusConditions != null)
+        {
+            return true;
+        }
+
+        GameObject player =
+            GameObject.FindGameObjectWithTag(playerTag);
+
+        if (player == null)
+        {
+            return false;
+        }
+
+        playerStatusConditions =
+            player.GetComponent<
+                PlayerStatusConditionController
+            >();
+
+        return playerStatusConditions != null;
+    }
+
+    private bool FindPlayerSurvivalController()
+    {
+        if (playerSurvivalController != null)
+        {
+            return true;
+        }
+
+        GameObject player =
+            GameObject.FindGameObjectWithTag(playerTag);
+
+        if (player == null)
+        {
+            return false;
+        }
+
+        playerSurvivalController =
+            player.GetComponent<PlayerSurvivalController>();
+
+        return playerSurvivalController != null;
+    }
+
     private void AddStartingItems()
     {
         foreach (StartingItem startingItem in startingItems)
         {
-            if (startingItem == null || startingItem.ItemData == null)
+            if (startingItem == null ||
+                startingItem.ItemData == null)
             {
                 continue;
             }

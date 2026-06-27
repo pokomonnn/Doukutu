@@ -19,6 +19,14 @@ public class PlayerWeightController : MonoBehaviour
     [SerializeField] private EquipmentController equipmentController;
     [SerializeField] private PlayerMove playerMove;
 
+    [Tooltip("骨折など、重量以外の移動速度低下を管理するコンポーネント")]
+    [SerializeField]
+    private PlayerStatusConditionController statusConditionController;
+
+    [Tooltip("食料不足による移動速度低下を管理するコンポーネント")]
+    [SerializeField]
+    private PlayerSurvivalController survivalController;
+
     [Header("重量ごとの段階")]
     [Tooltip("この重量までは通常速度")]
     [SerializeField, Min(0f)]
@@ -60,11 +68,13 @@ public class PlayerWeightController : MonoBehaviour
 
     private bool isSubscribedToInventory;
     private bool isSubscribedToEquipment;
+    private bool isSubscribedToStatusConditions;
+    private bool isSubscribedToSurvival;
+
     private bool refreshRequested;
 
     public float CurrentWeight => currentWeight;
 
-    // UI側では「75kgまで持てる」と表示するために使う
     public float ImmobilizedWeightLimit =>
         verySlowWeightLimit;
 
@@ -73,6 +83,7 @@ public class PlayerWeightController : MonoBehaviour
     public bool IsImmobilized =>
         currentState == PlayerWeightState.Immobilized;
 
+    // 重量だけによる倍率
     public float CurrentMoveSpeedMultiplier
     {
         get
@@ -96,6 +107,24 @@ public class PlayerWeightController : MonoBehaviour
             }
         }
     }
+
+    // 骨折など、状態異常だけによる倍率
+    public float CurrentConditionMoveSpeedMultiplier =>
+        statusConditionController != null
+            ? statusConditionController.MoveSpeedMultiplier
+            : 1f;
+
+    // 食料不足だけによる倍率
+    public float CurrentSurvivalMoveSpeedMultiplier =>
+        survivalController != null
+            ? survivalController.FoodMoveSpeedMultiplier
+            : 1f;
+
+    // 実際にPlayerMoveへ反映する最終倍率
+    public float TotalMoveSpeedMultiplier =>
+        CurrentMoveSpeedMultiplier *
+        CurrentConditionMoveSpeedMultiplier *
+        CurrentSurvivalMoveSpeedMultiplier;
 
     public event Action<float> OnWeightChanged;
     public event Action<PlayerWeightState> OnWeightStateChanged;
@@ -141,17 +170,21 @@ public class PlayerWeightController : MonoBehaviour
     {
         FindReferences();
         CacheBaseMovementValues();
-
-        if (inventoryController == null)
-        {
-            return;
-        }
+        SubscribeEvents();
 
         float previousWeight = currentWeight;
         PlayerWeightState previousState = currentState;
 
-        currentWeight = CalculateTotalWeight();
-        currentState = GetWeightState(currentWeight);
+        if (inventoryController != null)
+        {
+            currentWeight = CalculateTotalWeight();
+            currentState = GetWeightState(currentWeight);
+        }
+        else
+        {
+            currentWeight = 0f;
+            currentState = PlayerWeightState.Normal;
+        }
 
         ApplyMovementState();
 
@@ -271,9 +304,10 @@ public class PlayerWeightController : MonoBehaviour
             return;
         }
 
+        // 基礎速度 × 重量 × 骨折 × 食料
         playerMove.moveSpeed =
             baseMoveSpeed *
-            CurrentMoveSpeedMultiplier;
+            TotalMoveSpeedMultiplier;
 
         if (IsImmobilized)
         {
@@ -309,6 +343,18 @@ public class PlayerWeightController : MonoBehaviour
         refreshRequested = true;
     }
 
+    private void HandleStatusConditionsChanged(
+        StatusConditionType activeConditions)
+    {
+        refreshRequested = true;
+    }
+
+    private void HandleFoodStateChanged(
+        SurvivalNeedState foodState)
+    {
+        refreshRequested = true;
+    }
+
     private void SubscribeEvents()
     {
         if (!isSubscribedToInventory &&
@@ -327,6 +373,24 @@ public class PlayerWeightController : MonoBehaviour
                 HandleEquipmentChanged;
 
             isSubscribedToEquipment = true;
+        }
+
+        if (!isSubscribedToStatusConditions &&
+            statusConditionController != null)
+        {
+            statusConditionController.ConditionsChanged +=
+                HandleStatusConditionsChanged;
+
+            isSubscribedToStatusConditions = true;
+        }
+
+        if (!isSubscribedToSurvival &&
+            survivalController != null)
+        {
+            survivalController.FoodStateChanged +=
+                HandleFoodStateChanged;
+
+            isSubscribedToSurvival = true;
         }
     }
 
@@ -349,6 +413,24 @@ public class PlayerWeightController : MonoBehaviour
 
             isSubscribedToEquipment = false;
         }
+
+        if (isSubscribedToStatusConditions &&
+            statusConditionController != null)
+        {
+            statusConditionController.ConditionsChanged -=
+                HandleStatusConditionsChanged;
+
+            isSubscribedToStatusConditions = false;
+        }
+
+        if (isSubscribedToSurvival &&
+            survivalController != null)
+        {
+            survivalController.FoodStateChanged -=
+                HandleFoodStateChanged;
+
+            isSubscribedToSurvival = false;
+        }
     }
 
     private void FindReferences()
@@ -368,6 +450,18 @@ public class PlayerWeightController : MonoBehaviour
         if (playerMove == null)
         {
             playerMove = GetComponent<PlayerMove>();
+        }
+
+        if (statusConditionController == null)
+        {
+            statusConditionController =
+                GetComponent<PlayerStatusConditionController>();
+        }
+
+        if (survivalController == null)
+        {
+            survivalController =
+                GetComponent<PlayerSurvivalController>();
         }
 
         if (playerRigidbody == null &&

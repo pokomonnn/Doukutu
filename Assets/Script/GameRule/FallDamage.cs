@@ -3,21 +3,30 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(PlayerMove))]
 [RequireComponent(typeof(CharacterHealth))]
+[RequireComponent(typeof(PlayerStatusConditionController))]
 public class FallDamage : MonoBehaviour
 {
     [Header("落下ダメージ設定")]
     [Tooltip("この距離まではダメージなし")]
-    [SerializeField] private float safeFallDistance = 8f;
+    [SerializeField, Min(0f)] private float safeFallDistance = 8f;
 
     [Tooltip("安全距離を超えた1ユニットごとのダメージ")]
-    [SerializeField] private int damagePerUnit = 10;
+    [SerializeField, Min(0)] private int damagePerUnit = 10;
 
     [Tooltip("1回で受ける最大ダメージ")]
-    [SerializeField] private int maxDamage = 80;
+    [SerializeField, Min(1)] private int maxDamage = 80;
+
+    [Header("骨折設定")]
+    [Tooltip("オンなら、一定以上の落下時に骨折します")]
+    [SerializeField] private bool canCauseFracture = true;
+
+    [Tooltip("この距離以上を落下すると骨折します")]
+    [SerializeField, Min(0f)] private float fractureFallDistance = 13f;
 
     private Rigidbody2D rb;
     private PlayerMove playerMove;
     private CharacterHealth health;
+    private PlayerStatusConditionController statusConditions;
 
     private bool wasGrounded;
     private bool isTrackingFall;
@@ -28,6 +37,8 @@ public class FallDamage : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         playerMove = GetComponent<PlayerMove>();
         health = GetComponent<CharacterHealth>();
+        statusConditions =
+            GetComponent<PlayerStatusConditionController>();
     }
 
     private void Start()
@@ -64,12 +75,33 @@ public class FallDamage : MonoBehaviour
         {
             float fallDistance = highestY - rb.position.y;
 
-            ApplyFallDamage(fallDistance);
+            ApplyLandingEffects(fallDistance);
 
             isTrackingFall = false;
         }
 
         wasGrounded = isGrounded;
+    }
+
+    private void ApplyLandingEffects(float fallDistance)
+    {
+        // すでに死亡している場合は処理しない
+        if (health == null || health.IsDead)
+        {
+            return;
+        }
+
+        // 無敵中は従来どおり落下ダメージを受けない
+        if (!health.IsInvincible)
+        {
+            ApplyFallDamage(fallDistance);
+        }
+
+        // 致命傷になった落下では骨折状態を付けない
+        if (!health.IsDead)
+        {
+            TryCauseFracture(fallDistance);
+        }
     }
 
     private void ApplyFallDamage(float fallDistance)
@@ -78,15 +110,55 @@ public class FallDamage : MonoBehaviour
 
         if (dangerousDistance <= 0f)
         {
-            
             return;
         }
 
-        int damage = Mathf.CeilToInt(dangerousDistance * damagePerUnit);
+        int damage = Mathf.CeilToInt(
+            dangerousDistance * damagePerUnit
+        );
+
         damage = Mathf.Clamp(damage, 1, maxDamage);
 
-        Debug.Log($"落下距離 {fallDistance:F2}：落下ダメージ {damage}");
+        Debug.Log(
+            $"落下距離 {fallDistance:F2}：落下ダメージ {damage}",
+            this
+        );
 
         health.TakeDamage(damage);
+    }
+
+    private void TryCauseFracture(float fallDistance)
+    {
+        if (!canCauseFracture ||
+            statusConditions == null ||
+            fallDistance < fractureFallDistance)
+        {
+            return;
+        }
+
+        bool fractured = statusConditions.AddConditions(
+            StatusConditionType.Fracture
+        );
+
+        if (fractured)
+        {
+            Debug.Log(
+                $"落下距離 {fallDistance:F2}：骨折しました",
+                this
+            );
+        }
+    }
+
+    private void OnValidate()
+    {
+        safeFallDistance = Mathf.Max(0f, safeFallDistance);
+        damagePerUnit = Mathf.Max(0, damagePerUnit);
+        maxDamage = Mathf.Max(1, maxDamage);
+
+        // 骨折の閾値が安全距離を下回らないようにする
+        fractureFallDistance = Mathf.Max(
+            safeFallDistance,
+            fractureFallDistance
+        );
     }
 }

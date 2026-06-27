@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine.Localization;
 using TMPro;
 using UnityEngine;
 
@@ -14,7 +15,15 @@ public class WorldItemPickup : MonoBehaviour
 
     [Header("拾う表示")]
     [SerializeField] private TMP_Text pickupPromptText;
-    [SerializeField] private string pickupPromptLabel = "拾う";
+
+    [Header("拾う表示の翻訳")]
+    [Tooltip("GameText の world.pickup を設定")]
+    [SerializeField]
+    private LocalizedString pickupPromptLabel =
+        new LocalizedString();
+
+    private string localizedPickupPromptLabel = "拾う";
+    private bool isPickupPromptLabelSubscribed;
 
     [SerializeField]
     private Vector3 pickupPromptLocalPosition =
@@ -198,6 +207,55 @@ public class WorldItemPickup : MonoBehaviour
         RefreshVisual();
         RefreshPickupPrompt();
         RefreshStackAmountText();
+    }
+
+    private void OnEnable()
+    {
+        SubscribePickupPromptLabel();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribePickupPromptLabel();
+    }
+
+    private void SubscribePickupPromptLabel()
+    {
+        if (isPickupPromptLabelSubscribed ||
+            pickupPromptLabel == null)
+        {
+            return;
+        }
+
+        pickupPromptLabel.StringChanged +=
+            HandlePickupPromptLabelChanged;
+
+        isPickupPromptLabelSubscribed = true;
+    }
+
+    private void UnsubscribePickupPromptLabel()
+    {
+        if (!isPickupPromptLabelSubscribed ||
+            pickupPromptLabel == null)
+        {
+            return;
+        }
+
+        pickupPromptLabel.StringChanged -=
+            HandlePickupPromptLabelChanged;
+
+        isPickupPromptLabelSubscribed = false;
+    }
+
+    private void HandlePickupPromptLabelChanged(
+        string localizedLabel)
+    {
+        localizedPickupPromptLabel =
+            string.IsNullOrWhiteSpace(localizedLabel)
+                ? "拾う"
+                : localizedLabel;
+
+        RefreshPickupPrompt();
     }
 
     private void Update()
@@ -553,7 +611,7 @@ public class WorldItemPickup : MonoBehaviour
         if (shouldShow)
         {
             pickupPromptText.text =
-                $"{pickupKey}:{pickupPromptLabel}";
+     $"{pickupKey}:{localizedPickupPromptLabel}";
         }
 
         pickupPromptText.enabled = shouldShow;
@@ -646,10 +704,7 @@ public class WorldItemPickup : MonoBehaviour
         pickupSoundVolume = Mathf.Clamp01(pickupSoundVolume);
         soundSpatialBlend = Mathf.Clamp01(soundSpatialBlend);
 
-        if (string.IsNullOrWhiteSpace(pickupPromptLabel))
-        {
-            pickupPromptLabel = "拾う";
-        }
+       
 
         if (string.IsNullOrWhiteSpace(stackAmountPrefix))
         {

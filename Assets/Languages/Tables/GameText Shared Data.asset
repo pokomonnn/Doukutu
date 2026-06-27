@@ -1,0 +1,108 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: GameText Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: GameText
+  m_TableCollectionNameGuidString: ba446b814f6747e43b2b1e2fca9a27e8
+  m_Entries:
+  - m_Id: 184578744320
+    m_Key: menu.use
+    m_Metadata:
+      m_Items: []
+  - m_Id: 394977615872
+    m_Key: menu.equip
+    m_Metadata:
+      m_Items: []
+  - m_Id: 493438902272
+    m_Key: menu.information
+    m_Metadata:
+      m_Items: []
+  - m_Id: 501571657728
+    m_Key: menu.discard
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2709394563072
+    m_Key: menu.uses
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3362254757888
+    m_Key: menu.us
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3820092399616
+    m_Key: ' menu.equip'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4181335220224
+    m_Key: information
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4453511995392
+    m_Key: menu.discar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7108707753984
+    m_Key: world.pickup
+    m_Metadata:
+      m_Items: []
+  - m_Id: 8723309273088
+    m_Key: world.picup
+    m_Metadata:
+      m_Items: []
+  - m_Id: 11736547598336
+    m_Key: hub.reload
+    m_Metadata:
+      m_Items: []
+  - m_Id: 12165129969664
+    m_Key: hub.no_ammo
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14203595268096
+    m_Key: toast.health_full
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15326121041920
+    m_Key: weight.value.with_max
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15456270295040
+    m_Key: weight.value.current
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15562893697024
+    m_Key: weight.state.slow
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15625388826624
+    m_Key: weight.state.very_slow
+    m_Metadata:
+      m_Items: []
+  - m_Id: 15663716376576
+    m_Key: weight.state.immobilized
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16115283533824
+    m_Key: weight.state.slightly_slow
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 7482993088154042640
+  references:
+    version: 2
+    RefIds:
+    - rid: 7482993088154042640
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1782574718947

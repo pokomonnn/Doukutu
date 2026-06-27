@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: add0153c34f19f349bebf1c476c638d4, type: 3}
+  m_Name: Kanzume
+  m_EditorClassIdentifier: Assembly-CSharp::ConsumableItemData
+  itemId: Food_001
+  displayName: Kanzume
+  description: 
+  icon: {fileID: 1090565541757966482, guid: cd558956e212eb946abdde3492aa3bdd, type: 3}
+  width: 1
+  height: 1
+  canRotate: 1
+  maxStack: 1
+  purchasePrice: 0
+  sellPrice: 0
+  canSellToShop: 1
+  weight: 0.1
+  canDiscard: 1
+  healAmount: 5
+  foodRestoreAmount: 30
+  waterRestoreAmount: 0
+  curedConditions: 0
+  useDuration: 0
+  consumeOnUse: 1
+  useSound: {fileID: 8300000, guid: 552648c57d14cb94585a286eb725a0b4, type: 3}

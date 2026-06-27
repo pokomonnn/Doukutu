@@ -53,7 +53,15 @@ MonoBehaviour:
   pickupKey: 101
   pickupDelay: 0.25
   pickupPromptText: {fileID: 7379584063680741308}
-  pickupPromptLabel: take
+  pickupPromptLabel:
+    m_TableReference:
+      m_TableCollectionName: GUID:ba446b814f6747e43b2b1e2fca9a27e8
+    m_TableEntryReference:
+      m_KeyId: 8723309273088
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   pickupPromptLocalPosition: {x: 0, y: 0.85, z: 0}
   hidePromptDuringPickupDelay: 1
   stackAmountText: {fileID: 6822791716432205903}
@@ -68,6 +76,9 @@ MonoBehaviour:
   itemSpriteRenderer: {fileID: 9171832562365942117}
   inventoryController: {fileID: 0}
   playerTag: Player
+  references:
+    version: 2
+    RefIds: []
 --- !u!212 &9171832562365942117
 SpriteRenderer:
   serializedVersion: 2

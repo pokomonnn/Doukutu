@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization;
 
 [RequireComponent(typeof(TextMeshPro))]
 public class ReloadPromptUI : MonoBehaviour
@@ -16,14 +17,31 @@ public class ReloadPromptUI : MonoBehaviour
     [SerializeField, Min(0.01f)]
     private float fadeDuration = 0.25f;
 
+    [Header("翻訳")]
+    [Tooltip("GameText の hud.reload を設定")]
+    [SerializeField]
+    private LocalizedString reloadPromptText =
+        new LocalizedString();
+
+    [Tooltip("GameText の hud.no_ammo を設定")]
+    [SerializeField]
+    private LocalizedString noAmmoPromptText =
+        new LocalizedString();
+
     private GunShooter currentGunShooter;
 
     private Color originalColor;
     private float currentAlpha;
     private bool isSubscribed;
+    private bool isPromptTextSubscribed;
+
+    private string localizedReloadPrompt = "リロード「R」";
+    private string localizedNoAmmoPrompt = "弾薬がありません";
 
     private void Awake()
     {
+        EnsureLocalizedStrings();
+
         if (promptText == null)
         {
             promptText = GetComponent<TextMeshPro>();
@@ -43,12 +61,13 @@ public class ReloadPromptUI : MonoBehaviour
 
     private void OnEnable()
     {
+        SubscribePromptTexts();
         SubscribeToEquipmentVisualController();
     }
 
     private void Start()
     {
-        // 実行順の違いでOnEnable時に見つからなかった場合の保険
+        SubscribePromptTexts();
         SubscribeToEquipmentVisualController();
 
         if (equipmentVisualController != null)
@@ -62,6 +81,7 @@ public class ReloadPromptUI : MonoBehaviour
     private void OnDisable()
     {
         UnsubscribeFromEquipmentVisualController();
+        UnsubscribePromptTexts();
     }
 
     private void Update()
@@ -76,8 +96,8 @@ public class ReloadPromptUI : MonoBehaviour
         if (shouldShow && promptText != null)
         {
             promptText.text = currentGunShooter.HasReserveAmmo
-                ? "Reload \"R\""
-                : "NoAmmo";
+                ? localizedReloadPrompt
+                : localizedNoAmmoPrompt;
         }
 
         float targetAlpha = shouldShow ? 1f : 0f;
@@ -101,12 +121,63 @@ public class ReloadPromptUI : MonoBehaviour
     {
         currentGunShooter = newGunShooter;
 
-        // 銃を外した瞬間は、表示を消す
         if (currentGunShooter == null)
         {
             currentAlpha = 0f;
             SetTextAlpha(0f);
         }
+    }
+
+    private void SubscribePromptTexts()
+    {
+        EnsureLocalizedStrings();
+
+        if (isPromptTextSubscribed)
+        {
+            return;
+        }
+
+        reloadPromptText.StringChanged +=
+            HandleReloadPromptChanged;
+
+        noAmmoPromptText.StringChanged +=
+            HandleNoAmmoPromptChanged;
+
+        isPromptTextSubscribed = true;
+    }
+
+    private void UnsubscribePromptTexts()
+    {
+        if (!isPromptTextSubscribed)
+        {
+            return;
+        }
+
+        reloadPromptText.StringChanged -=
+            HandleReloadPromptChanged;
+
+        noAmmoPromptText.StringChanged -=
+            HandleNoAmmoPromptChanged;
+
+        isPromptTextSubscribed = false;
+    }
+
+    private void HandleReloadPromptChanged(
+        string localizedText)
+    {
+        localizedReloadPrompt =
+            string.IsNullOrWhiteSpace(localizedText)
+                ? "リロード「R」"
+                : localizedText;
+    }
+
+    private void HandleNoAmmoPromptChanged(
+        string localizedText)
+    {
+        localizedNoAmmoPrompt =
+            string.IsNullOrWhiteSpace(localizedText)
+                ? "弾薬がありません"
+                : localizedText;
     }
 
     private void SubscribeToEquipmentVisualController()
@@ -171,5 +242,23 @@ public class ReloadPromptUI : MonoBehaviour
         color.a = originalColor.a * alpha;
 
         promptText.color = color;
+    }
+
+    private void EnsureLocalizedStrings()
+    {
+        if (reloadPromptText == null)
+        {
+            reloadPromptText = new LocalizedString();
+        }
+
+        if (noAmmoPromptText == null)
+        {
+            noAmmoPromptText = new LocalizedString();
+        }
+    }
+
+    private void OnValidate()
+    {
+        fadeDuration = Mathf.Max(0.01f, fadeDuration);
     }
 }

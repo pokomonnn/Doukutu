@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -46,7 +47,18 @@ public class InventoryContextMenuUI : MonoBehaviour
     [Header("通知UI")]
     [SerializeField] private InventoryToastUI healthFullToastUI;
 
-    
+    [Header("通知UIの翻訳")]
+    [Tooltip("GameText の toast.health_full を設定")]
+    [SerializeField]
+    private LocalizedString healthFullMessage =
+        new LocalizedString();
+
+    private string localizedHealthFullMessage =
+        "体力満タンです";
+
+    private bool isHealthFullMessageSubscribed;
+
+
 
     private bool buttonsRegistered;
     private int openedFrame = -1;
@@ -57,6 +69,7 @@ public class InventoryContextMenuUI : MonoBehaviour
 
     private void Awake()
     {
+        EnsureLocalizedStrings();
         EnsureReferences();
         FindSoundPlayer();
         FindEquipmentController();
@@ -67,8 +80,8 @@ public class InventoryContextMenuUI : MonoBehaviour
 
     private void OnEnable()
     {
-        // 親のInventoryPanelを閉じてから再度開いた時に、
-        // 前回の空メニューが残らないようにする
+        SubscribeHealthFullMessage();
+
         if (selectedItem == null && Time.frameCount > 0)
         {
             gameObject.SetActive(false);
@@ -77,6 +90,8 @@ public class InventoryContextMenuUI : MonoBehaviour
 
     private void OnDisable()
     {
+        UnsubscribeHealthFullMessage();
+
         selectedItem = null;
         inventoryController = null;
         selectedEquipmentSlotUI = null;
@@ -279,7 +294,7 @@ public class InventoryContextMenuUI : MonoBehaviour
         {
             soundPlayer?.PlayHealthFull();
 
-            healthFullToastUI?.Show("体力満タンです");
+            healthFullToastUI?.Show(localizedHealthFullMessage);
 
             return;
         }
@@ -752,5 +767,50 @@ public class InventoryContextMenuUI : MonoBehaviour
             healthFullToastUI =
                 canvas.GetComponentInChildren<InventoryToastUI>(true);
         }
+    }
+
+    private void EnsureLocalizedStrings()
+    {
+        if (healthFullMessage == null)
+        {
+            healthFullMessage = new LocalizedString();
+        }
+    }
+
+    private void SubscribeHealthFullMessage()
+    {
+        EnsureLocalizedStrings();
+
+        if (isHealthFullMessageSubscribed)
+        {
+            return;
+        }
+
+        healthFullMessage.StringChanged +=
+            HandleHealthFullMessageChanged;
+
+        isHealthFullMessageSubscribed = true;
+    }
+
+    private void UnsubscribeHealthFullMessage()
+    {
+        if (!isHealthFullMessageSubscribed)
+        {
+            return;
+        }
+
+        healthFullMessage.StringChanged -=
+            HandleHealthFullMessageChanged;
+
+        isHealthFullMessageSubscribed = false;
+    }
+
+    private void HandleHealthFullMessageChanged(
+        string localizedText)
+    {
+        localizedHealthFullMessage =
+            string.IsNullOrWhiteSpace(localizedText)
+                ? "体力満タンです"
+                : localizedText;
     }
 }
