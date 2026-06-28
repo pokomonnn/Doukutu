@@ -19,6 +19,23 @@ public class GunShooter : MonoBehaviour
     [SerializeField]
     private PlayerWeightController playerWeightController;
 
+    [Header("SAN値による射撃精度")]
+    [Tooltip("未設定ならPlayerから自動取得します")]
+    [SerializeField]
+    private PlayerSanityController playerSanityController;
+
+    [Tooltip("このSAN割合を下回ると、弾がランダムにブレ始めます")]
+    [SerializeField, Range(0f, 1f)]
+    private float accuracyLossStartSanityPercent = 0.7f;
+
+    [Tooltip("SAN値が0の時に、左右どちらかへ最大何度ブレるか")]
+    [SerializeField, Min(0f)]
+    private float maxSpreadAngleAtZeroSanity = 12f;
+
+    [Tooltip("オフならSAN値に関係なく通常どおり真っすぐ飛びます")]
+    [SerializeField]
+    private bool useSanityAccuracyPenalty = true;
+
     [Header("弾薬連携")]
     [Tooltip("装備時にPlayerEquipmentVisualControllerから設定されます。Prefab側では未設定でOKです。")]
     [SerializeField] private WeaponItemData weaponItemData;
@@ -75,7 +92,6 @@ public class GunShooter : MonoBehaviour
     [Header("薬きょう")]
     [SerializeField] private ParticleSystem casingParticleSystem;
 
-
     private float nextFireTime;
     private float nextEmptySoundTime;
     private bool isReloading;
@@ -105,9 +121,7 @@ public class GunShooter : MonoBehaviour
                 return 0;
             }
 
-            return inventoryController.GetTotalAmount(
-                CompatibleAmmo
-            );
+            return inventoryController.GetTotalAmount(CompatibleAmmo);
         }
     }
 
@@ -189,9 +203,9 @@ public class GunShooter : MonoBehaviour
     private void Shoot()
     {
         if (!isGunEquipped ||
-    isReloading ||
-    IsInventoryOpen ||
-    IsUsingConsumable)
+            isReloading ||
+            IsInventoryOpen ||
+            IsUsingConsumable)
         {
             return;
         }
@@ -225,17 +239,24 @@ public class GunShooter : MonoBehaviour
             casingParticleSystem.Emit(1);
         }
 
+        // SAN値が低いほど、Muzzle Pointの正面方向からランダムにブレます。
+        Vector2 shotDirection = GetShotDirection();
+        float shotAngle = Mathf.Atan2(
+            shotDirection.y,
+            shotDirection.x
+        ) * Mathf.Rad2Deg;
+
         GameObject bullet = Instantiate(
             bulletPrefab,
             muzzlePoint.position,
-            muzzlePoint.rotation
+            Quaternion.Euler(0f, 0f, shotAngle)
         );
 
         Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
 
         if (bulletRb != null)
         {
-            bulletRb.linearVelocity = muzzlePoint.right * bulletSpeed;
+            bulletRb.linearVelocity = shotDirection * bulletSpeed;
         }
         else
         {
@@ -245,13 +266,53 @@ public class GunShooter : MonoBehaviour
         Destroy(bullet, bulletLifeTime);
     }
 
+    private Vector2 GetShotDirection()
+    {
+        Vector2 baseDirection = muzzlePoint.right.normalized;
+
+        if (!useSanityAccuracyPenalty ||
+            maxSpreadAngleAtZeroSanity <= 0f ||
+            !FindPlayerSanityController())
+        {
+            return baseDirection;
+        }
+
+        float sanityPercent = playerSanityController.SanityPercent;
+
+        if (sanityPercent >= accuracyLossStartSanityPercent)
+        {
+            return baseDirection;
+        }
+
+        // 例：開始値70%、SAN 35%ならブレは最大値の半分。
+        float spreadStrength = Mathf.InverseLerp(
+            accuracyLossStartSanityPercent,
+            0f,
+            sanityPercent
+        );
+
+        float angleOffset = UnityEngine.Random.Range(
+            -maxSpreadAngleAtZeroSanity,
+            maxSpreadAngleAtZeroSanity
+        ) * spreadStrength;
+
+        Vector3 rotatedDirection =
+            Quaternion.Euler(0f, 0f, angleOffset) *
+            new Vector3(baseDirection.x, baseDirection.y, 0f);
+
+        return new Vector2(
+            rotatedDirection.x,
+            rotatedDirection.y
+        ).normalized;
+    }
+
     public void StartReload()
     {
         if (!isGunEquipped ||
-           IsInventoryOpen ||
-           IsUsingConsumable ||
-           isReloading ||
-           currentAmmo >= magazineSize)
+            IsInventoryOpen ||
+            IsUsingConsumable ||
+            isReloading ||
+            currentAmmo >= magazineSize)
         {
             return;
         }
@@ -386,6 +447,38 @@ public class GunShooter : MonoBehaviour
         return playerWeightController != null;
     }
 
+    private bool FindPlayerSanityController()
+    {
+        if (playerSanityController != null)
+        {
+            return true;
+        }
+
+        playerSanityController =
+            GetComponentInParent<PlayerSanityController>();
+
+        if (playerSanityController != null)
+        {
+            return true;
+        }
+
+        GameObject player =
+            GameObject.FindGameObjectWithTag("Player");
+
+        if (player != null)
+        {
+            playerSanityController =
+                player.GetComponent<PlayerSanityController>();
+        }
+
+        if (playerSanityController == null)
+        {
+            playerSanityController =
+                FindAnyObjectByType<PlayerSanityController>();
+        }
+
+        return playerSanityController != null;
+    }
 
     private bool TryGetAmmoContext(
         out AmmoItemData requiredAmmo,
@@ -430,5 +523,11 @@ public class GunShooter : MonoBehaviour
         currentAmmo = Mathf.Clamp(currentAmmo, 0, magazineSize);
         reloadDuration = Mathf.Max(0f, reloadDuration);
         emptySoundInterval = Mathf.Max(0f, emptySoundInterval);
+
+        accuracyLossStartSanityPercent =
+            Mathf.Clamp01(accuracyLossStartSanityPercent);
+
+        maxSpreadAngleAtZeroSanity =
+            Mathf.Max(0f, maxSpreadAngleAtZeroSanity);
     }
 }
