@@ -29,25 +29,44 @@ public class InventorySoundPlayer : MonoBehaviour
     private float healthFullVolume = 0.8f;
 
     [Header("音量")]
-    [SerializeField, Range(0f, 1f)] private float pickUpVolume = 0.8f;
-    [SerializeField, Range(0f, 1f)] private float rotateVolume = 0.8f;
-    [SerializeField, Range(0f, 1f)] private float placeVolume = 0.8f;
-    [SerializeField, Range(0f, 1f)] private float failedVolume = 0.7f;
+    [SerializeField, Range(0f, 1f)]
+    private float pickUpVolume = 0.8f;
 
-    [SerializeField, Range(0f, 1f)] private float informationVolume = 0.8f;
-    [SerializeField, Range(0f, 1f)] private float trashVolume = 0.8f;
-    [SerializeField, Range(0f, 1f)] private float closeVolume = 0.8f;
+    [SerializeField, Range(0f, 1f)]
+    private float rotateVolume = 0.8f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float placeVolume = 0.8f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float failedVolume = 0.7f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float informationVolume = 0.8f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float trashVolume = 0.8f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float closeVolume = 0.8f;
 
     [SerializeField, Range(0f, 1f)]
     private float contextMenuOpenVolume = 0.8f;
+
     [SerializeField, Range(0f, 1f)]
     private float contextMenuCloseVolume = 0.8f;
 
     [Header("アイテム使用音")]
     [Tooltip("各回復アイテムの Use Sound を鳴らす時の音量")]
-    [SerializeField, Range(0f, 1f)] private float useVolume = 0.9f;
+    [SerializeField, Range(0f, 1f)]
+    private float useVolume = 0.9f;
 
-    
+    [Tooltip(
+        "オンの場合、インベントリを閉じても" +
+        "回復アイテムの使用音を最後まで再生します。"
+    )]
+    [SerializeField]
+    private bool keepUseSoundPlayingWhenInventoryCloses = true;
 
     private void Awake()
     {
@@ -56,7 +75,6 @@ public class InventorySoundPlayer : MonoBehaviour
             audioSource = GetComponent<AudioSource>();
         }
 
-        // UI音なので距離による音量変化を無効化
         audioSource.spatialBlend = 0f;
         audioSource.playOnAwake = false;
     }
@@ -84,6 +102,12 @@ public class InventorySoundPlayer : MonoBehaviour
     // ConsumableItemData の Use Sound を再生する
     public void PlayUseSound(AudioClip useClip)
     {
+        if (keepUseSoundPlayingWhenInventoryCloses)
+        {
+            PlayDetachedOneShot(useClip, useVolume);
+            return;
+        }
+
         Play(useClip, useVolume);
     }
 
@@ -107,6 +131,16 @@ public class InventorySoundPlayer : MonoBehaviour
         Play(healthFullClip, healthFullVolume);
     }
 
+    public void PlayContextMenuOpen()
+    {
+        Play(contextMenuOpenClip, contextMenuOpenVolume);
+    }
+
+    public void PlayContextMenuClose()
+    {
+        Play(contextMenuCloseClip, contextMenuCloseVolume);
+    }
+
     private void Play(AudioClip clip, float volume)
     {
         if (audioSource == null || clip == null)
@@ -117,13 +151,53 @@ public class InventorySoundPlayer : MonoBehaviour
         audioSource.PlayOneShot(clip, volume);
     }
 
-    public void PlayContextMenuOpen()
+    private void PlayDetachedOneShot(
+        AudioClip clip,
+        float volume)
     {
-        Play(contextMenuOpenClip, contextMenuOpenVolume);
+        if (clip == null)
+        {
+            return;
+        }
+
+        GameObject soundObject = new GameObject(
+            $"ConsumableUseSound_{clip.name}"
+        );
+
+        AudioSource oneShotSource =
+            soundObject.AddComponent<AudioSource>();
+
+        oneShotSource.playOnAwake = false;
+        oneShotSource.spatialBlend = 0f;
+        oneShotSource.volume = Mathf.Clamp01(volume);
+        oneShotSource.clip = clip;
+
+        oneShotSource.Play();
+
+        Destroy(
+            soundObject,
+            Mathf.Max(0.1f, clip.length)
+        );
     }
 
-    public void PlayContextMenuClose()
+    private void OnValidate()
     {
-        Play(contextMenuCloseClip, contextMenuCloseVolume);
-    }   
+        pickUpVolume = Mathf.Clamp01(pickUpVolume);
+        rotateVolume = Mathf.Clamp01(rotateVolume);
+        placeVolume = Mathf.Clamp01(placeVolume);
+        failedVolume = Mathf.Clamp01(failedVolume);
+
+        informationVolume = Mathf.Clamp01(informationVolume);
+        trashVolume = Mathf.Clamp01(trashVolume);
+            closeVolume = Mathf.Clamp01(closeVolume);
+
+        contextMenuOpenVolume =
+            Mathf.Clamp01(contextMenuOpenVolume);
+
+        contextMenuCloseVolume =
+            Mathf.Clamp01(contextMenuCloseVolume);
+
+        healthFullVolume = Mathf.Clamp01(healthFullVolume);
+        useVolume = Mathf.Clamp01(useVolume);
+    }
 }

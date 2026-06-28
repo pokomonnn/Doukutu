@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [Flags]
 public enum StatusConditionType
@@ -38,10 +39,15 @@ public class ConsumableItemData : ItemData
     private StatusConditionType curedConditions =
         StatusConditionType.None;
 
-    [Header("使用設定")]
-    [Tooltip("使用にかかる秒数。0なら即時使用")]
+    [Header("使用中の移動速度低下")]
+    [Tooltip("回復アイテムを使った後、移動速度が低下する秒数。0なら速度低下なし")]
+    [FormerlySerializedAs("useDuration")]
     [SerializeField, Min(0f)]
-    private float useDuration = 0f;
+    private float slowdownDuration = 3f;
+
+    [Tooltip("移動速度低下中の速度倍率。0.5なら通常速度の半分")]
+    [SerializeField, Range(0.05f, 1f)]
+    private float useMoveSpeedMultiplier = 0.5f;
 
     [Tooltip("使用成功時にアイテムを1個消費する")]
     [SerializeField]
@@ -50,6 +56,15 @@ public class ConsumableItemData : ItemData
     [Tooltip("使用時に鳴らす音")]
     [SerializeField]
     private AudioClip useSound;
+
+    [Header("使用アニメーション")]
+    [Tooltip(
+    "Player Animatorに作成したTrigger名。" +
+    "例：UseBandage、DrinkWater、EatFood。" +
+    "空欄ならアニメーションは再生しません。"
+)]
+    [SerializeField]
+    private string useAnimationTrigger = "UseItem";
 
     public override InventoryItemType ItemType =>
         InventoryItemType.Consumable;
@@ -62,11 +77,17 @@ public class ConsumableItemData : ItemData
 
     public StatusConditionType CuredConditions => curedConditions;
 
-    public float UseDuration => useDuration;
+    public float SlowdownDuration => slowdownDuration;
+
+    public float UseMoveSpeedMultiplier =>
+        useMoveSpeedMultiplier;
 
     public bool ConsumeOnUse => consumeOnUse;
 
     public AudioClip UseSound => useSound;
+
+    public string UseAnimationTrigger =>
+    useAnimationTrigger;
 
     public bool CanHealHealth => healAmount > 0;
 
@@ -100,6 +121,14 @@ public class ConsumableItemData : ItemData
             waterRestoreAmount
         );
 
-        useDuration = Mathf.Max(0f, useDuration);
+        slowdownDuration = Mathf.Max(0f, slowdownDuration);
+
+        useMoveSpeedMultiplier = Mathf.Clamp(
+            useMoveSpeedMultiplier,
+            0.05f,
+            1f
+        );
+        useAnimationTrigger =
+    useAnimationTrigger?.Trim() ?? string.Empty;
     }
 }

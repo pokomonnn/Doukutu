@@ -16,6 +16,24 @@ MonoBehaviour:
   displayName: Kanzume
   description: 
   icon: {fileID: 1090565541757966482, guid: cd558956e212eb946abdde3492aa3bdd, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   width: 1
   height: 1
   canRotate: 1
@@ -29,6 +47,11 @@ MonoBehaviour:
   foodRestoreAmount: 30
   waterRestoreAmount: 0
   curedConditions: 0
-  useDuration: 0
+  slowdownDuration: 5
+  useMoveSpeedMultiplier: 0.5
   consumeOnUse: 1
   useSound: {fileID: 8300000, guid: 552648c57d14cb94585a286eb725a0b4, type: 3}
+  useAnimationTrigger: UseItem
+  references:
+    version: 2
+    RefIds: []

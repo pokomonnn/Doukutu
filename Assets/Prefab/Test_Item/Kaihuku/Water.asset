@@ -16,6 +16,24 @@ MonoBehaviour:
   displayName: Water
   description: 
   icon: {fileID: -6820745987359068363, guid: 83482133b70b6c3489d2de0d1dc786c9, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   width: 1
   height: 2
   canRotate: 1
@@ -29,6 +47,11 @@ MonoBehaviour:
   foodRestoreAmount: 0
   waterRestoreAmount: 40
   curedConditions: 0
-  useDuration: 0
+  slowdownDuration: 5
+  useMoveSpeedMultiplier: 0.5
   consumeOnUse: 1
   useSound: {fileID: 8300000, guid: d564dec4937db0246b4fc2033562008b, type: 3}
+  useAnimationTrigger: UseItem
+  references:
+    version: 2
+    RefIds: []

@@ -14,6 +14,11 @@ public class GunShooter : MonoBehaviour
     [Tooltip("Tabで表示・非表示にしているインベントリの親Panelを設定")]
     [SerializeField] private GameObject inventoryPanel;
 
+    [Header("回復中の射撃制限")]
+    [Tooltip("未設定ならPlayerから自動取得します")]
+    [SerializeField]
+    private PlayerWeightController playerWeightController;
+
     [Header("弾薬連携")]
     [Tooltip("装備時にPlayerEquipmentVisualControllerから設定されます。Prefab側では未設定でOKです。")]
     [SerializeField] private WeaponItemData weaponItemData;
@@ -111,6 +116,17 @@ public class GunShooter : MonoBehaviour
     private bool IsInventoryOpen =>
         inventoryPanel != null && inventoryPanel.activeInHierarchy;
 
+    private bool IsUsingConsumable
+    {
+        get
+        {
+            FindPlayerWeightController();
+
+            return playerWeightController != null &&
+                   playerWeightController.IsUsingConsumable;
+        }
+    }
+
     private void Awake()
     {
         if (gunAudioSource == null)
@@ -141,14 +157,24 @@ public class GunShooter : MonoBehaviour
             return;
         }
 
+        if (IsInventoryOpen || IsUsingConsumable)
+        {
+            return;
+        }
+
         if (Keyboard.current != null &&
             Keyboard.current.rKey.wasPressedThisFrame)
         {
             StartReload();
         }
 
-        // リロード中は発射不可
         if (isReloading || Mouse.current == null)
+        {
+            return;
+        }
+
+        // 回復中は射撃禁止
+        if (IsUsingConsumable)
         {
             return;
         }
@@ -162,7 +188,10 @@ public class GunShooter : MonoBehaviour
 
     private void Shoot()
     {
-        if (!isGunEquipped || isReloading || IsInventoryOpen)
+        if (!isGunEquipped ||
+    isReloading ||
+    IsInventoryOpen ||
+    IsUsingConsumable)
         {
             return;
         }
@@ -219,9 +248,10 @@ public class GunShooter : MonoBehaviour
     public void StartReload()
     {
         if (!isGunEquipped ||
-            IsInventoryOpen ||
-            isReloading ||
-            currentAmmo >= magazineSize)
+           IsInventoryOpen ||
+           IsUsingConsumable ||
+           isReloading ||
+           currentAmmo >= magazineSize)
         {
             return;
         }
@@ -322,6 +352,40 @@ public class GunShooter : MonoBehaviour
         currentAmmo = clampedAmmo;
         OnMagazineAmmoChanged?.Invoke(currentAmmo);
     }
+
+    private bool FindPlayerWeightController()
+    {
+        if (playerWeightController != null)
+        {
+            return true;
+        }
+
+        playerWeightController =
+            GetComponentInParent<PlayerWeightController>();
+
+        if (playerWeightController != null)
+        {
+            return true;
+        }
+
+        GameObject player =
+            GameObject.FindGameObjectWithTag("Player");
+
+        if (player != null)
+        {
+            playerWeightController =
+                player.GetComponent<PlayerWeightController>();
+        }
+
+        if (playerWeightController == null)
+        {
+            playerWeightController =
+                FindAnyObjectByType<PlayerWeightController>();
+        }
+
+        return playerWeightController != null;
+    }
+
 
     private bool TryGetAmmoContext(
         out AmmoItemData requiredAmmo,

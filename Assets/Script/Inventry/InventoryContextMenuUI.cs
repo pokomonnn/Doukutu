@@ -58,7 +58,10 @@ public class InventoryContextMenuUI : MonoBehaviour
 
     private bool isHealthFullMessageSubscribed;
 
-
+    // Information Panelを開いているアイテム。
+    // コンテキストメニューを閉じた後も言語切替で更新するため保持する。
+    private ItemData informationItemData;
+    private bool isItemTextChangeSubscribed;
 
     private bool buttonsRegistered;
     private int openedFrame = -1;
@@ -76,6 +79,7 @@ public class InventoryContextMenuUI : MonoBehaviour
         FindPlayerItemDropper();
         FindHealthFullToastUI();
         RegisterButtons();
+        SubscribeItemTextChanges();
     }
 
     private void OnEnable()
@@ -100,6 +104,7 @@ public class InventoryContextMenuUI : MonoBehaviour
     private void OnDestroy()
     {
         UnregisterButtons();
+        UnsubscribeItemTextChanges();
     }
 
     private void Update()
@@ -317,15 +322,8 @@ public class InventoryContextMenuUI : MonoBehaviour
 
         if (informationPanel != null)
         {
-            if (informationTitleText != null)
-            {
-                informationTitleText.text = itemData.DisplayName;
-            }
-
-            if (informationDescriptionText != null)
-            {
-                informationDescriptionText.text = itemData.Description;
-            }
+            informationItemData = itemData;
+            RefreshInformationPanel();
 
             informationPanel.SetActive(true);
             soundPlayer?.PlayInformation();
@@ -348,6 +346,7 @@ public class InventoryContextMenuUI : MonoBehaviour
             informationPanel.SetActive(false);
         }
 
+        informationItemData = null;
         soundPlayer?.PlayClose();
     }
 
@@ -428,6 +427,75 @@ public class InventoryContextMenuUI : MonoBehaviour
 
         soundPlayer?.PlayTrash();
         Hide();
+    }
+
+    private void SubscribeItemTextChanges()
+    {
+        if (isItemTextChangeSubscribed)
+        {
+            return;
+        }
+
+        ItemData.OnLocalizedTextChanged +=
+            HandleLocalizedItemTextChanged;
+
+        isItemTextChangeSubscribed = true;
+    }
+
+    private void UnsubscribeItemTextChanges()
+    {
+        if (!isItemTextChangeSubscribed)
+        {
+            return;
+        }
+
+        ItemData.OnLocalizedTextChanged -=
+            HandleLocalizedItemTextChanged;
+
+        isItemTextChangeSubscribed = false;
+    }
+
+    private void HandleLocalizedItemTextChanged(
+        ItemData changedItemData)
+    {
+        if (changedItemData == null)
+        {
+            return;
+        }
+
+        if (IsOpen &&
+            selectedItem != null &&
+            selectedItem.ItemData == changedItemData)
+        {
+            RefreshMenu();
+        }
+
+        if (informationItemData == changedItemData &&
+            informationPanel != null &&
+            informationPanel.activeInHierarchy)
+        {
+            RefreshInformationPanel();
+        }
+    }
+
+    private void RefreshInformationPanel()
+    {
+        if (informationItemData == null)
+        {
+            return;
+        }
+
+        if (informationTitleText != null)
+        {
+            informationTitleText.text =
+                informationItemData.DisplayName;
+        }
+
+        if (informationDescriptionText != null)
+        {
+            informationDescriptionText.text =
+                informationItemData.Description;
+        }
     }
 
     private void RefreshMenu()

@@ -10,26 +10,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: add0153c34f19f349bebf1c476c638d4, type: 3}
-  m_Name: Kaihuku
+  m_Name: NewConsumableItemData
   m_EditorClassIdentifier: Assembly-CSharp::ConsumableItemData
   itemId: item_id
   displayName: "\u65B0\u3057\u3044\u30A2\u30A4\u30C6\u30E0"
   description: 
-  icon: {fileID: 5232735641232087089, guid: e38667c183e52254695f45abdadae9b3, type: 3}
+  icon: {fileID: 0}
   localizedDisplayName:
     m_TableReference:
-      m_TableCollectionName: GUID:ba446b814f6747e43b2b1e2fca9a27e8
+      m_TableCollectionName: 
     m_TableEntryReference:
-      m_KeyId: 287278106681344
+      m_KeyId: 0
       m_Key: 
     m_FallbackState: 0
     m_WaitForCompletion: 0
     m_LocalVariables: []
   localizedDescription:
     m_TableReference:
-      m_TableCollectionName: GUID:ba446b814f6747e43b2b1e2fca9a27e8
+      m_TableCollectionName: 
     m_TableEntryReference:
-      m_KeyId: 287488547495936
+      m_KeyId: 0
       m_Key: 
     m_FallbackState: 0
     m_WaitForCompletion: 0
@@ -41,17 +41,16 @@ MonoBehaviour:
   purchasePrice: 0
   sellPrice: 0
   canSellToShop: 1
-  weight: 10
+  weight: 0
   canDiscard: 1
-  healAmount: 20
+  healAmount: 0
   foodRestoreAmount: 0
   waterRestoreAmount: 0
   curedConditions: 0
-  slowdownDuration: 5
+  slowdownDuration: 3
   useMoveSpeedMultiplier: 0.5
   consumeOnUse: 1
-  useSound: {fileID: 8300000, guid: a7cb8358a64492b48b3d173bb68eeb74, type: 3}
-  useAnimationTrigger: UseItem
+  useSound: {fileID: 0}
   references:
     version: 2
     RefIds: []

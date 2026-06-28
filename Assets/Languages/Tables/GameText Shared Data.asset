@@ -95,6 +95,34 @@ MonoBehaviour:
     m_Key: weight.state.slightly_slow
     m_Metadata:
       m_Items: []
+  - m_Id: 287278106681344
+    m_Key: item.bandage.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 287488547495936
+    m_Key: item.bandage.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 289496797028352
+    m_Key: gan.handgan.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 290044929646592
+    m_Key: gan.handgan.inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: 290463651209216
+    m_Key: New Entry
+    m_Metadata:
+      m_Items: []
+  - m_Id: 290623286419456
+    m_Key: gan.ak.inventory
+    m_Metadata:
+      m_Items: []
+  - m_Id: 290979122782208
+    m_Key: gan.ak.name
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

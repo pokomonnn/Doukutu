@@ -94,6 +94,30 @@ MonoBehaviour:
     m_Localized: 'Overloaded: Unable to Move'
     m_Metadata:
       m_Items: []
+  - m_Id: 287278106681344
+    m_Localized: Bandage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 287488547495936
+    m_Localized: A basic bandage used to stop bleeding.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 289496797028352
+    m_Localized: HandGan
+    m_Metadata:
+      m_Items: []
+  - m_Id: 290044929646592
+    m_Localized: This is HandGan
+    m_Metadata:
+      m_Items: []
+  - m_Id: 290623286419456
+    m_Localized: This is AK556
+    m_Metadata:
+      m_Items: []
+  - m_Id: 290979122782208
+    m_Localized: AK556
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

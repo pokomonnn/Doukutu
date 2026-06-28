@@ -16,6 +16,24 @@ MonoBehaviour:
   displayName: "\u65B0\u3057\u3044\u30A2\u30A4\u30C6\u30E0"
   description: 
   icon: {fileID: -1461178650845398902, guid: 2e61c1ab57359924bbe7987a54b25956, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: GUID:ba446b814f6747e43b2b1e2fca9a27e8
+    m_TableEntryReference:
+      m_KeyId: 289496797028352
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: GUID:ba446b814f6747e43b2b1e2fca9a27e8
+    m_TableEntryReference:
+      m_KeyId: 290044929646592
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   width: 2
   height: 2
   canRotate: 1
@@ -27,3 +45,6 @@ MonoBehaviour:
   canDiscard: 1
   weaponPrefab: {fileID: 4584479946820505900, guid: a00fe7959b989b24793faefc86b56177, type: 3}
   compatibleAmmo: {fileID: 11400000, guid: a3b808ca916280a46816c5033eac419a, type: 2}
+  references:
+    version: 2
+    RefIds: []

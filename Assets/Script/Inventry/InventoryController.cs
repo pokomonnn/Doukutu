@@ -68,6 +68,14 @@ public class InventoryController : MonoBehaviour
     private PlayerSurvivalController
         playerSurvivalController;
 
+    [Tooltip(
+        "回復アイテム使用中の速度低下を反映する管理。" +
+        "未設定ならPlayerタグから自動取得します。"
+    )]
+    [SerializeField]
+    private PlayerWeightController
+        playerWeightController;
+
     [SerializeField] private string playerTag = "Player";
 
     [Header("インベントリ本体")]
@@ -81,6 +89,15 @@ public class InventoryController : MonoBehaviour
 
     private bool isInitialized;
 
+    [Tooltip(
+    "回復アイテム使用時のアニメーション・" +
+    "銃非表示を管理します。"
+)]
+    [SerializeField]
+    private PlayerConsumableUseController
+    playerConsumableUseController;
+
+
     private void Awake()
     {
         InitializeInventory();
@@ -88,6 +105,8 @@ public class InventoryController : MonoBehaviour
         FindPlayerHealth();
         FindPlayerStatusConditions();
         FindPlayerSurvivalController();
+        FindPlayerWeightController();
+        FindPlayerConsumableUseController();
     }
 
     public void InitializeInventory()
@@ -512,6 +531,10 @@ public class InventoryController : MonoBehaviour
             RemoveItemAmount(item, 1);
         }
 
+        // 移動速度低下時間が0より大きい回復アイテムは、
+        // 設定された時間だけ移動速度を下げる。
+        ApplyConsumableUseSlowdown(consumableData);
+
         result = ItemUseResult.Success;
         return true;
     }
@@ -632,6 +655,107 @@ public class InventoryController : MonoBehaviour
             player.GetComponent<PlayerSurvivalController>();
 
         return playerSurvivalController != null;
+    }
+
+    private void ApplyConsumableUseSlowdown(
+    ConsumableItemData consumableData)
+    {
+        if (consumableData == null ||
+            consumableData.SlowdownDuration <= 0f)
+        {
+            return;
+        }
+
+        // 新しい回復演出Controllerがあれば、
+        // アニメーション・銃非表示・速度低下をまとめて処理する
+        if (FindPlayerConsumableUseController())
+        {
+            playerConsumableUseController.BeginConsumableUse(
+                consumableData
+            );
+
+            return;
+        }
+
+        // Controllerを付け忘れた場合も、
+        // 従来どおり移動低下だけは動くようにする
+        if (!FindPlayerWeightController())
+        {
+            Debug.LogWarning(
+                "InventoryController：" +
+                "PlayerWeightControllerがPlayerに見つかりません。",
+                this
+            );
+
+            return;
+        }
+
+        playerWeightController.ApplyConsumableUseSlowdown(
+            consumableData.SlowdownDuration,
+            consumableData.UseMoveSpeedMultiplier
+        );
+    }
+
+    private bool FindPlayerWeightController()
+    {
+        if (playerWeightController != null)
+        {
+            return true;
+        }
+
+        // InventoryControllerと同じPlayerに付いている場合
+        playerWeightController =
+            GetComponent<PlayerWeightController>();
+
+        if (playerWeightController != null)
+        {
+            return true;
+        }
+
+        GameObject player =
+            GameObject.FindGameObjectWithTag(playerTag);
+
+        if (player == null)
+        {
+            return false;
+        }
+
+        playerWeightController =
+            player.GetComponent<PlayerWeightController>();
+
+        return playerWeightController != null;
+    }
+
+    private bool FindPlayerConsumableUseController()
+    {
+        if (playerConsumableUseController != null)
+        {
+            return true;
+        }
+
+        // InventoryControllerと同じPlayerにある場合
+        playerConsumableUseController =
+            GetComponent<PlayerConsumableUseController>();
+
+        if (playerConsumableUseController != null)
+        {
+            return true;
+        }
+
+        GameObject player =
+            GameObject.FindGameObjectWithTag(playerTag);
+
+        if (player == null)
+        {
+            return false;
+        }
+
+        playerConsumableUseController =
+            player.GetComponent<
+                PlayerConsumableUseController
+            >();
+
+        return playerConsumableUseController != null;
     }
 
     private void AddStartingItems()

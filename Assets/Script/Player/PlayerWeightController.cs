@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -73,6 +74,15 @@ public class PlayerWeightController : MonoBehaviour
 
     private bool refreshRequested;
 
+    // 回復アイテムを使用している間だけ有効になる速度低下
+    private bool isUsingConsumable;
+    private float consumableUseSpeedMultiplier = 1f;
+
+    private float consumableUseDuration;
+    private float consumableUseEndTime;
+
+    private Coroutine consumableSlowdownCoroutine;
+
     public float CurrentWeight => currentWeight;
 
     public float ImmobilizedWeightLimit =>
@@ -120,11 +130,61 @@ public class PlayerWeightController : MonoBehaviour
             ? survivalController.FoodMoveSpeedMultiplier
             : 1f;
 
+    // 回復アイテムの使用中だけ有効な倍率
+    public float CurrentConsumableUseMoveSpeedMultiplier =>
+        isUsingConsumable
+            ? consumableUseSpeedMultiplier
+            : 1f;
+
+    public bool IsUsingConsumable => isUsingConsumable;
+
+    // 回復中の合計時間
+    public float ConsumableUseDuration =>
+        consumableUseDuration;
+
+    // 回復中の残り時間
+    public float ConsumableUseRemainingTime
+    {
+        get
+        {
+            if (!isUsingConsumable)
+            {
+                return 0f;
+            }
+
+            return Mathf.Max(
+                0f,
+                consumableUseEndTime - Time.time
+            );
+        }
+    }
+
+    // 回復ゲージ用の進行率
+    // 0 = 開始直後、1 = 完了直前
+    public float ConsumableUseProgress
+    {
+        get
+        {
+            if (!isUsingConsumable ||
+                consumableUseDuration <= 0f)
+            {
+                return 0f;
+            }
+
+            return Mathf.Clamp01(
+                1f -
+                ConsumableUseRemainingTime /
+                consumableUseDuration
+            );
+        }
+    }
+
     // 実際にPlayerMoveへ反映する最終倍率
     public float TotalMoveSpeedMultiplier =>
         CurrentMoveSpeedMultiplier *
         CurrentConditionMoveSpeedMultiplier *
-        CurrentSurvivalMoveSpeedMultiplier;
+        CurrentSurvivalMoveSpeedMultiplier *
+        CurrentConsumableUseMoveSpeedMultiplier;
 
     public event Action<float> OnWeightChanged;
     public event Action<PlayerWeightState> OnWeightStateChanged;
@@ -163,6 +223,7 @@ public class PlayerWeightController : MonoBehaviour
     private void OnDisable()
     {
         UnsubscribeEvents();
+        StopConsumableUseSlowdown();
         RestoreBaseMovementValues();
     }
 
@@ -218,6 +279,76 @@ public class PlayerWeightController : MonoBehaviour
         RecalculateWeight();
     }
 
+    // ConsumableItemData の Use Duration の間だけ、
+    // 回復アイテム用の速度倍率を加える。
+    public void ApplyConsumableUseSlowdown(
+     float duration,
+     float speedMultiplier)
+    {
+        duration = Mathf.Max(0f, duration);
+
+        if (duration <= 0f)
+        {
+            return;
+        }
+
+        FindReferences();
+        CacheBaseMovementValues();
+
+        if (consumableSlowdownCoroutine != null)
+        {
+            StopCoroutine(consumableSlowdownCoroutine);
+            consumableSlowdownCoroutine = null;
+        }
+
+        isUsingConsumable = true;
+
+        consumableUseSpeedMultiplier = Mathf.Clamp(
+            speedMultiplier,
+            0.05f,
+            1f
+        );
+
+        consumableUseDuration = duration;
+        consumableUseEndTime = Time.time + duration;
+
+        ApplyMovementState();
+
+        consumableSlowdownCoroutine = StartCoroutine(
+            ConsumableSlowdownRoutine(duration)
+        );
+    }
+
+    private IEnumerator ConsumableSlowdownRoutine(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+
+        consumableSlowdownCoroutine = null;
+
+        FinishConsumableUse();
+    }
+
+    private void StopConsumableUseSlowdown()
+    {
+        if (consumableSlowdownCoroutine != null)
+        {
+            StopCoroutine(consumableSlowdownCoroutine);
+            consumableSlowdownCoroutine = null;
+        }
+
+        FinishConsumableUse();
+    }
+
+    private void FinishConsumableUse()
+    {
+        isUsingConsumable = false;
+        consumableUseSpeedMultiplier = 1f;
+
+        consumableUseDuration = 0f;
+        consumableUseEndTime = 0f;
+
+        ApplyMovementState();
+    }
     private float CalculateTotalWeight()
     {
         float totalWeight = 0f;

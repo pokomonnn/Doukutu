@@ -39,6 +39,7 @@ public class PlayerEquipmentVisualController : MonoBehaviour
 
     private bool isSubscribed;
     private bool weaponControlsEnabled = true;
+    private bool isWeaponHiddenForConsumableUse;
 
     private void Awake()
     {
@@ -98,6 +99,17 @@ public class PlayerEquipmentVisualController : MonoBehaviour
     public void SetWeaponControlsEnabled(bool enabled)
     {
         weaponControlsEnabled = enabled;
+        ApplyWeaponControlState();
+    }
+    public void SetWeaponHiddenForConsumableUse(bool hidden)
+    {
+        if (isWeaponHiddenForConsumableUse == hidden)
+        {
+            return;
+        }
+
+        isWeaponHiddenForConsumableUse = hidden;
+
         ApplyWeaponControlState();
     }
 
@@ -317,7 +329,8 @@ public class PlayerEquipmentVisualController : MonoBehaviour
     {
         bool canUseWeapon =
             currentWeaponData != null &&
-            weaponControlsEnabled;
+            weaponControlsEnabled &&
+            !isWeaponHiddenForConsumableUse;
 
         currentGunShooter?.SetGunEquipped(
             canUseWeapon
@@ -326,6 +339,27 @@ public class PlayerEquipmentVisualController : MonoBehaviour
         currentWeaponAim?.SetGunEquipped(
             canUseWeapon
         );
+
+        ApplyWeaponVisualState();
+    }
+
+    private void ApplyWeaponVisualState()
+    {
+        if (activeWeaponObject == null)
+        {
+            return;
+        }
+
+        bool shouldShowWeapon =
+            !isWeaponHiddenForConsumableUse;
+
+        if (activeWeaponObject.activeSelf !=
+            shouldShowWeapon)
+        {
+            activeWeaponObject.SetActive(
+                shouldShowWeapon
+            );
+        }
     }
 
     private void ApplyHelmetState(bool equipped)

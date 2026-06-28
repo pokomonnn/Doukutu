@@ -16,6 +16,24 @@ MonoBehaviour:
   displayName: AK-558
   description: this is AK
   icon: {fileID: -198929506401869900, guid: 7f1b2f9b41ae6294ca7ef19ef4de9241, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: GUID:ba446b814f6747e43b2b1e2fca9a27e8
+    m_TableEntryReference:
+      m_KeyId: 290979122782208
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: GUID:ba446b814f6747e43b2b1e2fca9a27e8
+    m_TableEntryReference:
+      m_KeyId: 290623286419456
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   width: 5
   height: 2
   canRotate: 1
@@ -27,3 +45,6 @@ MonoBehaviour:
   canDiscard: 1
   weaponPrefab: {fileID: 4584479946820505900, guid: 3d41a99aaca964e4c90238f398af13b3, type: 3}
   compatibleAmmo: {fileID: 11400000, guid: fb52aa05e33bca54e9a1f901280855d0, type: 2}
+  references:
+    version: 2
+    RefIds: []
