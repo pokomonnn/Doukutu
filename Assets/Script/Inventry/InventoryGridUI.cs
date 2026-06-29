@@ -7,7 +7,11 @@ using UnityEngine.UI;
 public class InventoryGridUI : MonoBehaviour
 {
     [Header("参照")]
+    [Tooltip("プレイヤー用のGrid UIでは設定します")]
     [SerializeField] private InventoryController inventoryController;
+
+    [Tooltip("アイテムボックス用のGrid UIでは、ItemBoxUIControllerが実行中に設定します")]
+    [SerializeField] private ItemBoxInventory itemBoxInventory;
 
     [Header("右クリックメニュー")]
     [SerializeField] private InventoryContextMenuUI contextMenuUI;
@@ -41,7 +45,33 @@ public class InventoryGridUI : MonoBehaviour
     public float CellSize => cellSize;
     public float CellSpacing => cellSpacing;
 
-    public InventoryController Controller => inventoryController;
+    // 既存コード互換用。箱側Grid UIでは null です。
+    public InventoryController Controller =>
+        itemBoxInventory == null
+            ? inventoryController
+            : null;
+
+    public ItemBoxInventory ItemBox => itemBoxInventory;
+
+    public bool IsPlayerInventory =>
+        itemBoxInventory == null &&
+        inventoryController != null;
+
+    public bool IsItemBoxInventory => itemBoxInventory != null;
+
+    // Shop は売買機能を作るまで無料ドラッグ移動を禁止します。
+    public bool AllowsDirectTransfer =>
+        itemBoxInventory == null ||
+        itemBoxInventory.AllowsDirectItemTransfer;
+
+    public InventoryGrid Grid
+    {
+        get
+        {
+            TryGetInventoryGrid(out InventoryGrid grid);
+            return grid;
+        }
+    }
 
     // InventoryItemUI が右クリックメニューを開く時に使う
     public InventoryContextMenuUI ContextMenuUI => contextMenuUI;
@@ -79,17 +109,37 @@ public class InventoryGridUI : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 箱側のGrid UIに、開いたItemBoxInventoryを接続します。
+    /// プレイヤー用Grid UIでは呼ばないでください。
+    /// </summary>
+    public void BindItemBoxInventory(ItemBoxInventory newItemBoxInventory)
+    {
+        if (itemBoxInventory == newItemBoxInventory)
+        {
+            RefreshInventoryUI();
+            return;
+        }
+
+        UnsubscribeFromInventory();
+
+        itemBoxInventory = newItemBoxInventory;
+        builtWidth = -1;
+        builtHeight = -1;
+
+        SubscribeToInventory();
+        RefreshInventoryUI();
+    }
+
     [ContextMenu("Rebuild Grid UI")]
     public void RebuildGridUI()
     {
-        if (!TryGetInventoryController())
+        if (!TryGetInventoryGrid(out InventoryGrid grid))
         {
             return;
         }
 
         EnsureRoots();
-
-        InventoryGrid grid = inventoryController.Grid;
 
         ClearChildren(cellRoot);
 
@@ -126,12 +176,10 @@ public class InventoryGridUI : MonoBehaviour
 
     public void RefreshInventoryUI()
     {
-        if (!TryGetInventoryController())
+        if (!TryGetInventoryGrid(out InventoryGrid grid))
         {
             return;
         }
-
-        InventoryGrid grid = inventoryController.Grid;
 
         // 初回表示時、またはグリッドサイズが変わっている時は
         // マス目ごと作り直す
@@ -144,6 +192,128 @@ public class InventoryGridUI : MonoBehaviour
 
         // アイテム数、弾数などの表示だけ最新化する
         RefreshItemsUI();
+    }
+
+    public bool ContainsItem(InventoryItem item)
+    {
+        return TryGetInventoryGrid(out InventoryGrid grid) &&
+               grid.ContainsItem(item);
+    }
+
+    public bool TryMoveItem(
+        InventoryItem item,
+        int targetX,
+        int targetY,
+        bool isRotated)
+    {
+        if (item == null)
+        {
+            return false;
+        }
+
+        if (itemBoxInventory != null)
+        {
+            return itemBoxInventory.TryMoveItem(
+                item,
+                targetX,
+                targetY,
+                isRotated
+            );
+        }
+
+        return inventoryController != null &&
+               inventoryController.TryMoveItem(
+                   item,
+                   targetX,
+                   targetY,
+                   isRotated
+               );
+    }
+
+    /// <summary>
+    /// 別のGrid UIへ、同じInventoryItemを移動します。
+    /// 武器のStoredMagazineAmmoなど個別情報も維持されます。
+    /// </summary>
+    public bool TryTransferItemTo(
+        InventoryItem item,
+        InventoryGridUI targetGridUI,
+        int targetX,
+        int targetY,
+        bool isRotated)
+    {
+        if (item == null ||
+            targetGridUI == null)
+        {
+            return false;
+        }
+
+        // 同じGridなら通常の並べ替えとして扱う
+        if (targetGridUI == this)
+        {
+            return TryMoveItem(
+                item,
+                targetX,
+                targetY,
+                isRotated
+            );
+        }
+
+        // Shopは、売買実装前に無料で取れてしまわないようにする
+        if (!AllowsDirectTransfer ||
+            !targetGridUI.AllowsDirectTransfer)
+        {
+            return false;
+        }
+
+        if (!TryGetInventoryGrid(out InventoryGrid sourceGrid) ||
+            !targetGridUI.TryGetInventoryGrid(
+                out InventoryGrid targetGrid) ||
+            !sourceGrid.ContainsItem(item))
+        {
+            return false;
+        }
+
+        bool finalRotation = item.CanRotate && isRotated;
+
+        if (!targetGrid.CanPlaceItem(
+                item,
+                targetX,
+                targetY,
+                finalRotation))
+        {
+            return false;
+        }
+
+        int sourceX = item.GridX;
+        int sourceY = item.GridY;
+        bool sourceRotation = item.IsRotated;
+
+        if (!RemoveItemFromThisGrid(item))
+        {
+            return false;
+        }
+
+        bool moved = targetGridUI.TryMoveItem(
+            item,
+            targetX,
+            targetY,
+            finalRotation
+        );
+
+        if (moved)
+        {
+            return true;
+        }
+
+        // 万一の失敗時は、元のGridへ戻す
+        TryMoveItem(
+            item,
+            sourceX,
+            sourceY,
+            sourceRotation
+        );
+
+        return false;
     }
 
     public Vector2 GetCellPosition(int x, int y)
@@ -176,7 +346,7 @@ public class InventoryGridUI : MonoBehaviour
     {
         gridPosition = Vector2Int.zero;
 
-        if (!TryGetInventoryController())
+        if (!TryGetInventoryGrid(out InventoryGrid grid))
         {
             return false;
         }
@@ -190,7 +360,6 @@ public class InventoryGridUI : MonoBehaviour
             return false;
         }
 
-        InventoryGrid grid = inventoryController.Grid;
         Vector2 gridSize = GetGridPixelSize(grid.Width, grid.Height);
 
         if (localPoint.x < 0f ||
@@ -225,14 +394,12 @@ public class InventoryGridUI : MonoBehaviour
 
     private void RefreshItemsUI()
     {
-        if (!TryGetInventoryController())
+        if (!TryGetInventoryGrid(out InventoryGrid grid))
         {
             return;
         }
 
         EnsureRoots();
-
-        InventoryGrid grid = inventoryController.Grid;
 
         HashSet<InventoryItem> currentItems =
             new HashSet<InventoryItem>();
@@ -307,34 +474,63 @@ public class InventoryGridUI : MonoBehaviour
 
     private void SubscribeToInventory()
     {
-        if (isSubscribed || !TryGetInventoryController())
+        if (isSubscribed)
         {
             return;
         }
 
-        inventoryController.OnInventoryChanged += HandleInventoryChanged;
-        isSubscribed = true;
-    }
-
-    private void UnsubscribeFromInventory()
-    {
-        if (!isSubscribed || inventoryController == null)
+        if (itemBoxInventory != null)
         {
+            itemBoxInventory.OnInventoryChanged +=
+                HandleInventoryChanged;
+
+            isSubscribed = true;
             return;
         }
 
-        inventoryController.OnInventoryChanged -= HandleInventoryChanged;
-        isSubscribed = false;
-    }
+        if (inventoryController == null)
+        {
+            inventoryController = GetComponent<InventoryController>();
+        }
 
-    private void HandleInventoryChanged()
-    {
         if (inventoryController == null)
         {
             return;
         }
 
-        InventoryGrid grid = inventoryController.Grid;
+        inventoryController.OnInventoryChanged +=
+            HandleInventoryChanged;
+
+        isSubscribed = true;
+    }
+
+    private void UnsubscribeFromInventory()
+    {
+        if (!isSubscribed)
+        {
+            return;
+        }
+
+        if (itemBoxInventory != null)
+        {
+            itemBoxInventory.OnInventoryChanged -=
+                HandleInventoryChanged;
+        }
+        else if (inventoryController != null)
+        {
+            inventoryController.OnInventoryChanged -=
+                HandleInventoryChanged;
+        }
+
+        isSubscribed = false;
+    }
+
+    private void HandleInventoryChanged()
+    {
+        if (!TryGetInventoryGrid(out InventoryGrid grid))
+        {
+            return;
+        }
 
         if (grid.Width != builtWidth || grid.Height != builtHeight)
         {
@@ -345,23 +541,39 @@ public class InventoryGridUI : MonoBehaviour
         RefreshItemsUI();
     }
 
-    private bool TryGetInventoryController()
+    private bool RemoveItemFromThisGrid(InventoryItem item)
     {
+        if (itemBoxInventory != null)
+        {
+            return itemBoxInventory.RemoveItem(item);
+        }
+
+        return inventoryController != null &&
+               inventoryController.RemoveItem(item);
+    }
+
+    private bool TryGetInventoryGrid(out InventoryGrid grid)
+    {
+        grid = null;
+
+        if (itemBoxInventory != null)
+        {
+            grid = itemBoxInventory.Grid;
+            return grid != null;
+        }
+
         if (inventoryController == null)
         {
             inventoryController = GetComponent<InventoryController>();
         }
 
-        if (inventoryController != null)
+        if (inventoryController == null)
         {
-            return true;
+            return false;
         }
 
-        Debug.LogError(
-            "InventoryGridUI: InventoryController をInspectorで設定してください。"
-        );
-
-        return false;
+        grid = inventoryController.Grid;
+        return grid != null;
     }
 
     private void FindContextMenuUI()
@@ -378,10 +590,25 @@ public class InventoryGridUI : MonoBehaviour
             contextMenuUI =
                 parent.GetComponentInChildren<InventoryContextMenuUI>(true);
         }
+
+        if (contextMenuUI == null)
+        {
+            contextMenuUI =
+                FindAnyObjectByType<InventoryContextMenuUI>(
+                    FindObjectsInactive.Include
+                );
+        }
     }
 
     private void EnsureRoots()
     {
+        // 非アクティブなPanel内のGrid UIでも、
+        // ItemBoxUIControllerから先に接続できるようにする
+        if (gridRect == null)
+        {
+            gridRect = GetComponent<RectTransform>();
+        }
+
         if (cellRoot == null)
         {
             cellRoot = CreateRoot("CellRoot");

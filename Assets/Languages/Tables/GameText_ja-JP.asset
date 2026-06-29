@@ -118,6 +118,10 @@ MonoBehaviour:
     m_Localized: AK556
     m_Metadata:
       m_Items: []
+  - m_Id: 671902662139904
+    m_Localized: "E:\u958B\u3051\u308B"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

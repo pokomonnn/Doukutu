@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using UnityEngine.Localization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Localization;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -39,8 +39,10 @@ public class InventoryContextMenuUI : MonoBehaviour
 
     private InventoryItem selectedItem;
     private InventoryController inventoryController;
-
     private EquipmentSlotUI selectedEquipmentSlotUI;
+
+    // 箱・ショップ在庫を右クリックした時は、詳細だけ閲覧できる状態にする
+    private bool selectedItemIsReadOnly;
 
     [SerializeField] private InventorySoundPlayer soundPlayer;
 
@@ -99,6 +101,7 @@ public class InventoryContextMenuUI : MonoBehaviour
         selectedItem = null;
         inventoryController = null;
         selectedEquipmentSlotUI = null;
+        selectedItemIsReadOnly = false;
     }
 
     private void OnDestroy()
@@ -153,6 +156,7 @@ public class InventoryContextMenuUI : MonoBehaviour
         selectedEquipmentSlotUI = null;
         selectedItem = item;
         inventoryController = controller;
+        selectedItemIsReadOnly = false;
 
         FindEquipmentController();
         FindPlayerItemDropper();
@@ -172,9 +176,9 @@ public class InventoryContextMenuUI : MonoBehaviour
     }
 
     public void ShowEquippedItem(
-    InventoryItem item,
-    EquipmentSlotUI equipmentSlotUI,
-    Vector2 screenPosition)
+        InventoryItem item,
+        EquipmentSlotUI equipmentSlotUI,
+        Vector2 screenPosition)
     {
         if (item == null ||
             item.ItemData == null ||
@@ -187,14 +191,45 @@ public class InventoryContextMenuUI : MonoBehaviour
         bool wasOpen = IsOpen;
 
         selectedItem = item;
-        inventoryController =
-            equipmentSlotUI.InventoryController;
-
-        selectedEquipmentSlotUI =
-            equipmentSlotUI;
+        inventoryController = equipmentSlotUI.InventoryController;
+        selectedEquipmentSlotUI = equipmentSlotUI;
+        selectedItemIsReadOnly = false;
 
         FindEquipmentController();
         FindPlayerItemDropper();
+
+        gameObject.SetActive(true);
+
+        RefreshMenu();
+        SetMenuPosition(screenPosition);
+
+        openedFrame = Time.frameCount;
+
+        if (!wasOpen)
+        {
+            soundPlayer?.PlayContextMenuOpen();
+        }
+    }
+
+    /// <summary>
+    /// アイテムボックス・ショップ側のアイテム用。
+    /// 現段階では詳細表示だけ可能にし、使用・装備・捨てるは表示しません。
+    /// </summary>
+    public void ShowReadOnlyItem(
+        InventoryItem item,
+        Vector2 screenPosition)
+    {
+        if (item == null || item.ItemData == null)
+        {
+            return;
+        }
+
+        bool wasOpen = IsOpen;
+
+        selectedItem = item;
+        inventoryController = null;
+        selectedEquipmentSlotUI = null;
+        selectedItemIsReadOnly = true;
 
         gameObject.SetActive(true);
 
@@ -218,9 +253,11 @@ public class InventoryContextMenuUI : MonoBehaviour
         {
             soundPlayer?.PlayContextMenuClose();
         }
+
         selectedEquipmentSlotUI = null;
         selectedItem = null;
         inventoryController = null;
+        selectedItemIsReadOnly = false;
 
         gameObject.SetActive(false);
     }
@@ -228,7 +265,9 @@ public class InventoryContextMenuUI : MonoBehaviour
     // Equipボタンから呼ぶ
     public void EquipSelectedItem()
     {
-        if (selectedItem == null || inventoryController == null)
+        if (selectedItemIsReadOnly ||
+            selectedItem == null ||
+            inventoryController == null)
         {
             Hide();
             return;
@@ -254,7 +293,6 @@ public class InventoryContextMenuUI : MonoBehaviour
         if (equipped)
         {
             soundPlayer?.PlayPlace();
-
             Hide();
             return;
         }
@@ -269,7 +307,9 @@ public class InventoryContextMenuUI : MonoBehaviour
 
     public void UseSelectedItem()
     {
-        if (selectedItem == null || inventoryController == null)
+        if (selectedItemIsReadOnly ||
+            selectedItem == null ||
+            inventoryController == null)
         {
             Hide();
             return;
@@ -290,7 +330,6 @@ public class InventoryContextMenuUI : MonoBehaviour
         if (used)
         {
             soundPlayer?.PlayUseSound(useClip);
-
             Hide();
             return;
         }
@@ -298,9 +337,7 @@ public class InventoryContextMenuUI : MonoBehaviour
         if (result == ItemUseResult.HealthIsFull)
         {
             soundPlayer?.PlayHealthFull();
-
             healthFullToastUI?.Show(localizedHealthFullMessage);
-
             return;
         }
 
@@ -358,7 +395,8 @@ public class InventoryContextMenuUI : MonoBehaviour
     // Trashボタンから呼ばれる
     public void TrashSelectedItem()
     {
-        if (selectedItem == null ||
+        if (selectedItemIsReadOnly ||
+            selectedItem == null ||
             selectedItem.ItemData == null)
         {
             Hide();
@@ -514,11 +552,13 @@ public class InventoryContextMenuUI : MonoBehaviour
         }
 
         bool isEquippedItem =
-    selectedEquipmentSlotUI != null &&
-    selectedEquipmentSlotUI.GetEquippedItem() ==
-        selectedItem;
+            !selectedItemIsReadOnly &&
+            selectedEquipmentSlotUI != null &&
+            selectedEquipmentSlotUI.GetEquippedItem() ==
+                selectedItem;
 
         bool canEquip =
+            !selectedItemIsReadOnly &&
             !isEquippedItem &&
             CanEquip(itemData);
 
@@ -527,7 +567,9 @@ public class InventoryContextMenuUI : MonoBehaviour
             equipButton.gameObject.SetActive(canEquip);
         }
 
-        bool canUse = itemData is ConsumableItemData;
+        bool canUse =
+            !selectedItemIsReadOnly &&
+            itemData is ConsumableItemData;
 
         if (useButton != null)
         {
@@ -542,6 +584,7 @@ public class InventoryContextMenuUI : MonoBehaviour
         if (trashButton != null)
         {
             trashButton.gameObject.SetActive(
+                !selectedItemIsReadOnly &&
                 CanDiscard(itemData)
             );
         }

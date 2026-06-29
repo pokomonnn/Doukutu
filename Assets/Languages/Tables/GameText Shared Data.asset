@@ -123,6 +123,10 @@ MonoBehaviour:
     m_Key: gan.ak.name
     m_Metadata:
       m_Items: []
+  - m_Id: 671902662139904
+    m_Key: New Entry 1
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

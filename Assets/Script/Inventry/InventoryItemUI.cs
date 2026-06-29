@@ -1,7 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using System.Collections.Generic;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(RectTransform))]
@@ -90,7 +90,8 @@ public class InventoryItemUI : MonoBehaviour,
     {
         if (inventoryItem == null ||
             inventoryItem.ItemData == null ||
-            gridUI == null)
+            gridUI == null ||
+            !gridUI.ContainsItem(inventoryItem))
         {
             gameObject.SetActive(false);
             return;
@@ -119,8 +120,7 @@ public class InventoryItemUI : MonoBehaviour,
             isDragging ||
             inventoryItem == null ||
             inventoryItem.ItemData == null ||
-            gridUI == null ||
-            gridUI.Controller == null)
+            gridUI == null)
         {
             return;
         }
@@ -139,11 +139,24 @@ public class InventoryItemUI : MonoBehaviour,
             return;
         }
 
-        contextMenuUI.Show(
-            inventoryItem,
-            gridUI.Controller,
-            eventData.position
-        );
+        // プレイヤーインベントリでは従来どおり装備・使用・捨てる。
+        // 箱・ショップ在庫側は、誤操作防止のため詳細表示だけにする。
+        if (gridUI.IsPlayerInventory &&
+            gridUI.Controller != null)
+        {
+            contextMenuUI.Show(
+                inventoryItem,
+                gridUI.Controller,
+                eventData.position
+            );
+        }
+        else
+        {
+            contextMenuUI.ShowReadOnlyItem(
+                inventoryItem,
+                eventData.position
+            );
+        }
 
         Log(
             $"右クリックメニューを開きました：" +
@@ -153,15 +166,11 @@ public class InventoryItemUI : MonoBehaviour,
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (inventoryItem == null ||
+        if (eventData.button != PointerEventData.InputButton.Left ||
+            inventoryItem == null ||
             inventoryItem.ItemData == null ||
             gridUI == null ||
-            gridUI.Controller == null)
-        {
-            return;
-        }
-
-        if (!gridUI.Controller.Grid.ContainsItem(inventoryItem))
+            !gridUI.ContainsItem(inventoryItem))
         {
             return;
         }
@@ -242,7 +251,8 @@ public class InventoryItemUI : MonoBehaviour,
         Log(
             $"ドラッグ開始：{inventoryItem.ItemData.DisplayName} / " +
             $"向き={(dragIsRotated ? "回転" : "通常")} / " +
-            $"サイズ={GetSize(dragIsRotated).x}×{GetSize(dragIsRotated).y}"
+            $"サイズ={GetSize(dragIsRotated).x}×" +
+            $"{GetSize(dragIsRotated).y}"
         );
     }
 
@@ -283,29 +293,39 @@ public class InventoryItemUI : MonoBehaviour,
         if (wasOverEquipmentSlot)
         {
             soundPlayer?.PlayFailed();
-
             FinishDrag();
             return;
         }
 
         bool moved = false;
 
-        if (gridUI != null &&
-            gridUI.Controller != null &&
-            gridUI.TryGetGridPosition(
-                eventData.position,
-                eventData.pressEventCamera,
+        if (TryFindTargetGrid(
+                eventData,
+                out InventoryGridUI targetGridUI,
                 out Vector2Int pointerGridPosition))
         {
             Vector2Int targetPosition =
                 pointerGridPosition - dragCellOffset;
 
-            moved = gridUI.Controller.TryMoveItem(
-                inventoryItem,
-                targetPosition.x,
-                targetPosition.y,
-                dragIsRotated
-            );
+            if (targetGridUI == gridUI)
+            {
+                moved = gridUI.TryMoveItem(
+                    inventoryItem,
+                    targetPosition.x,
+                    targetPosition.y,
+                    dragIsRotated
+                );
+            }
+            else
+            {
+                moved = gridUI.TryTransferItemTo(
+                    inventoryItem,
+                    targetGridUI,
+                    targetPosition.x,
+                    targetPosition.y,
+                    dragIsRotated
+                );
+            }
 
             if (moved)
             {
@@ -328,22 +348,21 @@ public class InventoryItemUI : MonoBehaviour,
         else
         {
             soundPlayer?.PlayFailed();
-
             Log("ドロップ失敗：グリッド外です。");
         }
 
         FinishDrag();
     }
 
-
-
     private bool TryDropToEquipmentSlot(
-    PointerEventData eventData,
-    out bool wasOverEquipmentSlot)
+        PointerEventData eventData,
+        out bool wasOverEquipmentSlot)
     {
         wasOverEquipmentSlot = false;
 
-        if (EventSystem.current == null)
+        // 箱から直接装備はさせず、いったんプレイヤー側へ移してから装備する。
+        if (gridUI == null || !gridUI.IsPlayerInventory ||
+            EventSystem.current == null)
         {
             return false;
         }
@@ -395,7 +414,38 @@ public class InventoryItemUI : MonoBehaviour,
         return false;
     }
 
+    private bool TryFindTargetGrid(
+        PointerEventData eventData,
+        out InventoryGridUI targetGridUI,
+        out Vector2Int pointerGridPosition)
+    {
+        targetGridUI = null;
+        pointerGridPosition = Vector2Int.zero;
 
+        InventoryGridUI[] allGridUIs =
+            Object.FindObjectsByType<InventoryGridUI>(
+                FindObjectsInactive.Exclude
+            );
+
+        foreach (InventoryGridUI candidate in allGridUIs)
+        {
+            if (candidate == null ||
+                !candidate.isActiveAndEnabled ||
+                !candidate.TryGetGridPosition(
+                    eventData.position,
+                    eventData.pressEventCamera,
+                    out Vector2Int gridPosition))
+            {
+                continue;
+            }
+
+            targetGridUI = candidate;
+            pointerGridPosition = gridPosition;
+            return true;
+        }
+
+        return false;
+    }
 
     private void TryRotateDuringDrag()
     {
@@ -411,7 +461,7 @@ public class InventoryItemUI : MonoBehaviour,
 
             Log(
                 $"Rキー検知：{inventoryItem.ItemData.DisplayName} は " +
-                $"Can Rotate がオフです。"
+                "Can Rotate がオフです。"
             );
 
             return;
@@ -593,6 +643,13 @@ public class InventoryItemUI : MonoBehaviour,
         if (soundPlayer == null)
         {
             soundPlayer = GetComponentInParent<InventorySoundPlayer>();
+        }
+
+        if (soundPlayer == null)
+        {
+            soundPlayer = FindAnyObjectByType<InventorySoundPlayer>(
+                FindObjectsInactive.Include
+            );
         }
     }
 

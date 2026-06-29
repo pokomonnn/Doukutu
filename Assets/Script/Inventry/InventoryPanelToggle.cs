@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 [RequireComponent(typeof(AudioSource))]
@@ -8,6 +9,10 @@ public class InventoryPanelToggle : MonoBehaviour
 
     [Header("開閉キー")]
     [SerializeField] private KeyCode toggleKey = KeyCode.Tab;
+
+    [Header("アイテムボックスUI")]
+    [Tooltip("設定すると、ItemBox UIを開いている間のTabは箱を閉じる操作になります")]
+    [SerializeField] private ItemBoxUIController itemBoxUIController;
 
     [Header("音")]
     [SerializeField] private AudioSource audioSource;
@@ -28,6 +33,14 @@ public class InventoryPanelToggle : MonoBehaviour
         audioSource.spatialBlend = 0f;
         audioSource.playOnAwake = false;
 
+        if (itemBoxUIController == null)
+        {
+            itemBoxUIController =
+                FindAnyObjectByType<ItemBoxUIController>(
+                    FindObjectsInactive.Include
+                );
+        }
+
         if (inventoryPanel != null)
         {
             inventoryPanel.SetActive(false);
@@ -36,10 +49,19 @@ public class InventoryPanelToggle : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(toggleKey))
+        if (!Input.GetKeyDown(toggleKey))
         {
-            ToggleInventory();
+            return;
         }
+
+        // 箱を開いている時は、通常インベントリを開かず箱を閉じる
+        if (itemBoxUIController != null && itemBoxUIController.IsOpen)
+        {
+            itemBoxUIController.Close();
+            return;
+        }
+
+        ToggleInventory();
     }
 
     public void ToggleInventory()
