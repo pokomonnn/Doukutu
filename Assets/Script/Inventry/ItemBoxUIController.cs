@@ -32,9 +32,18 @@ public class ItemBoxUIController : MonoBehaviour
     [Tooltip("Playerに付いているPlayerMove。未設定なら自動検索します")]
     [SerializeField] private PlayerMove playerMove;
 
+    [Header("武器操作")]
+    [Tooltip("オンの場合、アイテムボックスを開いている間は照準・射撃・リロードを止めます")]
+    [SerializeField] private bool lockWeaponControlsWhileOpen = true;
+
+    [Tooltip("Playerに付いているPlayerEquipmentVisualController。未設定なら自動検索します")]
+    [SerializeField]
+    private PlayerEquipmentVisualController equipmentVisualController;
+
     private Rigidbody2D playerRigidbody;
     private bool wasPlayerMoveEnabledBeforeOpen;
     private bool hasLockedPlayerMovement;
+    private bool hasLockedWeaponControls;
 
     public bool IsOpen =>
         itemBoxPanel != null &&
@@ -48,6 +57,7 @@ public class ItemBoxUIController : MonoBehaviour
     private void Awake()
     {
         FindPlayerMove();
+        FindEquipmentVisualController();
 
         if (itemBoxPanel != null)
         {
@@ -60,11 +70,13 @@ public class ItemBoxUIController : MonoBehaviour
         // CanvasやこのControllerが無効になった時も、
         // プレイヤーだけ操作不能のまま残らないようにする
         UnlockPlayerMovement();
+        UnlockWeaponControls();
     }
 
     private void OnDestroy()
     {
         UnlockPlayerMovement();
+        UnlockWeaponControls();
     }
 
     public void Open(ItemBoxInventory itemBox)
@@ -99,8 +111,9 @@ public class ItemBoxUIController : MonoBehaviour
             itemBoxPanel.SetActive(true);
         }
 
-        // パネル表示と同時に、移動とジャンプを止める
+        // パネル表示と同時に、移動・ジャンプと武器操作を止める
         LockPlayerMovement();
+        LockWeaponControls();
 
         playerGridUI.RefreshInventoryUI();
         itemBoxGridUI.RefreshInventoryUI();
@@ -122,6 +135,7 @@ public class ItemBoxUIController : MonoBehaviour
 
         // Tabや閉じるボタンで箱を閉じたら、元の操作状態へ戻す
         UnlockPlayerMovement();
+        UnlockWeaponControls();
     }
 
     private void LockPlayerMovement()
@@ -163,6 +177,67 @@ public class ItemBoxUIController : MonoBehaviour
 
         hasLockedPlayerMovement = false;
         wasPlayerMoveEnabledBeforeOpen = false;
+    }
+
+    private void LockWeaponControls()
+    {
+        if (!lockWeaponControlsWhileOpen ||
+            hasLockedWeaponControls ||
+            !FindEquipmentVisualController())
+        {
+            return;
+        }
+
+        equipmentVisualController.SetWeaponControlLock(
+            this,
+            true
+        );
+
+        hasLockedWeaponControls = true;
+    }
+
+    private void UnlockWeaponControls()
+    {
+        if (!hasLockedWeaponControls)
+        {
+            return;
+        }
+
+        if (equipmentVisualController != null)
+        {
+            equipmentVisualController.SetWeaponControlLock(
+                this,
+                false
+            );
+        }
+
+        hasLockedWeaponControls = false;
+    }
+
+    private bool FindEquipmentVisualController()
+    {
+        if (equipmentVisualController != null)
+        {
+            return true;
+        }
+
+        if (playerMove != null)
+        {
+            equipmentVisualController =
+                playerMove.GetComponent<
+                    PlayerEquipmentVisualController
+                >();
+        }
+
+        if (equipmentVisualController == null)
+        {
+            equipmentVisualController =
+                FindAnyObjectByType<
+                    PlayerEquipmentVisualController
+                >(FindObjectsInactive.Include);
+        }
+
+        return equipmentVisualController != null;
     }
 
     private bool FindPlayerMove()

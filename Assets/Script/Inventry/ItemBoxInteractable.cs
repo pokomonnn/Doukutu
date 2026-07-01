@@ -38,7 +38,25 @@ public class ItemBoxInteractable : MonoBehaviour
     [Tooltip("Canvas内のItemBoxOpenProgressUI。未設定なら自動検索します")]
     [SerializeField] private ItemBoxOpenProgressUI openProgressUI;
 
-    [Header("表示")]
+    [Header("接近アイコン")]
+    [Tooltip("箱の子に置いたアイコン用GameObject。SpriteRendererやWorld Space Canvasでも使えます")]
+    [SerializeField] private GameObject nearbyIcon;
+
+    [Tooltip("アイコンの箱から見たローカル位置")]
+    [SerializeField]
+    private Vector3 nearbyIconLocalPosition =
+        new Vector3(0f, 1.2f, 0f);
+
+    [Tooltip("接近中のアイコンを上下にゆっくり動かします")]
+    [SerializeField] private bool animateNearbyIcon = true;
+
+    [SerializeField, Min(0f)]
+    private float iconFloatHeight = 0.08f;
+
+    [SerializeField, Min(0.01f)]
+    private float iconFloatSpeed = 2f;
+
+    [Header("文字表示")]
     [SerializeField] private TMP_Text openPromptText;
 
     [Tooltip("GameText の world.open などを設定")]
@@ -84,14 +102,17 @@ public class ItemBoxInteractable : MonoBehaviour
         FindItemBoxUIController();
         FindOpenProgressUI();
         FindPromptText();
+        FindNearbyIcon();
+
         ApplyPromptPosition();
-        RefreshPrompt();
+        ApplyNearbyIconPosition();
+        RefreshInteractionVisuals();
     }
 
     private void OnEnable()
     {
         SubscribePromptLabel();
-        RefreshPrompt();
+        RefreshInteractionVisuals();
     }
 
     private void OnDisable()
@@ -106,6 +127,7 @@ public class ItemBoxInteractable : MonoBehaviour
 
         isOpening = false;
         openProgressUI?.Hide();
+        SetNearbyIconVisible(false);
     }
 
     private void Reset()
@@ -120,7 +142,8 @@ public class ItemBoxInteractable : MonoBehaviour
 
     private void Update()
     {
-        RefreshPrompt();
+        RefreshInteractionVisuals();
+        UpdateNearbyIconAnimation();
 
         if (!IsPlayerInRange ||
             isOpening ||
@@ -139,14 +162,15 @@ public class ItemBoxInteractable : MonoBehaviour
 
     private void BeginOpen()
     {
-        if (isOpening || itemBoxInventory == null ||
+        if (isOpening ||
+            itemBoxInventory == null ||
             !FindItemBoxUIController())
         {
             return;
         }
 
         isOpening = true;
-        RefreshPrompt();
+        RefreshInteractionVisuals();
         PlayOpenSound();
 
         FindOpenProgressUI();
@@ -186,7 +210,7 @@ public class ItemBoxInteractable : MonoBehaviour
             itemBoxUIController.Open(itemBoxInventory);
         }
 
-        RefreshPrompt();
+        RefreshInteractionVisuals();
     }
 
     private void PlayOpenSound()
@@ -208,13 +232,13 @@ public class ItemBoxInteractable : MonoBehaviour
         }
 
         playerColliders.Add(other);
-        RefreshPrompt();
+        RefreshInteractionVisuals();
     }
 
     private void OnTriggerExit2D(Collider2D other)
     {
         playerColliders.Remove(other);
-        RefreshPrompt();
+        RefreshInteractionVisuals();
     }
 
     private bool IsPlayerCollider(Collider2D other)
@@ -284,19 +308,44 @@ public class ItemBoxInteractable : MonoBehaviour
         }
     }
 
-    private void RefreshPrompt()
+    private void FindNearbyIcon()
+    {
+        if (nearbyIcon != null)
+        {
+            return;
+        }
+
+        Transform iconTransform = transform.Find("OpenIcon");
+
+        if (iconTransform != null)
+        {
+            nearbyIcon = iconTransform.gameObject;
+        }
+    }
+
+    private void RefreshInteractionVisuals()
+    {
+        bool shouldShow = ShouldShowInteractionVisuals();
+
+        RefreshPrompt(shouldShow);
+        SetNearbyIconVisible(shouldShow);
+    }
+
+    private bool ShouldShowInteractionVisuals()
+    {
+        return IsPlayerInRange &&
+               !isOpening &&
+               itemBoxInventory != null &&
+               (!FindItemBoxUIController() ||
+                !itemBoxUIController.IsOpen);
+    }
+
+    private void RefreshPrompt(bool shouldShow)
     {
         if (openPromptText == null)
         {
             return;
         }
-
-        bool shouldShow =
-            IsPlayerInRange &&
-            !isOpening &&
-            itemBoxInventory != null &&
-            (!FindItemBoxUIController() ||
-             !itemBoxUIController.IsOpen);
 
         if (shouldShow)
         {
@@ -307,6 +356,21 @@ public class ItemBoxInteractable : MonoBehaviour
         openPromptText.enabled = shouldShow;
     }
 
+    private void SetNearbyIconVisible(bool visible)
+    {
+        FindNearbyIcon();
+
+        if (nearbyIcon == null)
+        {
+            return;
+        }
+
+        if (nearbyIcon.activeSelf != visible)
+        {
+            nearbyIcon.SetActive(visible);
+        }
+    }
+
     private void ApplyPromptPosition()
     {
         if (openPromptText != null)
@@ -314,6 +378,37 @@ public class ItemBoxInteractable : MonoBehaviour
             openPromptText.transform.localPosition =
                 promptLocalPosition;
         }
+    }
+
+    private void ApplyNearbyIconPosition()
+    {
+        FindNearbyIcon();
+
+        if (nearbyIcon != null)
+        {
+            nearbyIcon.transform.localPosition =
+                nearbyIconLocalPosition;
+        }
+    }
+
+    private void UpdateNearbyIconAnimation()
+    {
+        if (nearbyIcon == null ||
+            !nearbyIcon.activeInHierarchy)
+        {
+            return;
+        }
+
+        Vector3 position = nearbyIconLocalPosition;
+
+        if (animateNearbyIcon && iconFloatHeight > 0f)
+        {
+            position.y += Mathf.Sin(
+                Time.time * iconFloatSpeed
+            ) * iconFloatHeight;
+        }
+
+        nearbyIcon.transform.localPosition = position;
     }
 
     private void SubscribePromptLabel()
@@ -352,7 +447,7 @@ public class ItemBoxInteractable : MonoBehaviour
                 ? fallbackOpenPromptLabel
                 : localizedText;
 
-        RefreshPrompt();
+        RefreshInteractionVisuals();
     }
 
     private void OnValidate()
@@ -363,12 +458,17 @@ public class ItemBoxInteractable : MonoBehaviour
             openSoundSpatialBlend
         );
 
+        iconFloatHeight = Mathf.Max(0f, iconFloatHeight);
+        iconFloatSpeed = Mathf.Max(0.01f, iconFloatSpeed);
+
         fallbackOpenPromptLabel =
             string.IsNullOrWhiteSpace(fallbackOpenPromptLabel)
                 ? "開ける"
                 : fallbackOpenPromptLabel;
 
         FindPromptText();
+        FindNearbyIcon();
         ApplyPromptPosition();
+        ApplyNearbyIconPosition();
     }
 }

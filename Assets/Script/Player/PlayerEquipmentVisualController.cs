@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -40,6 +41,11 @@ public class PlayerEquipmentVisualController : MonoBehaviour
     private bool isSubscribed;
     private bool weaponControlsEnabled = true;
     private bool isWeaponHiddenForConsumableUse;
+
+    // アイテムボックス・キャンプなど、複数の画面から
+    // 同時に武器操作を止められるようにするロック一覧
+    private readonly HashSet<object> weaponControlLocks =
+        new HashSet<object>();
 
     private void Awake()
     {
@@ -101,6 +107,27 @@ public class PlayerEquipmentVisualController : MonoBehaviour
         weaponControlsEnabled = enabled;
         ApplyWeaponControlState();
     }
+
+    // アイテムボックス・キャンプなど、特定の画面を開いている間だけ
+    // 銃の照準・射撃・リロードを止めるためのロックです。
+    // 同時に別のロックが残っている場合は、解除しても武器は使えません。
+    public void SetWeaponControlLock(object owner, bool locked)
+    {
+        if (owner == null)
+        {
+            return;
+        }
+
+        bool changed = locked
+            ? weaponControlLocks.Add(owner)
+            : weaponControlLocks.Remove(owner);
+
+        if (changed)
+        {
+            ApplyWeaponControlState();
+        }
+    }
+
     public void SetWeaponHiddenForConsumableUse(bool hidden)
     {
         if (isWeaponHiddenForConsumableUse == hidden)
@@ -330,6 +357,7 @@ public class PlayerEquipmentVisualController : MonoBehaviour
         bool canUseWeapon =
             currentWeaponData != null &&
             weaponControlsEnabled &&
+            weaponControlLocks.Count == 0 &&
             !isWeaponHiddenForConsumableUse;
 
         currentGunShooter?.SetGunEquipped(
