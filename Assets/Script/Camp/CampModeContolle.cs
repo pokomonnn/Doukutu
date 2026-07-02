@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using Unity.Cinemachine;
 
 /// <summary>
 /// キャンプへの入場・退出、暗転、プレイヤー移動、カメラズーム、
@@ -26,8 +27,11 @@ public class CampModeController : MonoBehaviour
     [Tooltip("未設定ならPlayerから自動取得します")]
     [SerializeField] private PlayerSurvivalController survivalController;
 
-    [Header("カメラ")]
-    [Tooltip("未設定ならMain Cameraを使います。通常の2D Camera用です")]
+    [Header("カメラ（Cinemachine 3対応）")]
+    [Tooltip("普段プレイヤーを追いかけている Cinemachine Camera を設定します。設定時はこちらを優先してズームします")]
+    [SerializeField] private CinemachineCamera cinemachineCamera;
+
+    [Tooltip("Cinemachineを使っていない時だけ使う通常の2D Cameraです。通常はMain Cameraを設定します")]
     [SerializeField] private Camera targetCamera;
 
     [Tooltip("キャンプ中のOrthographic Size。小さいほどズームします")]
@@ -97,6 +101,34 @@ public class CampModeController : MonoBehaviour
     [Tooltip("通常ポーズへ戻すTrigger名。不要なら空欄でOKです")]
     [SerializeField] private string returnTriggerName = "";
 
+    [Header("キャンプサウンド")]
+    [Tooltip("未設定なら、このCampSystemのAudioSourceを使います。無ければ自動で追加します")]
+    [SerializeField] private AudioSource soundEffectAudioSource;
+
+    [Tooltip("Eでキャンプに入った時の効果音")]
+    [SerializeField] private AudioClip campEnterSound;
+
+    [SerializeField, Range(0f, 1f)]
+    private float campEnterSoundVolume = 0.9f;
+
+    [Tooltip("睡眠時間を決定して、眠り始めた時の効果音")]
+    [SerializeField] private AudioClip sleepStartSound;
+
+    [SerializeField, Range(0f, 1f)]
+    private float sleepStartSoundVolume = 0.9f;
+
+    [Tooltip("睡眠が終わって起きた時の効果音")]
+    [SerializeField] private AudioClip wakeSound;
+
+    [SerializeField, Range(0f, 1f)]
+    private float wakeSoundVolume = 0.9f;
+
+    [Tooltip("Gでキャンプから戻る時の効果音")]
+    [SerializeField] private AudioClip campExitSound;
+
+    [SerializeField, Range(0f, 1f)]
+    private float campExitSoundVolume = 0.9f;
+
     public bool IsCamping { get; private set; }
     public bool IsBusy { get; private set; }
     public bool IsSleeping { get; private set; }
@@ -119,11 +151,16 @@ public class CampModeController : MonoBehaviour
     private Quaternion savedPlayerRotation;
     private float savedCameraOrthographicSize;
     private bool cameraSizeWasSaved;
+    private bool savedCameraSizeUsesCinemachine;
+
+    // 現在のキャンプ地で鳴らしている焚き火のAudioSource
+    private AudioSource activeCampfireAudioSource;
 
     private void Awake()
     {
         FindReferences();
         SetupFadeCanvas();
+        SetupSoundEffectAudioSource();
 
         if (campPanel != null)
         {
@@ -352,6 +389,8 @@ public class CampModeController : MonoBehaviour
 
         ApplyCampCameraZoom();
         PlayAnimatorTrigger(restTriggerName);
+        StartCampfireSound();
+        PlaySound(campEnterSound, campEnterSoundVolume);
 
         if (campPanel != null)
         {
@@ -375,6 +414,7 @@ public class CampModeController : MonoBehaviour
             campPanel.SetActive(false);
         }
 
+        PlaySound(sleepStartSound, sleepStartSoundVolume);
         PlayAnimatorTrigger(sleepTriggerName);
 
         yield return FadeTo(1f);
@@ -400,6 +440,7 @@ public class CampModeController : MonoBehaviour
 
         ApplySleepEffects(gameHours);
 
+        PlaySound(wakeSound, wakeSoundVolume);
         PlayAnimatorTrigger(wakeTriggerName);
 
         if (campPanel != null)
@@ -442,8 +483,12 @@ public class CampModeController : MonoBehaviour
             campPanel.SetActive(false);
         }
 
+        PlaySound(campExitSound, campExitSoundVolume);
+
         yield return FadeTo(1f);
         yield return WaitBlackScreenHold();
+
+        StopCampfireSound();
 
         if (playerMove != null && playerPositionWasSaved)
         {
@@ -508,6 +553,7 @@ public class CampModeController : MonoBehaviour
     private void ForceRestorePlayerState()
     {
         CloseSleepTimeSelection();
+        StopCampfireSound();
 
         if (campPanel != null)
         {
@@ -601,45 +647,152 @@ public class CampModeController : MonoBehaviour
 
     private void ApplyCampCameraZoom()
     {
-        if (!zoomCameraWhileCamping ||
-            targetCamera == null ||
-            !targetCamera.orthographic)
+        if (!zoomCameraWhileCamping)
         {
             return;
         }
 
-        targetCamera.orthographicSize = campOrthographicSize;
+        // Cinemachine 3では、Main Cameraではなく
+        // Cinemachine CameraのLensを変更します。
+        if (cinemachineCamera != null)
+        {
+            LensSettings lens = cinemachineCamera.Lens;
+            lens.OrthographicSize = campOrthographicSize;
+            cinemachineCamera.Lens = lens;
+            return;
+        }
+
+        // Cinemachineを使わない通常Camera用の予備処理
+        if (targetCamera != null && targetCamera.orthographic)
+        {
+            targetCamera.orthographicSize = campOrthographicSize;
+        }
     }
 
     private void SaveCameraSize()
     {
-        if (!zoomCameraWhileCamping ||
-            targetCamera == null ||
-            !targetCamera.orthographic)
+        cameraSizeWasSaved = false;
+        savedCameraSizeUsesCinemachine = false;
+
+        if (!zoomCameraWhileCamping)
         {
-            cameraSizeWasSaved = false;
             return;
         }
 
-        savedCameraOrthographicSize =
-            targetCamera.orthographicSize;
+        if (cinemachineCamera != null)
+        {
+            savedCameraOrthographicSize =
+                cinemachineCamera.Lens.OrthographicSize;
 
-        cameraSizeWasSaved = true;
+            cameraSizeWasSaved = true;
+            savedCameraSizeUsesCinemachine = true;
+            return;
+        }
+
+        if (targetCamera != null && targetCamera.orthographic)
+        {
+            savedCameraOrthographicSize =
+                targetCamera.orthographicSize;
+
+            cameraSizeWasSaved = true;
+        }
     }
 
     private void RestoreCameraZoom()
     {
-        if (!cameraSizeWasSaved ||
-            targetCamera == null ||
-            !targetCamera.orthographic)
+        if (!cameraSizeWasSaved)
         {
             return;
         }
 
-        targetCamera.orthographicSize =
-            savedCameraOrthographicSize;
+        if (savedCameraSizeUsesCinemachine &&
+            cinemachineCamera != null)
+        {
+            LensSettings lens = cinemachineCamera.Lens;
+            lens.OrthographicSize = savedCameraOrthographicSize;
+            cinemachineCamera.Lens = lens;
+        }
+        else if (targetCamera != null && targetCamera.orthographic)
+        {
+            targetCamera.orthographicSize =
+                savedCameraOrthographicSize;
+        }
 
         cameraSizeWasSaved = false;
+        savedCameraSizeUsesCinemachine = false;
+    }
+
+    private void SetupSoundEffectAudioSource()
+    {
+        if (soundEffectAudioSource == null)
+        {
+            soundEffectAudioSource = GetComponent<AudioSource>();
+        }
+
+        if (soundEffectAudioSource == null)
+        {
+            soundEffectAudioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        soundEffectAudioSource.playOnAwake = false;
+        soundEffectAudioSource.loop = false;
+        soundEffectAudioSource.spatialBlend = 0f;
+    }
+
+    private void PlaySound(AudioClip clip, float volume)
+    {
+        if (clip == null)
+        {
+            return;
+        }
+
+        SetupSoundEffectAudioSource();
+
+        if (soundEffectAudioSource == null)
+        {
+            return;
+        }
+
+        soundEffectAudioSource.PlayOneShot(
+            clip,
+            Mathf.Clamp01(volume)
+        );
+    }
+
+    private void StartCampfireSound()
+    {
+        StopCampfireSound();
+
+        AudioSource campfireSource =
+            CurrentCampSite != null
+                ? CurrentCampSite.CampfireAudioSource
+                : null;
+
+        if (campfireSource == null || campfireSource.clip == null)
+        {
+            return;
+        }
+
+        campfireSource.playOnAwake = false;
+        campfireSource.loop = true;
+
+        if (!campfireSource.isPlaying)
+        {
+            campfireSource.Play();
+        }
+
+        activeCampfireAudioSource = campfireSource;
+    }
+
+    private void StopCampfireSound()
+    {
+        if (activeCampfireAudioSource != null &&
+            activeCampfireAudioSource.isPlaying)
+        {
+            activeCampfireAudioSource.Stop();
+        }
+
+        activeCampfireAudioSource = null;
     }
 
     private void PlayAnimatorTrigger(string triggerName)
@@ -715,6 +868,12 @@ public class CampModeController : MonoBehaviour
                 );
         }
 
+        if (cinemachineCamera == null)
+        {
+            cinemachineCamera =
+                FindAnyObjectByType<CinemachineCamera>();
+        }
+
         if (targetCamera == null)
         {
             targetCamera = Camera.main;
@@ -742,5 +901,10 @@ public class CampModeController : MonoBehaviour
         foodDecreasePerGameHour = Mathf.Max(0f, foodDecreasePerGameHour);
         waterDecreasePerGameHour = Mathf.Max(0f, waterDecreasePerGameHour);
         sleepSecondsPerGameHour = Mathf.Max(0f, sleepSecondsPerGameHour);
+
+        campEnterSoundVolume = Mathf.Clamp01(campEnterSoundVolume);
+        sleepStartSoundVolume = Mathf.Clamp01(sleepStartSoundVolume);
+        wakeSoundVolume = Mathf.Clamp01(wakeSoundVolume);
+        campExitSoundVolume = Mathf.Clamp01(campExitSoundVolume);
     }
 }

@@ -43,18 +43,24 @@ public class CampSiteInteractable : MonoBehaviour
     [Tooltip("プレイヤーから見たテキストの位置")]
     [SerializeField] private Vector3 promptWorldOffset = new Vector3(0f, 1.85f, 0f);
 
+    [Header("焚き火サウンド")]
+    [Tooltip("Campfireに付けたAudioSourceを設定します。キャンプ中だけループ再生します")]
+    [SerializeField] private AudioSource campfireAudioSource;
+
     private readonly HashSet<Collider2D> playerColliders =
         new HashSet<Collider2D>();
 
     private Transform currentPlayerTransform;
 
     public Transform CampRestPoint => campRestPoint;
+    public AudioSource CampfireAudioSource => campfireAudioSource;
     public bool IsPlayerInRange => playerColliders.Count > 0;
 
     private void Awake()
     {
         FindCampModeController();
         FindCampRestPoint();
+        FindCampfireAudioSource();
 
         SetInteractionVisualsVisible(false);
     }
@@ -178,6 +184,22 @@ public class CampSiteInteractable : MonoBehaviour
         if (child != null)
         {
             campRestPoint = child;
+        }
+    }
+
+    private void FindCampfireAudioSource()
+    {
+        if (campfireAudioSource != null)
+        {
+            return;
+        }
+
+        Transform campfireTransform = transform.Find("Campfire");
+
+        if (campfireTransform != null)
+        {
+            campfireAudioSource =
+                campfireTransform.GetComponentInChildren<AudioSource>(true);
         }
     }
 

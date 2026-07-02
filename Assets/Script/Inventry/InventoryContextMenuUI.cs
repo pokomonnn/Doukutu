@@ -49,6 +49,15 @@ public class InventoryContextMenuUI : MonoBehaviour
     [Header("通知UI")]
     [SerializeField] private InventoryToastUI healthFullToastUI;
 
+    [Header("回復アイテム使用中の制限")]
+    [Tooltip("未設定なら、PlayerにあるPlayerWeightControllerを自動取得します")]
+    [SerializeField] private PlayerWeightController playerWeightController;
+
+    [Tooltip("別の回復アイテムを使おうとした時に表示するメッセージ")]
+    [SerializeField]
+    private string usingConsumableMessage =
+        "回復アイテムを使用中です";
+
     [Header("通知UIの翻訳")]
     [Tooltip("GameText の toast.health_full を設定")]
     [SerializeField]
@@ -311,6 +320,16 @@ public class InventoryContextMenuUI : MonoBehaviour
             selectedItem == null ||
             inventoryController == null)
         {
+            Hide();
+            return;
+        }
+
+        // 回復アイテムの使用演出中は、効果・消費・SEが
+        // 二重に発生しないよう、次の回復アイテムを使わせない
+        if (IsUsingConsumable())
+        {
+            soundPlayer?.PlayFailed();
+            healthFullToastUI?.Show(usingConsumableMessage);
             Hide();
             return;
         }
@@ -824,6 +843,49 @@ public class InventoryContextMenuUI : MonoBehaviour
         }
 
         return equipmentController != null;
+    }
+
+    private bool IsUsingConsumable()
+    {
+        return FindPlayerWeightController() &&
+               playerWeightController.IsUsingConsumable;
+    }
+
+    private bool FindPlayerWeightController()
+    {
+        if (playerWeightController != null)
+        {
+            return true;
+        }
+
+        // InventoryControllerと同じPlayerに付いている場合
+        if (inventoryController != null)
+        {
+            playerWeightController =
+                inventoryController.GetComponent<
+                    PlayerWeightController
+                >();
+        }
+
+        if (playerWeightController == null)
+        {
+            GameObject player =
+                GameObject.FindGameObjectWithTag("Player");
+
+            if (player != null)
+            {
+                playerWeightController =
+                    player.GetComponent<PlayerWeightController>();
+            }
+        }
+
+        if (playerWeightController == null)
+        {
+            playerWeightController =
+                FindAnyObjectByType<PlayerWeightController>();
+        }
+
+        return playerWeightController != null;
     }
 
     private bool FindPlayerItemDropper()
