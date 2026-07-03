@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 1699773000674312363}
   - component: {fileID: 1194673743966556348}
   - component: {fileID: -6098901855265792692}
+  - component: {fileID: 4727902328635156361}
   m_Layer: 0
   m_Name: Ballet
   m_TagString: Untagged
@@ -183,3 +184,21 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   hitEffectPrefab: {fileID: 1410812373965111304, guid: 4749406402d9b35499debe1aad133720, type: 3}
+--- !u!114 &4727902328635156361
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 508504824892919759}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42a5798685ab6824cbe05c8b16e61ecf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DamageDealer
+  damage: 10
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 2048
+  hitOnlyOncePerTarget: 1
+  destroyOnHit: 1

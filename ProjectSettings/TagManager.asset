@@ -18,7 +18,7 @@ TagManager:
   - Helmet
   - DroppedItem
   - Enemy
-  - 
+  - Top
   - 
   - 
   - 
@@ -50,6 +50,9 @@ TagManager:
     locked: 0
   - name: Gun
     uniqueID: 939989353
+    locked: 0
+  - name: Compass
+    uniqueID: 3686457869
     locked: 0
   m_RenderingLayers:
   - Default

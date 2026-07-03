@@ -4,6 +4,7 @@ using UnityEngine;
 /// <summary>
 /// Playerに付けて使うロープ上り下り操作です。
 /// ロープのTrigger内でW/Sを押すとつかまり、W/Sで上下します。
+/// ロープ中にジャンプキーを押すと、途中から横へ飛び離れられます。
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(PlayerMove))]
@@ -46,12 +47,31 @@ public class RopeClimbController : MonoBehaviour
     [Tooltip("ロープへつかまる時、X座標をロープ中心へ寄せる速さ。0ならすぐ中心へ寄せます")]
     [SerializeField, Min(0f)] private float horizontalSnapSpeed = 18f;
 
+    [Header("ロープ途中からのジャンプ")]
+    [Tooltip("ロープ中にこのキーを押すと、途中から横へ飛び離れます")]
+    [SerializeField] private KeyCode jumpOffKey = KeyCode.Space;
+
+    [Tooltip("オンならA/Dキー入力の方向へ飛びます。入力がない場合は現在向いている方向へ飛びます")]
+    [SerializeField] private bool useHorizontalInputForJumpOff = true;
+
+    [Tooltip("ロープから飛び離れる横方向の速さ")]
+    [SerializeField, Min(0f)] private float jumpOffHorizontalPower = 6f;
+
+    [Tooltip("ロープから飛び離れる上方向の速さ")]
+    [SerializeField, Min(0f)] private float jumpOffVerticalPower = 9f;
+
+    [Tooltip("飛ぶ直前にロープ中心から横へずらす距離。壁やロープの判定へ重なる場合だけ少し上げます")]
+    [SerializeField, Min(0f)] private float jumpOffHorizontalOffset = 0.12f;
+
+    [Tooltip("飛び離れた直後、この秒数だけ横方向の勢いを維持します")]
+    [SerializeField, Min(0f)] private float jumpOffControlLockDuration = 0.12f;
+
     [Header("角で止まらないための設定")]
     [Tooltip("オンなら、ロープ中だけPlayer本体の物理Colliderを無効にします。崖の角・天井に引っかからず、ロープを上下できます")]
     [SerializeField] private bool disablePlayerBodyColliderWhileClimbing = true;
 
     [Header("ロープから離れた直後の再つかまり防止")]
-    [Tooltip("上端・下端から降りた直後、同じロープを再びつかめるまでの最短秒数です")]
+    [Tooltip("上端・下端・ジャンプで離れた直後、同じロープを再びつかめるまでの最短秒数です")]
     [SerializeField, Min(0f)] private float regrabDelayAfterExit = 0.35f;
 
     [Header("制限")]
@@ -120,6 +140,12 @@ public class RopeClimbController : MonoBehaviour
             !currentRopeZone.IsClimbAvailable)
         {
             StopClimbing(true);
+            return;
+        }
+
+        if (Input.GetKeyDown(jumpOffKey))
+        {
+            TryJumpOffRope();
         }
     }
 
@@ -176,6 +202,63 @@ public class RopeClimbController : MonoBehaviour
     public void StopClimbingNow()
     {
         StopClimbing(true);
+    }
+
+    /// <summary>
+    /// ロープの途中からジャンプして離れます。
+    /// A/Dを押している時はその方向、押していない時は現在の向きへ飛びます。
+    /// </summary>
+    public bool TryJumpOffRope()
+    {
+        if (!isClimbing ||
+            currentRopeZone == null ||
+            playerRigidbody == null)
+        {
+            return false;
+        }
+
+        RopeClimbZone exitingRopeZone = currentRopeZone;
+        float direction = GetJumpOffDirection();
+
+        // 同じロープTrigger内へ残っていても、すぐつかみ直さないようにする。
+        MarkRopeAsJustExited(exitingRopeZone);
+
+        // 物理Colliderを無効のまま少し横へ移動してから戻すため、
+        // ロープや壁の境目に引っかかりにくくなります。
+        StopClimbing(false);
+
+        Vector2 launchPosition = playerRigidbody.position;
+        launchPosition.x += direction * jumpOffHorizontalOffset;
+        playerRigidbody.position = launchPosition;
+        playerRigidbody.angularVelocity = 0f;
+
+        RestorePlayerBodyCollider();
+
+        Vector2 launchVelocity = new Vector2(
+            direction * jumpOffHorizontalPower,
+            jumpOffVerticalPower
+        );
+
+        if (playerMove != null && playerMove.enabled)
+        {
+            playerMove.LaunchFromRope(
+                launchVelocity,
+                jumpOffControlLockDuration
+            );
+        }
+        else
+        {
+            // 死亡・イベント中などでPlayerMoveが元から無効だった場合でも、
+            // 余計に有効化せずRigidbodyだけへ速度を渡します。
+            playerRigidbody.linearVelocity = launchVelocity;
+        }
+
+        Log(
+            $"ロープ途中からジャンプで離れました。方向=" +
+            (direction > 0f ? "右" : "左")
+        );
+
+        return true;
     }
 
     private void TryStartClimbing()
@@ -311,6 +394,23 @@ public class RopeClimbController : MonoBehaviour
             ? "ロープ上端から離れました。"
             : "ロープ下端から離れました。"
         );
+    }
+
+    private float GetJumpOffDirection()
+    {
+        if (useHorizontalInputForJumpOff)
+        {
+            float horizontalInput = Input.GetAxisRaw("Horizontal");
+
+            if (Mathf.Abs(horizontalInput) > 0.01f)
+            {
+                return Mathf.Sign(horizontalInput);
+            }
+        }
+
+        return playerMove != null && playerMove.IsFacingRight
+            ? 1f
+            : -1f;
     }
 
     private void MarkRopeAsJustExited(RopeClimbZone ropeZone)
@@ -599,6 +699,15 @@ public class RopeClimbController : MonoBehaviour
         climbSpeed = Mathf.Max(0.01f, climbSpeed);
         exitThreshold = Mathf.Max(0f, exitThreshold);
         horizontalSnapSpeed = Mathf.Max(0f, horizontalSnapSpeed);
+
+        jumpOffHorizontalPower = Mathf.Max(0f, jumpOffHorizontalPower);
+        jumpOffVerticalPower = Mathf.Max(0f, jumpOffVerticalPower);
+        jumpOffHorizontalOffset = Mathf.Max(0f, jumpOffHorizontalOffset);
+        jumpOffControlLockDuration = Mathf.Max(
+            0f,
+            jumpOffControlLockDuration
+        );
+
         regrabDelayAfterExit = Mathf.Max(0f, regrabDelayAfterExit);
     }
 }

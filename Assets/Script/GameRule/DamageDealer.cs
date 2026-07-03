@@ -63,6 +63,18 @@ public class DamageDealer : MonoBehaviour
             return;
         }
 
+        // EnemyHitReaction2Dが付いている敵だけ、弾の命中位置を渡します。
+        // Playerなど、付いていない対象の既存ダメージ処理には影響しません。
+        EnemyHitReaction2D hitReaction =
+            targetHealth.GetComponent<EnemyHitReaction2D>();
+
+        // CharacterHealthの無敵中は実際にHPが減らないため、
+        // 被弾方向だけが次のダメージへ残らないようにしない。
+        if (!targetHealth.IsInvincible)
+        {
+            hitReaction?.NotifyHitSource(transform.position);
+        }
+
         targetHealth.TakeDamage(damage);
         damagedTargets.Add(targetHealth);
 
