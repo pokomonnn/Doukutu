@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 364e17b6664ff524e91d46e23804e4ef, type: 3}
+  m_Name: PawnShopDialogue
+  m_EditorClassIdentifier: Assembly-CSharp::TownResidentDialogueData
+  residentId: Town_001
+  residentName: "\u8CEA\u5C4B"
+  defaultPortrait: {fileID: 6218016037910126416, guid: f86b2b107c634e04eae8068f18432ad3, type: 3}
+  nodes:
+  - speakerNameOverride: 
+    portraitOverride: {fileID: 0}
+    message: irashai nanika youkai?
+    nextNodeIndex: -1
+    choices:
+    - choiceText: uru
+      action: 1
+      nextNodeIndex: 0
+      missionToStart: {fileID: 0}
+      trackMissionAfterStarting: 0
+    - choiceText: hanashi wo kiku
+      action: 0
+      nextNodeIndex: 1
+      missionToStart: {fileID: 0}
+      trackMissionAfterStarting: 0
+    - choiceText: yameru
+      action: 3
+      nextNodeIndex: 0
+      missionToStart: {fileID: 0}
+      trackMissionAfterStarting: 0
+  - speakerNameOverride: 
+    portraitOverride: {fileID: 0}
+    message: katiaru mono nara chant neo tukeru yo
+    nextNodeIndex: -1
+    choices:
+    - choiceText: modoru
+      action: 0
+      nextNodeIndex: 0
+      missionToStart: {fileID: 0}
+      trackMissionAfterStarting: 0

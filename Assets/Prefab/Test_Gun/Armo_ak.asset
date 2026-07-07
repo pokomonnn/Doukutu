@@ -16,13 +16,34 @@ MonoBehaviour:
   displayName: AK AMMO
   description: this isAK AMMO
   icon: {fileID: 533058970198856314, guid: cc3089ea71a608c4bb4d285cacf67b92, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   width: 1
   height: 1
   canRotate: 1
   maxStack: 60
-  purchasePrice: 0
-  sellPrice: 0
+  purchasePrice: 20
+  sellPrice: 5
   canSellToShop: 1
   weight: 0.012
   canDiscard: 1
   ammoTypeName: 7.62mm
+  references:
+    version: 2
+    RefIds: []

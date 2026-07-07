@@ -38,8 +38,8 @@ MonoBehaviour:
   height: 2
   canRotate: 1
   maxStack: 1
-  purchasePrice: 0
-  sellPrice: 0
+  purchasePrice: 1000
+  sellPrice: 500
   canSellToShop: 1
   weight: 1.2
   canDiscard: 1

@@ -16,13 +16,34 @@ MonoBehaviour:
   displayName: "\u65B0\u3057\u3044\u30A2\u30A4\u30C6\u30E0"
   description: 
   icon: {fileID: -4875340869984468519, guid: f8e3f4c63e7aba5448a7fdef856c4140, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   width: 1
   height: 1
   canRotate: 1
   maxStack: 60
-  purchasePrice: 0
-  sellPrice: 0
+  purchasePrice: 10
+  sellPrice: 3
   canSellToShop: 1
   weight: 0.012
   canDiscard: 1
   ammoTypeName: 9mm
+  references:
+    version: 2
+    RefIds: []

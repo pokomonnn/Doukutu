@@ -209,7 +209,6 @@ public class EquipmentController : MonoBehaviour
         return true;
     }
 
-
     // 装備中のアイテムを、指定したインベントリ座標へ戻す
     public bool TryUnequipToPosition(
         EquipmentSlotType slotType,
@@ -324,6 +323,75 @@ public class EquipmentController : MonoBehaviour
         return true;
     }
 
+    // ---------------------------------------------------------------------
+    // シーン間引き継ぎ用API
+    // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// インベントリを経由せず、保存済みの装備アイテムを指定枠へ復元します。
+    /// PlayerInventorySessionBridge専用の復元処理です。
+    /// </summary>
+    public bool RestoreEquippedItem(
+        EquipmentSlotType slotType,
+        InventoryItem item,
+        out EquipmentResult result)
+    {
+        result = EquipmentResult.InvalidItem;
+
+        if (slotType == EquipmentSlotType.None ||
+            item == null ||
+            item.ItemData == null)
+        {
+            return false;
+        }
+
+        if (item.Amount != 1)
+        {
+            result = EquipmentResult.InvalidStackAmount;
+            return false;
+        }
+
+        if (!TryGetEquipmentSlot(
+                item.ItemData,
+                out EquipmentSlotType expectedSlot) ||
+            expectedSlot != slotType)
+        {
+            result = EquipmentResult.UnsupportedItem;
+            return false;
+        }
+
+        if (HasEquippedItem(slotType))
+        {
+            result = EquipmentResult.SlotOccupied;
+            return false;
+        }
+
+        SetEquippedItem(slotType, item);
+
+        result = EquipmentResult.Success;
+        OnEquipmentChanged?.Invoke();
+        return true;
+    }
+
+    /// <summary>
+    /// すべての装備枠を空にします。通常インベントリへは戻しません。
+    /// シーン間復元の直前に、古いシーン側の装備参照を消すために使います。
+    /// </summary>
+    public void ClearAllEquippedItems()
+    {
+        bool hadAnyItem =
+            primaryWeaponItem != null ||
+            helmetItem != null;
+
+        primaryWeaponItem = null;
+        helmetItem = null;
+
+        if (hadAnyItem)
+        {
+            OnEquipmentChanged?.Invoke();
+        }
+    }
+
     private bool HasEquippedItem(EquipmentSlotType slotType)
     {
         InventoryItem equippedItem = GetEquippedItem(slotType);
@@ -333,7 +401,7 @@ public class EquipmentController : MonoBehaviour
     }
 
     public bool IsSlotOccupied(
-    EquipmentSlotType slotType)
+        EquipmentSlotType slotType)
     {
         return HasEquippedItem(slotType);
     }
