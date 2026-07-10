@@ -42,6 +42,15 @@ public class GameSessionManager : MonoBehaviour
     /// <summary>インベントリ・装備の引き継ぎデータを保存または復元した時に通知します。</summary>
     public event Action InventorySessionChanged;
 
+    /// <summary>ミッション受注・進行データが変化した時に通知します。</summary>
+    public event Action MissionSessionChanged;
+
+    /// <summary>シーン間で保持しているミッション数です。</summary>
+    public int MissionSessionCount => missionSessionData.Count;
+
+    /// <summary>追跡中にしたいミッションIDです。空なら追跡なしです。</summary>
+    public string TrackedMissionId => trackedMissionId;
+
     private int currentMoney;
     private bool hasInitializedMoney;
 
@@ -49,6 +58,11 @@ public class GameSessionManager : MonoBehaviour
         new PlayerInventorySessionData();
 
     private bool hasInventorySessionData;
+
+    private readonly List<MissionSessionData> missionSessionData =
+        new List<MissionSessionData>();
+
+    private string trackedMissionId = string.Empty;
 
     private void Awake()
     {
@@ -422,6 +436,562 @@ public class GameSessionManager : MonoBehaviour
         InventorySessionChanged?.Invoke();
 
         Log("インベントリ引き継ぎデータを消去しました。");
+    }
+
+    // ---------------------------------------------------------------------
+    // ミッションのシーン間引き継ぎ
+    // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// 町の会話などからミッションを受注状態にします。
+    /// 探索シーンへ戻った時、MissionSessionBridgeがMissionManager2Dへ反映します。
+    /// </summary>
+    public bool AcceptMission(
+        MissionDefinition2D mission,
+        bool trackAfterAccepting,
+        out string resultMessage)
+    {
+        resultMessage = string.Empty;
+
+        if (mission == null)
+        {
+            resultMessage = "受注するミッションが設定されていません。";
+            LogMissionWarning(resultMessage);
+            return false;
+        }
+
+        string missionId = GetMissionId(mission);
+
+        if (string.IsNullOrWhiteSpace(missionId))
+        {
+            resultMessage =
+                $"{mission.DisplayName} の Mission Id が空です。MissionDefinition2DでMission Idを設定してください。";
+            LogMissionWarning(resultMessage);
+            return false;
+        }
+
+        MissionSessionData data = GetOrCreateMissionSessionData(mission);
+
+        if (data.State == MissionSessionState.Completed)
+        {
+            resultMessage = $"{mission.DisplayName} はすでに達成済みです。";
+            LogMissionWarning(resultMessage);
+            return false;
+        }
+
+        bool wasAlreadyInProgress =
+            data.State == MissionSessionState.InProgress;
+
+        data.Mission = mission;
+        data.MissionId = missionId;
+        data.DisplayName = mission.DisplayName;
+        data.State = MissionSessionState.InProgress;
+        data.RequiredAmount = Mathf.Max(1, mission.RequiredAmount);
+        data.Progress = Mathf.Clamp(
+            data.Progress,
+            0,
+            data.RequiredAmount
+        );
+
+        if (trackAfterAccepting)
+        {
+            trackedMissionId = missionId;
+        }
+
+        MissionSessionChanged?.Invoke();
+
+        resultMessage = wasAlreadyInProgress
+            ? $"{mission.DisplayName} はすでに受注済みです。"
+            : $"{mission.DisplayName} を受注しました。";
+
+        LogMission(resultMessage);
+        return true;
+    }
+
+    /// <summary>
+    /// 探索シーンのMissionManager2Dから現在の進行状態を保存します。
+    /// シーン移動直前、またはMissionSessionBridgeのOnDisableから呼びます。
+    /// 
+    /// 重要：MissionManager2DのMissionsには「受注候補」も登録されているため、
+    /// Inactive（未受注）のミッションは保存しません。
+    /// 未受注まで保存すると、町で受注したデータをInactiveで上書きしてしまうためです。
+    /// </summary>
+    public bool CaptureMissionsFromManager(MissionManager2D missionManager)
+    {
+        if (missionManager == null)
+        {
+            LogMissionWarning(
+                "ミッション保存失敗: MissionManager2Dが見つかりません。"
+            );
+            return false;
+        }
+
+        int capturedCount = 0;
+        int skippedInactiveCount = 0;
+        int skippedInvalidCount = 0;
+
+        for (int i = 0; i < missionManager.MissionCount; i++)
+        {
+            MissionDefinition2D mission =
+                missionManager.GetMissionDefinition(i);
+
+            if (mission == null)
+            {
+                skippedInvalidCount++;
+                continue;
+            }
+
+            string missionId = GetMissionId(mission);
+
+            if (string.IsNullOrWhiteSpace(missionId))
+            {
+                skippedInvalidCount++;
+                LogMissionWarning(
+                    $"ミッション保存スキップ: {mission.name} のMission Idが空です。"
+                );
+                continue;
+            }
+
+            MissionProgressState2D managerState =
+                missionManager.GetMissionState(i);
+
+            // MissionManager2Dに登録されているだけの未受注ミッションは保存しない。
+            // ここで保存すると、町で受注したInProgress情報をInactiveで上書きする原因になる。
+            if (managerState == MissionProgressState2D.Inactive)
+            {
+                skippedInactiveCount++;
+                LogMission(
+                    $"未受注のため保存スキップ: {mission.DisplayName} / MissionId={missionId}"
+                );
+                continue;
+            }
+
+            MissionSessionData data = GetOrCreateMissionSessionData(mission);
+            data.Mission = mission;
+            data.MissionId = missionId;
+            data.DisplayName = mission.DisplayName;
+            data.Progress = Mathf.Max(0, missionManager.GetMissionProgress(i));
+            data.RequiredAmount = Mathf.Max(
+                1,
+                missionManager.GetMissionRequiredAmount(i)
+            );
+            data.State = ConvertMissionState(managerState);
+
+            if (missionManager.IsTrackedMission(i))
+            {
+                trackedMissionId = missionId;
+            }
+
+            capturedCount++;
+
+            LogMission(
+                $"保存: {data.DisplayName} / 状態={data.State} / " +
+                $"進捗={data.Progress}/{data.RequiredAmount} / " +
+                $"追跡={missionManager.IsTrackedMission(i)}"
+            );
+        }
+
+        MissionSessionChanged?.Invoke();
+        LogMission(
+            $"ミッション保存完了: 受注済み={capturedCount}件 / " +
+            $"未受注スキップ={skippedInactiveCount}件 / 無効スキップ={skippedInvalidCount}件"
+        );
+        return true;
+    }
+
+    /// <summary>
+    /// 保存済みの受注ミッションを、現在シーンのMissionManager2Dへ反映します。
+    /// </summary>
+    public bool RestoreMissionsToManager(MissionManager2D missionManager)
+    {
+        if (missionManager == null)
+        {
+            LogMissionWarning(
+                "ミッション復元失敗: MissionManager2Dが見つかりません。"
+            );
+            return false;
+        }
+
+        int restoredCount = 0;
+        int missingCount = 0;
+
+        foreach (MissionSessionData data in missionSessionData)
+        {
+            if (data == null ||
+                string.IsNullOrWhiteSpace(data.MissionId) ||
+                data.State != MissionSessionState.InProgress)
+            {
+                continue;
+            }
+
+            int missionIndex = FindMissionIndexById(
+                missionManager,
+                data.MissionId
+            );
+
+            if (missionIndex < 0)
+            {
+                missingCount++;
+                LogMissionWarning(
+                    $"ミッション復元スキップ: MissionId={data.MissionId} が、" +
+                    "このシーンのMissionManager2Dに登録されていません。"
+                );
+                continue;
+            }
+
+            MissionDefinition2D mission =
+                missionManager.GetMissionDefinition(missionIndex);
+
+            bool started = missionManager.StartMission(missionIndex);
+
+            if (!started &&
+                !missionManager.IsMissionInProgress(missionIndex))
+            {
+                LogMissionWarning(
+                    $"ミッション復元失敗: {data.DisplayName}"
+                );
+                continue;
+            }
+
+            if (string.Equals(
+                    trackedMissionId,
+                    data.MissionId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                missionManager.SetTrackedMission(missionIndex);
+            }
+
+            restoredCount++;
+            LogMission(
+                $"復元: {(mission != null ? mission.DisplayName : data.DisplayName)} / " +
+                $"MissionId={data.MissionId}"
+            );
+        }
+
+        missionManager.RefreshAllMissionProgress();
+
+        LogMission(
+            $"ミッション復元完了: 反映={restoredCount}件 / 未登録={missingCount}件"
+        );
+
+        return restoredCount > 0 || missingCount == 0;
+    }
+
+
+    /// <summary>
+    /// 町の報告処理などから、ミッション報酬を受け取れる状態か確認します。
+    /// requireObjectiveCompletedがtrueの場合、進捗が必要数未満のミッションは報酬を受け取れません。
+    /// </summary>
+    public bool CanClaimMissionReward(
+        MissionDefinition2D mission,
+        bool requireObjectiveCompleted,
+        out string resultMessage)
+    {
+        resultMessage = string.Empty;
+
+        if (mission == null)
+        {
+            resultMessage = "報酬確認用のミッションが設定されていません。";
+            LogMissionWarning(resultMessage);
+            return false;
+        }
+
+        string missionId = GetMissionId(mission);
+
+        if (string.IsNullOrWhiteSpace(missionId))
+        {
+            resultMessage =
+                $"{mission.DisplayName} の Mission Id が空です。MissionDefinition2DでMission Idを設定してください。";
+            LogMissionWarning(resultMessage);
+            return false;
+        }
+
+        MissionSessionData data = FindMissionSessionData(missionId);
+
+        if (data == null || data.State == MissionSessionState.Inactive)
+        {
+            resultMessage = $"{mission.DisplayName} はまだ受注していません。";
+            LogMissionWarning(resultMessage);
+            return false;
+        }
+
+        if (data.RewardClaimed)
+        {
+            resultMessage = $"{mission.DisplayName} の報酬はすでに受け取り済みです。";
+            LogMissionWarning(resultMessage);
+            return false;
+        }
+
+        if (requireObjectiveCompleted && !IsMissionObjectiveComplete(data))
+        {
+            resultMessage =
+                $"{mission.DisplayName} はまだ達成していません。進捗 {Mathf.Max(0, data.Progress)} / {Mathf.Max(1, data.RequiredAmount)}";
+            LogMissionWarning(resultMessage);
+            return false;
+        }
+
+        resultMessage = $"{mission.DisplayName} の報酬を受け取れます。";
+        return true;
+    }
+
+    /// <summary>
+    /// ミッション報酬を受け取った状態として保存します。
+    /// 報酬の実際の付与はTownMissionRewardController側で行います。
+    /// </summary>
+    public bool MarkMissionRewardClaimed(
+        MissionDefinition2D mission,
+        out string resultMessage)
+    {
+        resultMessage = string.Empty;
+
+        if (mission == null)
+        {
+            resultMessage = "報酬受け取り済みにするミッションが設定されていません。";
+            LogMissionWarning(resultMessage);
+            return false;
+        }
+
+        string missionId = GetMissionId(mission);
+
+        if (string.IsNullOrWhiteSpace(missionId))
+        {
+            resultMessage =
+                $"{mission.DisplayName} の Mission Id が空です。MissionDefinition2DでMission Idを設定してください。";
+            LogMissionWarning(resultMessage);
+            return false;
+        }
+
+        MissionSessionData data = FindMissionSessionData(missionId);
+
+        if (data == null)
+        {
+            resultMessage = $"{mission.DisplayName} はまだ受注していません。";
+            LogMissionWarning(resultMessage);
+            return false;
+        }
+
+        if (data.RewardClaimed)
+        {
+            resultMessage = $"{mission.DisplayName} の報酬はすでに受け取り済みです。";
+            LogMissionWarning(resultMessage);
+            return false;
+        }
+
+        data.Mission = mission;
+        data.MissionId = missionId;
+        data.DisplayName = mission.DisplayName;
+        data.RequiredAmount = Mathf.Max(1, data.RequiredAmount);
+        data.Progress = Mathf.Max(data.Progress, data.RequiredAmount);
+        data.State = MissionSessionState.Completed;
+        data.RewardClaimed = true;
+
+        if (string.Equals(
+                trackedMissionId,
+                missionId,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            trackedMissionId = string.Empty;
+        }
+
+        MissionSessionChanged?.Invoke();
+
+        resultMessage = $"{mission.DisplayName} を報告済み・報酬受け取り済みにしました。";
+        LogMission(resultMessage);
+        return true;
+    }
+
+    public bool IsMissionRewardClaimed(string missionId)
+    {
+        MissionSessionData data = FindMissionSessionData(missionId);
+        return data != null && data.RewardClaimed;
+    }
+
+    private static bool IsMissionObjectiveComplete(MissionSessionData data)
+    {
+        if (data == null)
+        {
+            return false;
+        }
+
+        if (data.State == MissionSessionState.Completed)
+        {
+            return true;
+        }
+
+        return data.Progress >= Mathf.Max(1, data.RequiredAmount);
+    }
+
+    public bool HasMissionSession(string missionId)
+    {
+        return FindMissionSessionData(missionId) != null;
+    }
+
+    public bool TryGetMissionSession(
+        string missionId,
+        out MissionSessionData missionData)
+    {
+        missionData = FindMissionSessionData(missionId);
+        return missionData != null;
+    }
+
+    public void ClearMissionSessionData()
+    {
+        missionSessionData.Clear();
+        trackedMissionId = string.Empty;
+        MissionSessionChanged?.Invoke();
+        LogMission("ミッション引き継ぎデータを消去しました。");
+    }
+
+    public string GetMissionSessionSummary()
+    {
+        if (missionSessionData.Count == 0)
+        {
+            return "[MissionSession] 保存データなし";
+        }
+
+        List<string> lines = new List<string>();
+
+        foreach (MissionSessionData data in missionSessionData)
+        {
+            if (data == null)
+            {
+                continue;
+            }
+
+            lines.Add(
+                $"{data.DisplayName}(ID={data.MissionId}, 状態={data.State}, " +
+                $"進捗={data.Progress}/{data.RequiredAmount}, 報酬={(data.RewardClaimed ? "受取済み" : "未受取")})"
+            );
+        }
+
+        return "[MissionSession] 保存データあり / 追跡=" +
+               (string.IsNullOrWhiteSpace(trackedMissionId)
+                   ? "なし"
+                   : trackedMissionId) +
+               " / " +
+               string.Join(" / ", lines);
+    }
+
+    private MissionSessionData GetOrCreateMissionSessionData(
+        MissionDefinition2D mission)
+    {
+        string missionId = GetMissionId(mission);
+        MissionSessionData existing = FindMissionSessionData(missionId);
+
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        MissionSessionData created = new MissionSessionData
+        {
+            Mission = mission,
+            MissionId = missionId,
+            DisplayName = mission != null ? mission.DisplayName : missionId,
+            RequiredAmount = mission != null ? mission.RequiredAmount : 1,
+            Progress = 0,
+            State = MissionSessionState.Inactive
+        };
+
+        missionSessionData.Add(created);
+        return created;
+    }
+
+    private MissionSessionData FindMissionSessionData(string missionId)
+    {
+        if (string.IsNullOrWhiteSpace(missionId))
+        {
+            return null;
+        }
+
+        foreach (MissionSessionData data in missionSessionData)
+        {
+            if (data != null &&
+                string.Equals(
+                    data.MissionId,
+                    missionId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return data;
+            }
+        }
+
+        return null;
+    }
+
+    private static int FindMissionIndexById(
+        MissionManager2D missionManager,
+        string missionId)
+    {
+        if (missionManager == null ||
+            string.IsNullOrWhiteSpace(missionId))
+        {
+            return -1;
+        }
+
+        for (int i = 0; i < missionManager.MissionCount; i++)
+        {
+            MissionDefinition2D mission =
+                missionManager.GetMissionDefinition(i);
+
+            if (mission == null)
+            {
+                continue;
+            }
+
+            if (string.Equals(
+                    mission.MissionId,
+                    missionId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static string GetMissionId(MissionDefinition2D mission)
+    {
+        return mission != null
+            ? (mission.MissionId ?? string.Empty).Trim()
+            : string.Empty;
+    }
+
+    private static MissionSessionState ConvertMissionState(
+        MissionProgressState2D state)
+    {
+        switch (state)
+        {
+            case MissionProgressState2D.InProgress:
+                return MissionSessionState.InProgress;
+
+            case MissionProgressState2D.Completed:
+                return MissionSessionState.Completed;
+
+            default:
+                return MissionSessionState.Inactive;
+        }
+    }
+
+    private void LogMission(string message)
+    {
+        if (!alwaysLogSessionTransfer)
+        {
+            return;
+        }
+
+        Debug.Log($"[MissionSession] {message}", this);
+    }
+
+    private void LogMissionWarning(string message)
+    {
+        if (!alwaysLogSessionTransfer)
+        {
+            return;
+        }
+
+        Debug.LogWarning($"[MissionSession] {message}", this);
     }
 
     [ContextMenu("Add 100 Money")]
@@ -844,4 +1414,27 @@ public class PlayerInventorySessionData
         new List<SessionInventoryItemData>();
     public SessionInventoryItemData PrimaryWeaponItem;
     public SessionInventoryItemData HelmetItem;
+}
+
+public enum MissionSessionState
+{
+    Inactive,
+    InProgress,
+    Completed
+}
+
+/// <summary>
+/// シーン間で保持するミッション1件分の状態です。
+/// MissionDefinition2Dへの参照も残しますが、探索シーンではMissionIdを優先してMissionManager2D内の登録を探します。
+/// </summary>
+[Serializable]
+public class MissionSessionData
+{
+    public MissionDefinition2D Mission;
+    public string MissionId;
+    public string DisplayName;
+    public MissionSessionState State;
+    public int Progress;
+    public int RequiredAmount = 1;
+    public bool RewardClaimed;
 }

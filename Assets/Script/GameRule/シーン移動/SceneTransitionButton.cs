@@ -25,6 +25,10 @@ public class SceneTransitionButton : MonoBehaviour
     [Tooltip("オンなら、開いている質屋画面を閉じて売却予定アイテムを戻してからシーン移動します。")]
     [SerializeField] private bool closeOpenPawnShopBeforeLoad = true;
 
+    [Header("ミッション引き継ぎ")]
+    [Tooltip("オンならSceneManager.LoadSceneの直前に、現在のシーンのMissionSessionBridgeからミッション状態を保存します。")]
+    [SerializeField] private bool captureMissionsBeforeLoad = true;
+
     [Header("ボタン設定")]
     [Tooltip("未設定なら同じGameObjectのButtonを自動取得します")]
     [SerializeField] private Button targetButton;
@@ -128,6 +132,11 @@ public class SceneTransitionButton : MonoBehaviour
             );
         }
 
+        if (captureMissionsBeforeLoad)
+        {
+            CaptureMissionsBeforeSceneLoad();
+        }
+
         SceneManager.LoadScene(sceneName, loadSceneMode);
     }
 
@@ -222,6 +231,71 @@ public class SceneTransitionButton : MonoBehaviour
                 saved
                     ? $"[SceneTransitionButton] インベントリ保存成功：{selectedBridge.name}"
                     : $"[SceneTransitionButton] インベントリ保存失敗：{selectedBridge.name}。直前のInventorySessionBridgeログを確認してください。",
+                this
+            );
+        }
+    }
+
+    private void CaptureMissionsBeforeSceneLoad()
+    {
+        Scene activeScene = SceneManager.GetActiveScene();
+
+        MissionSessionBridge[] allBridges =
+            FindObjectsByType<MissionSessionBridge>(
+                FindObjectsInactive.Include
+            );
+
+        MissionSessionBridge selectedBridge = null;
+        int bridgeCountInActiveScene = 0;
+
+        foreach (MissionSessionBridge bridge in allBridges)
+        {
+            if (bridge == null || bridge.gameObject.scene.handle != activeScene.handle)
+            {
+                continue;
+            }
+
+            bridgeCountInActiveScene++;
+
+            if (bridge.isActiveAndEnabled && selectedBridge == null)
+            {
+                selectedBridge = bridge;
+            }
+        }
+
+        if (bridgeCountInActiveScene == 0)
+        {
+            if (showDebugLogs)
+            {
+                Debug.Log(
+                    "[SceneTransitionButton] ミッション保存をスキップしました。" +
+                    $"現在のScene『{activeScene.name}』にMissionSessionBridgeがありません。" +
+                    "町だけのSceneでは通常問題ありません。探索Sceneには追加してください。",
+                    this
+                );
+            }
+
+            return;
+        }
+
+        if (selectedBridge == null)
+        {
+            Debug.LogWarning(
+                "[SceneTransitionButton] MissionSessionBridgeは見つかりましたが、すべて無効です。" +
+                "BridgeコンポーネントとGameObjectが有効か確認してください。",
+                this
+            );
+            return;
+        }
+
+        bool saved = selectedBridge.CaptureToSession();
+
+        if (showDebugLogs)
+        {
+            Debug.Log(
+                saved
+                    ? $"[SceneTransitionButton] ミッション保存成功：{selectedBridge.name}"
+                    : $"[SceneTransitionButton] ミッション保存失敗：{selectedBridge.name}。直前のMissionSessionBridgeログを確認してください。",
                 this
             );
         }

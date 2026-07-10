@@ -27,16 +27,21 @@ public class TownResidentDialogueData : ScriptableObject
         new List<TownDialogueNode>();
 
     public string ResidentId => residentId;
+
     public string ResidentName => string.IsNullOrWhiteSpace(residentName)
         ? name
         : residentName;
+
     public Sprite DefaultPortrait => defaultPortrait;
+
     public int NodeCount => nodes != null ? nodes.Count : 0;
 
     public bool IsValidNodeIndex(int index)
     {
-        return nodes != null && index >= 0 && index < nodes.Count &&
-            nodes[index] != null;
+        return nodes != null &&
+               index >= 0 &&
+               index < nodes.Count &&
+               nodes[index] != null;
     }
 
     public TownDialogueNode GetNode(int index)
@@ -59,6 +64,7 @@ public enum TownDialogueChoiceAction
     GoToNode,
     OpenPawnShop,
     StartMission,
+    ClaimMissionReward,
     CloseDialogue
 }
 
@@ -107,6 +113,20 @@ public class TownDialogueNode
 }
 
 /// <summary>
+/// 報酬アイテム1種類分です。
+/// </summary>
+[Serializable]
+public class TownMissionRewardItem
+{
+    [SerializeField] private ItemData itemData;
+
+    [SerializeField, Min(1)] private int amount = 1;
+
+    public ItemData ItemData => itemData;
+    public int Amount => Mathf.Max(1, amount);
+}
+
+/// <summary>
 /// 会話中に表示する選択肢1つ分の設定です。
 /// </summary>
 [Serializable]
@@ -120,7 +140,7 @@ public class TownDialogueChoice
     private TownDialogueChoiceAction action =
         TownDialogueChoiceAction.GoToNode;
 
-    [Tooltip("Go To Node、またはStart Mission成功後に続きの会話を表示したい時に設定します。-1なら会話を閉じます")]
+    [Tooltip("Go To Node、Start Mission成功後、Claim Mission Reward成功後に続きの会話を表示したい時に設定します。-1なら会話を閉じます")]
     [SerializeField] private int nextNodeIndex = -1;
 
     [Header("ミッション受注用")]
@@ -130,6 +150,21 @@ public class TownDialogueChoice
     [Tooltip("受注成功時、コンパスの追跡対象にも設定します")]
     [SerializeField] private bool trackMissionAfterStarting = true;
 
+    [Header("ミッション報告・報酬用")]
+    [Tooltip("ActionがClaim Mission Rewardの時に設定します。空欄ならMission To Startを代わりに使います")]
+    [SerializeField] private MissionDefinition2D missionToClaimReward;
+
+    [Tooltip("オンなら、ミッション達成済み、または進捗が必要数に到達している時だけ報酬を渡します")]
+    [SerializeField] private bool requireObjectiveCompleted = true;
+
+    [Tooltip("報酬として渡す所持金です")]
+    [SerializeField, Min(0)] private int moneyReward;
+
+    [Tooltip("報酬として渡すアイテムです。不要なら空のままでOKです")]
+    [SerializeField]
+    private List<TownMissionRewardItem> itemRewards =
+        new List<TownMissionRewardItem>();
+
     public string ChoiceText => string.IsNullOrWhiteSpace(choiceText)
         ? "選択肢"
         : choiceText;
@@ -138,4 +173,13 @@ public class TownDialogueChoice
     public int NextNodeIndex => nextNodeIndex;
     public MissionDefinition2D MissionToStart => missionToStart;
     public bool TrackMissionAfterStarting => trackMissionAfterStarting;
+
+    public MissionDefinition2D MissionToClaimReward =>
+        missionToClaimReward != null
+            ? missionToClaimReward
+            : missionToStart;
+
+    public bool RequireObjectiveCompleted => requireObjectiveCompleted;
+    public int MoneyReward => Mathf.Max(0, moneyReward);
+    public IReadOnlyList<TownMissionRewardItem> ItemRewards => itemRewards;
 }

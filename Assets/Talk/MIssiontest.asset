@@ -10,39 +10,42 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 364e17b6664ff524e91d46e23804e4ef, type: 3}
-  m_Name: MissionDefinition
+  m_Name: MIssiontest
   m_EditorClassIdentifier: Assembly-CSharp::TownResidentDialogueData
   residentId: resident_id
   residentName: "\u4F4F\u4EBA"
-  defaultPortrait: {fileID: 6218016037910126416, guid: f86b2b107c634e04eae8068f18432ad3, type: 3}
+  defaultPortrait: {fileID: 145177982165888970, guid: c8135d2cde8354745a498150371e4bf6, type: 3}
   nodes:
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: anta tabibito ka?
+    message: mission test dayo
     nextNodeIndex: 1
-    choices: []
-  - speakerNameOverride: 
-    portraitOverride: {fileID: 0}
-    message: yokatta mission wo ukete kure
-    nextNodeIndex: 2
     choices:
-    - choiceText: Yes
+    - choiceText: Yet
       action: 2
-      nextNodeIndex: 2
-      missionToStart: {fileID: 11400000, guid: c4ea86f6399d336479c1f7f15f13c35b, type: 2}
+      nextNodeIndex: 1
+      missionToStart: {fileID: 11400000, guid: 25e45a7ed7fce5e4e8be432db0793e5c, type: 2}
       trackMissionAfterStarting: 0
-    - choiceText: No
+      missionToClaimReward: {fileID: 0}
+      requireObjectiveCompleted: 1
+      moneyReward: 0
+      itemRewards: []
+    - choiceText: no
       action: 0
-      nextNodeIndex: 3
+      nextNodeIndex: 2
       missionToStart: {fileID: 0}
       trackMissionAfterStarting: 0
+      missionToClaimReward: {fileID: 0}
+      requireObjectiveCompleted: 1
+      moneyReward: 0
+      itemRewards: []
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: Ariga tou
+    message: onegai ne
     nextNodeIndex: -1
     choices: []
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: eee!?
+    message: eeeeee
     nextNodeIndex: -1
     choices: []

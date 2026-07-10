@@ -34,7 +34,13 @@ public class TownDialogueController : MonoBehaviour
     [Tooltip("Open Pawn Shopの選択肢で開く既存の質屋UIです")]
     [SerializeField] private PawnShopUIController pawnShopUIController;
 
-    [Tooltip("Start Missionの選択肢で使うMissionManager2Dです。空欄ならシーン内から探します")]
+    [Tooltip("Start Missionの選択肢で使う町用の受注Controllerです。町シーンではこちらを使います。")]
+    [SerializeField] private TownMissionAcceptController missionAcceptController;
+
+    [Tooltip("Claim Mission Rewardの選択肢で使う報酬Controllerです。町シーンではこちらを使います。")]
+    [SerializeField] private TownMissionRewardController missionRewardController;
+
+    [Tooltip("探索シーン内で直接会話を使う場合の予備です。町シーンでは通常不要です")]
     [SerializeField] private MissionManager2D missionManager;
 
     [Header("任意メッセージ")]
@@ -228,6 +234,10 @@ public class TownDialogueController : MonoBehaviour
 
             case TownDialogueChoiceAction.StartMission:
                 StartMissionFromDialogue(choice);
+                break;
+
+            case TownDialogueChoiceAction.ClaimMissionReward:
+                ClaimMissionRewardFromDialogue(choice);
                 break;
 
             case TownDialogueChoiceAction.CloseDialogue:
@@ -431,6 +441,34 @@ public class TownDialogueController : MonoBehaviour
             return;
         }
 
+        if (missionAcceptController == null)
+        {
+            missionAcceptController =
+                FindAnyObjectByType<TownMissionAcceptController>();
+        }
+
+        // Town_MainのようにMissionManager2Dが存在しないシーンでは、
+        // GameSessionManagerへ受注状態だけを保存する。
+        if (missionAcceptController != null)
+        {
+            bool accepted = missionAcceptController.AcceptMission(
+                mission,
+                choice.TrackMissionAfterStarting,
+                out string resultMessage
+            );
+
+            if (!accepted)
+            {
+                SetStatusMessage(resultMessage);
+                return;
+            }
+
+            Log($"ミッション受注を保存: {mission.DisplayName}");
+            GoToChoiceNextNodeOrClose(choice);
+            return;
+        }
+
+        // 予備：探索シーンなど、同じシーンにMissionManager2Dがある場合は従来どおり直接開始する。
         if (missionManager == null)
         {
             missionManager = FindAnyObjectByType<MissionManager2D>();
@@ -439,9 +477,11 @@ public class TownDialogueController : MonoBehaviour
         if (missionManager == null)
         {
             SetStatusMessage(
-                "MissionManager2Dがこのシーンにありません。"
+                "TownMissionAcceptController、またはMissionManager2Dがこのシーンにありません。"
             );
-            LogWarning("MissionManager2D が見つかりません。");
+            LogWarning(
+                "Start Missionを実行できません。TownMissionAcceptControllerをTownCanvasなどへ追加してください。"
+            );
             return;
         }
 
@@ -474,6 +514,54 @@ public class TownDialogueController : MonoBehaviour
         }
 
         Log($"ミッション受注: {mission.DisplayName}");
+        GoToChoiceNextNodeOrClose(choice);
+    }
+
+    private void ClaimMissionRewardFromDialogue(
+        TownDialogueChoice choice)
+    {
+        MissionDefinition2D mission = choice.MissionToClaimReward;
+
+        if (mission == null)
+        {
+            SetStatusMessage(
+                "報告するミッションが設定されていません。"
+            );
+            LogWarning(
+                "Claim Mission Rewardの選択肢にMission Definitionが未設定です。"
+            );
+            return;
+        }
+
+        if (missionRewardController == null)
+        {
+            missionRewardController =
+                FindAnyObjectByType<TownMissionRewardController>();
+        }
+
+        if (missionRewardController == null)
+        {
+            SetStatusMessage(
+                "TownMissionRewardControllerが見つかりません。TownCanvasなどへ追加してください。"
+            );
+            LogWarning(
+                "Claim Mission Rewardを実行できません。TownMissionRewardControllerを追加してください。"
+            );
+            return;
+        }
+
+        bool claimed = missionRewardController.TryClaimReward(
+            choice,
+            out string resultMessage
+        );
+
+        if (!claimed)
+        {
+            SetStatusMessage(resultMessage);
+            return;
+        }
+
+        Log($"ミッション報酬受け取り: {mission.DisplayName}");
         GoToChoiceNextNodeOrClose(choice);
     }
 
@@ -576,6 +664,18 @@ public class TownDialogueController : MonoBehaviour
         {
             pawnShopUIController =
                 FindAnyObjectByType<PawnShopUIController>();
+        }
+
+        if (missionAcceptController == null)
+        {
+            missionAcceptController =
+                FindAnyObjectByType<TownMissionAcceptController>();
+        }
+
+        if (missionRewardController == null)
+        {
+            missionRewardController =
+                FindAnyObjectByType<TownMissionRewardController>();
         }
 
         if (missionManager == null)

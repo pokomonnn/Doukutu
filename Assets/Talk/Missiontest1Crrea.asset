@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 364e17b6664ff524e91d46e23804e4ef, type: 3}
-  m_Name: MissionDefinition
+  m_Name: Missiontest1Crrea
   m_EditorClassIdentifier: Assembly-CSharp::TownResidentDialogueData
   residentId: resident_id
   residentName: "\u4F4F\u4EBA"
@@ -18,31 +18,38 @@ MonoBehaviour:
   nodes:
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: anta tabibito ka?
-    nextNodeIndex: 1
-    choices: []
-  - speakerNameOverride: 
-    portraitOverride: {fileID: 0}
-    message: yokatta mission wo ukete kure
-    nextNodeIndex: 2
+    message: dou datta
+    nextNodeIndex: 0
     choices:
-    - choiceText: Yes
-      action: 2
-      nextNodeIndex: 2
-      missionToStart: {fileID: 11400000, guid: c4ea86f6399d336479c1f7f15f13c35b, type: 2}
-      trackMissionAfterStarting: 0
-    - choiceText: No
-      action: 0
-      nextNodeIndex: 3
+    - choiceText: "\u5831\u544A\u3059\u308B"
+      action: 3
+      nextNodeIndex: 1
       missionToStart: {fileID: 0}
       trackMissionAfterStarting: 0
+      missionToClaimReward: {fileID: 11400000, guid: c4ea86f6399d336479c1f7f15f13c35b, type: 2}
+      requireObjectiveCompleted: 0
+      moneyReward: 200000
+      itemRewards:
+      - itemData: {fileID: 11400000, guid: c375d2bc72fdf754a9bb76c08017179c, type: 2}
+        amount: 1
+    - choiceText: mada
+      action: 0
+      nextNodeIndex: 2
+      missionToStart: {fileID: 0}
+      trackMissionAfterStarting: 0
+      missionToClaimReward: {fileID: 11400000, guid: 25e45a7ed7fce5e4e8be432db0793e5c, type: 2}
+      requireObjectiveCompleted: 0
+      moneyReward: 200000
+      itemRewards:
+      - itemData: {fileID: 11400000, guid: c375d2bc72fdf754a9bb76c08017179c, type: 2}
+        amount: 1
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: Ariga tou
+    message: ariga tou
     nextNodeIndex: -1
     choices: []
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: eee!?
+    message: souka gan batte
     nextNodeIndex: -1
     choices: []
