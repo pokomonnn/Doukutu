@@ -18,7 +18,7 @@ MonoBehaviour:
   nodes:
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: dou datta
+    message: "\u3069\u3046\u3060\u3063\u305F\uFF1F"
     nextNodeIndex: 0
     choices:
     - choiceText: "\u5831\u544A\u3059\u308B"
@@ -32,7 +32,7 @@ MonoBehaviour:
       itemRewards:
       - itemData: {fileID: 11400000, guid: c375d2bc72fdf754a9bb76c08017179c, type: 2}
         amount: 1
-    - choiceText: mada
+    - choiceText: "\u307E\u3060\u3060\u3088"
       action: 0
       nextNodeIndex: 2
       missionToStart: {fileID: 0}
@@ -45,11 +45,11 @@ MonoBehaviour:
         amount: 1
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: ariga tou
+    message: "\u3042\u308A\u304C\u3068\u3046"
     nextNodeIndex: -1
     choices: []
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: souka gan batte
+    message: "\u305D\u3046\u304B\u2026"
     nextNodeIndex: -1
     choices: []

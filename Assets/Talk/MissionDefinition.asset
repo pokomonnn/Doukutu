@@ -15,15 +15,22 @@ MonoBehaviour:
   residentId: resident_id
   residentName: "\u4F4F\u4EBA"
   defaultPortrait: {fileID: 6218016037910126416, guid: f86b2b107c634e04eae8068f18432ad3, type: 3}
+  defaultStartNodeIndex: 1
+  startRules:
+  - label: 
+    enabled: 0
+    condition: 0
+    mission: {fileID: 0}
+    startNodeIndex: 0
   nodes:
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: anta tabibito ka?
+    message: "\u8CB4\u65B9\u306F\u65C5\u4EBA\u304B\u306A\uFF1F"
     nextNodeIndex: 1
     choices: []
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: yokatta mission wo ukete kure
+    message: "\u3088\u304B\u3063\u305F\u3089\u4F9D\u983C\u3092\u53D7\u3051\u3066\u304F\u308C\u3088"
     nextNodeIndex: 2
     choices:
     - choiceText: Yes
@@ -31,18 +38,26 @@ MonoBehaviour:
       nextNodeIndex: 2
       missionToStart: {fileID: 11400000, guid: c4ea86f6399d336479c1f7f15f13c35b, type: 2}
       trackMissionAfterStarting: 0
+      missionToClaimReward: {fileID: 0}
+      requireObjectiveCompleted: 1
+      moneyReward: 0
+      itemRewards: []
     - choiceText: No
       action: 0
       nextNodeIndex: 3
       missionToStart: {fileID: 0}
       trackMissionAfterStarting: 0
+      missionToClaimReward: {fileID: 0}
+      requireObjectiveCompleted: 1
+      moneyReward: 0
+      itemRewards: []
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: Ariga tou
+    message: "\u3042\u308A\u304C\u3068\u3046"
     nextNodeIndex: -1
     choices: []
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: eee!?
+    message: "\u3048\u3048\u3048\uFF01\uFF1F"
     nextNodeIndex: -1
     choices: []

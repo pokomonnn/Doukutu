@@ -15,7 +15,10 @@ public class TownResidentBuildingButton : MonoBehaviour
 
     [SerializeField] private TownResidentDialogueData residentDialogue;
 
-    [Tooltip("通常は0。特定の会話ページから始めたい場合だけ変更します")]
+    [Tooltip("オンなら、Resident Dialogue DataのStart Rulesから現在のミッション状態に合う開始Nodeを自動選択します。")]
+    [SerializeField] private bool useConditionalStartNode = true;
+
+    [Tooltip("Use Conditional Start Nodeがオフの時だけ使います。特定の会話ページから始めたい場合に設定します。")]
     [SerializeField, Min(0)] private int startNodeIndex;
 
     [Header("デバッグ")]
@@ -66,12 +69,22 @@ public class TownResidentBuildingButton : MonoBehaviour
             return;
         }
 
-        dialogueController.OpenDialogue(
-            residentDialogue,
-            startNodeIndex
-        );
+        if (useConditionalStartNode)
+        {
+            dialogueController.OpenDialogue(residentDialogue);
+        }
+        else
+        {
+            dialogueController.OpenDialogue(
+                residentDialogue,
+                startNodeIndex
+            );
+        }
 
-        Log($"建物クリック: {residentDialogue.ResidentName}");
+        Log(
+            $"建物クリック: {residentDialogue.ResidentName} / " +
+            $"条件分岐={(useConditionalStartNode ? "ON" : "OFF")}"
+        );
     }
 
     private void FindReferences()

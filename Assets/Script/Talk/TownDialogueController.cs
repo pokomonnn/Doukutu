@@ -87,10 +87,50 @@ public class TownDialogueController : MonoBehaviour
 
     /// <summary>
     /// TownResidentBuildingButtonから呼びます。
+    /// Resident Dialogue Dataの開始条件を見て、自動で開始Nodeを切り替えます。
     /// </summary>
     public void OpenDialogue(TownResidentDialogueData dialogueData)
     {
-        OpenDialogue(dialogueData, 0);
+        if (dialogueData == null)
+        {
+            OpenDialogue(null, 0);
+            return;
+        }
+
+        int startNodeIndex = ResolveConditionalStartNode(dialogueData);
+        OpenDialogue(dialogueData, startNodeIndex);
+    }
+
+    private int ResolveConditionalStartNode(
+        TownResidentDialogueData dialogueData)
+    {
+        GameSessionManager session = GameSessionManager.Instance;
+
+        if (session == null)
+        {
+            session = FindAnyObjectByType<GameSessionManager>();
+        }
+
+        int startNodeIndex = dialogueData.GetStartNodeIndexForSession(
+            session,
+            out string debugReason
+        );
+
+        Log(
+            $"会話開始Node判定: {dialogueData.ResidentName} / " +
+            $"StartNode={startNodeIndex} / {debugReason}"
+        );
+
+        if (session == null)
+        {
+            LogWarning(
+                "GameSessionManagerが見つからないため、" +
+                "ミッション状態による会話分岐はDefault Nodeになります。" +
+                "Town_Mainを単体再生していないか確認してください。"
+            );
+        }
+
+        return startNodeIndex;
     }
 
     /// <summary>

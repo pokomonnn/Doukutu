@@ -18,7 +18,7 @@ MonoBehaviour:
   nodes:
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: mission test dayo
+    message: "\u3066\u3059\u3068\u3060\u3088"
     nextNodeIndex: 1
     choices:
     - choiceText: Yet
@@ -41,11 +41,11 @@ MonoBehaviour:
       itemRewards: []
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: onegai ne
+    message: "\u304A\u306D\u304C\u3044\u306D"
     nextNodeIndex: -1
     choices: []
   - speakerNameOverride: 
     portraitOverride: {fileID: 0}
-    message: eeeeee
+    message: "\u306A\u3093\u3067\uFF5E"
     nextNodeIndex: -1
     choices: []
