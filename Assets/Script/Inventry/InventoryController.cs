@@ -14,11 +14,13 @@ public enum ItemUseResult
     FoodIsFull,
     WaterIsFull,
     FoodAndWaterAreFull,
+    TorchIsFull,
 
     NoUsableEffect,
 
     StatusConditionControllerNotFound,
-    SurvivalControllerNotFound
+    SurvivalControllerNotFound,
+    TorchControllerNotFound
 }
 
 public class InventoryController : MonoBehaviour
@@ -69,6 +71,13 @@ public class InventoryController : MonoBehaviour
         playerSurvivalController;
 
     [Tooltip(
+        "松明残量の管理。" +
+        "未設定ならPlayerタグから自動取得します。"
+    )]
+    [SerializeField]
+    private TorchController torchController;
+
+    [Tooltip(
         "回復アイテム使用中の速度低下を反映する管理。" +
         "未設定ならPlayerタグから自動取得します。"
     )]
@@ -105,6 +114,7 @@ public class InventoryController : MonoBehaviour
         FindPlayerHealth();
         FindPlayerStatusConditions();
         FindPlayerSurvivalController();
+        FindTorchController();
         FindPlayerWeightController();
         FindPlayerConsumableUseController();
     }
@@ -414,6 +424,9 @@ public class InventoryController : MonoBehaviour
             consumableData.CanRestoreFood ||
             consumableData.CanRestoreWater;
 
+        bool needsTorchController =
+            consumableData.CanRestoreTorch;
+
         // 状態異常回復アイテムなのにControllerが無い場合、
         // アイテムが消費されないようにする
         if (needsStatusConditionController &&
@@ -450,6 +463,23 @@ public class InventoryController : MonoBehaviour
             return false;
         }
 
+        // 松明回復アイテムなのにTorchControllerが無い場合も、
+        // アイテムだけ消費されないようにする
+        if (needsTorchController &&
+            !FindTorchController())
+        {
+            result =
+                ItemUseResult.TorchControllerNotFound;
+
+            Debug.LogWarning(
+                "InventoryController：" +
+                "TorchControllerがPlayerに見つかりません。",
+                this
+            );
+
+            return false;
+        }
+
         bool usedEffect = false;
 
         bool healthIsFull =
@@ -464,6 +494,10 @@ public class InventoryController : MonoBehaviour
         bool waterIsFull =
             consumableData.CanRestoreWater &&
             playerSurvivalController.IsWaterFull;
+
+        bool torchIsFull =
+            consumableData.CanRestoreTorch &&
+            torchController.IsFull;
 
         // HP回復
         if (consumableData.HealAmount > 0 &&
@@ -503,6 +537,21 @@ public class InventoryController : MonoBehaviour
             }
         }
 
+        // 松明回復
+        if (consumableData.CanRestoreTorch &&
+            !torchIsFull)
+        {
+            float restoredTorch =
+                torchController.RestoreTorch(
+                    consumableData.TorchRestoreAmount
+                );
+
+            if (restoredTorch > 0f)
+            {
+                usedEffect = true;
+            }
+        }
+
         // 骨折・出血などの状態異常回復
         if (needsStatusConditionController &&
             playerStatusConditions.CureConditions(
@@ -519,7 +568,8 @@ public class InventoryController : MonoBehaviour
                 consumableData,
                 healthIsFull,
                 foodIsFull,
-                waterIsFull
+                waterIsFull,
+                torchIsFull
             );
 
             return false;
@@ -558,13 +608,22 @@ public class InventoryController : MonoBehaviour
         ConsumableItemData consumableData,
         bool healthIsFull,
         bool foodIsFull,
-        bool waterIsFull)
+        bool waterIsFull,
+        bool torchIsFull)
     {
         bool restoresFood =
             consumableData.CanRestoreFood;
 
         bool restoresWater =
             consumableData.CanRestoreWater;
+
+        bool restoresTorch =
+            consumableData.CanRestoreTorch;
+
+        if (restoresTorch && torchIsFull)
+        {
+            return ItemUseResult.TorchIsFull;
+        }
 
         if (restoresFood &&
             restoresWater &&
@@ -655,6 +714,39 @@ public class InventoryController : MonoBehaviour
             player.GetComponent<PlayerSurvivalController>();
 
         return playerSurvivalController != null;
+    }
+
+    private bool FindTorchController()
+    {
+        if (torchController != null)
+        {
+            return true;
+        }
+
+        // InventoryControllerと同じPlayerにある場合
+        torchController = GetComponent<TorchController>();
+
+        if (torchController != null)
+        {
+            return true;
+        }
+
+        GameObject player =
+            GameObject.FindGameObjectWithTag(playerTag);
+
+        if (player != null)
+        {
+            torchController =
+                player.GetComponent<TorchController>();
+        }
+
+        if (torchController == null)
+        {
+            torchController =
+                FindAnyObjectByType<TorchController>();
+        }
+
+        return torchController != null;
     }
 
     private void ApplyConsumableUseSlowdown(

@@ -127,6 +127,10 @@ MonoBehaviour:
     m_Key: New Entry 1
     m_Metadata:
       m_Items: []
+  - m_Id: 8673649582153728
+    m_Key: Torch
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

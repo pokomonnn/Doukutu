@@ -33,6 +33,11 @@ public class ConsumableItemData : ItemData
     [SerializeField, Min(0f)]
     private float waterRestoreAmount = 0f;
 
+    [Header("松明回復設定")]
+    [Tooltip("使用時に回復する松明値。松明アイテムでない場合は0")]
+    [SerializeField, Min(0f)]
+    private float torchRestoreAmount = 0f;
+
     [Header("状態異常回復設定")]
     [Tooltip("このアイテムで治療できる状態異常")]
     [SerializeField]
@@ -75,6 +80,8 @@ public class ConsumableItemData : ItemData
 
     public float WaterRestoreAmount => waterRestoreAmount;
 
+    public float TorchRestoreAmount => torchRestoreAmount;
+
     public StatusConditionType CuredConditions => curedConditions;
 
     public float SlowdownDuration => slowdownDuration;
@@ -94,6 +101,8 @@ public class ConsumableItemData : ItemData
     public bool CanRestoreFood => foodRestoreAmount > 0f;
 
     public bool CanRestoreWater => waterRestoreAmount > 0f;
+
+    public bool CanRestoreTorch => torchRestoreAmount > 0f;
 
     public bool CanCure(StatusConditionType condition)
     {
@@ -119,6 +128,11 @@ public class ConsumableItemData : ItemData
         waterRestoreAmount = Mathf.Max(
             0f,
             waterRestoreAmount
+        );
+
+        torchRestoreAmount = Mathf.Max(
+            0f,
+            torchRestoreAmount
         );
 
         slowdownDuration = Mathf.Max(0f, slowdownDuration);

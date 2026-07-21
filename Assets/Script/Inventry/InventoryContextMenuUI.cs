@@ -58,6 +58,16 @@ public class InventoryContextMenuUI : MonoBehaviour
     private string usingConsumableMessage =
         "回復アイテムを使用中です";
 
+    [Tooltip("松明が満タンの時に表示するメッセージ")]
+    [SerializeField]
+    private string torchFullMessage =
+        "松明は十分に燃えています";
+
+    [Tooltip("PlayerにTorchControllerが無い時に表示するメッセージ")]
+    [SerializeField]
+    private string torchControllerNotFoundMessage =
+        "松明システムが見つかりません";
+
     [Header("通知UIの翻訳")]
     [Tooltip("GameText の toast.health_full を設定")]
     [SerializeField]
@@ -357,6 +367,22 @@ public class InventoryContextMenuUI : MonoBehaviour
         {
             soundPlayer?.PlayHealthFull();
             healthFullToastUI?.Show(localizedHealthFullMessage);
+            return;
+        }
+
+        if (result == ItemUseResult.TorchIsFull)
+        {
+            soundPlayer?.PlayFailed();
+            healthFullToastUI?.Show(torchFullMessage);
+            return;
+        }
+
+        if (result == ItemUseResult.TorchControllerNotFound)
+        {
+            soundPlayer?.PlayFailed();
+            healthFullToastUI?.Show(
+                torchControllerNotFoundMessage
+            );
             return;
         }
 
