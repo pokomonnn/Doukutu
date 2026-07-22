@@ -29,6 +29,9 @@ public class SceneTransitionButton : MonoBehaviour
     [Tooltip("オンならSceneManager.LoadSceneの直前に、現在のシーンのMissionSessionBridgeからミッション状態を保存します。")]
     [SerializeField] private bool captureMissionsBeforeLoad = true;
 
+    [SerializeField] private bool capturePlayerStatusBeforeLoad = true;
+    [SerializeField] private bool captureWorldStateBeforeLoad = true;
+
     [Header("ボタン設定")]
     [Tooltip("未設定なら同じGameObjectのButtonを自動取得します")]
     [SerializeField] private Button targetButton;
@@ -135,6 +138,20 @@ public class SceneTransitionButton : MonoBehaviour
         if (captureMissionsBeforeLoad)
         {
             CaptureMissionsBeforeSceneLoad();
+        }
+
+        if (capturePlayerStatusBeforeLoad)
+        {
+            PlayerStatusSaveBridge statusBridge =
+                FindAnyObjectByType<PlayerStatusSaveBridge>(FindObjectsInactive.Include);
+            statusBridge?.CaptureToSession();
+        }
+
+        if (captureWorldStateBeforeLoad)
+        {
+            WorldStateSaveBridge worldBridge =
+                FindAnyObjectByType<WorldStateSaveBridge>(FindObjectsInactive.Include);
+            worldBridge?.CaptureToSession();
         }
 
         SceneManager.LoadScene(sceneName, loadSceneMode);

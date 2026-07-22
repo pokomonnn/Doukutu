@@ -284,6 +284,52 @@ public class ItemBoxInventory : MonoBehaviour
         );
     }
 
+    /// <summary>
+    /// セーブデータから箱の中身を完全復元します。
+    /// </summary>
+    public void RestoreInventoryFromSave(
+        int savedWidth,
+        int savedHeight,
+        IReadOnlyList<InventoryItem> restoredItems)
+    {
+        if (inventoryGrid == null)
+        {
+            inventoryGrid = new InventoryGrid();
+        }
+
+        inventoryGrid.Initialize(
+            Mathf.Max(1, savedWidth),
+            Mathf.Max(1, savedHeight),
+            true
+        );
+
+        if (restoredItems != null)
+        {
+            foreach (InventoryItem item in restoredItems)
+            {
+                if (item == null || item.ItemData == null)
+                {
+                    continue;
+                }
+
+                if (!inventoryGrid.TryPlaceItem(
+                        item,
+                        item.GridX,
+                        item.GridY,
+                        item.IsRotated))
+                {
+                    Debug.LogWarning(
+                        $"ItemBoxInventory: {item.ItemData.DisplayName} を保存位置へ復元できませんでした。",
+                        this
+                    );
+                }
+            }
+        }
+
+        isInitialized = true;
+        NotifyInventoryChanged();
+    }
+
     [ContextMenu("Reset Item Box Inventory")]
     public void ResetInventory()
     {

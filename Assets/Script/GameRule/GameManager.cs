@@ -61,6 +61,7 @@ public class GameManager : MonoBehaviour
     private static int currentCheckpointNumber;
     private static Vector3 currentSpawnPosition;
     private static int checkpointSceneBuildIndex = -1;
+    private static string checkpointSceneName = string.Empty;
 
     private void Awake()
     {
@@ -78,8 +79,18 @@ public class GameManager : MonoBehaviour
             gameOverPanel.SetActive(false);
         }
 
-        if (hasCheckpoint &&
-            checkpointSceneBuildIndex != SceneManager.GetActiveScene().buildIndex)
+        Scene activeScene = SceneManager.GetActiveScene();
+
+        bool checkpointMatchesActiveScene =
+            !string.IsNullOrWhiteSpace(checkpointSceneName)
+                ? string.Equals(
+                    checkpointSceneName,
+                    activeScene.name,
+                    System.StringComparison.OrdinalIgnoreCase
+                )
+                : checkpointSceneBuildIndex == activeScene.buildIndex;
+
+        if (hasCheckpoint && !checkpointMatchesActiveScene)
         {
             ClearCheckpoint();
         }
@@ -107,6 +118,7 @@ public class GameManager : MonoBehaviour
         currentCheckpointNumber = checkpointNumber;
         currentSpawnPosition = spawnPoint.position;
         checkpointSceneBuildIndex = SceneManager.GetActiveScene().buildIndex;
+        checkpointSceneName = SceneManager.GetActiveScene().name;
 
         Debug.Log($"チェックポイント更新：{checkpointNumber}");
     }
@@ -264,6 +276,41 @@ public class GameManager : MonoBehaviour
         currentCheckpointNumber = 0;
         currentSpawnPosition = Vector3.zero;
         checkpointSceneBuildIndex = -1;
+        checkpointSceneName = string.Empty;
+    }
+
+
+    public static SavedCheckpointData CreateCheckpointSaveData()
+    {
+        return new SavedCheckpointData
+        {
+            HasCheckpoint = hasCheckpoint,
+            CheckpointNumber = currentCheckpointNumber,
+            SceneName = checkpointSceneName,
+            SceneBuildIndex = checkpointSceneBuildIndex,
+            PositionX = currentSpawnPosition.x,
+            PositionY = currentSpawnPosition.y,
+            PositionZ = currentSpawnPosition.z
+        };
+    }
+
+    public static void ApplyCheckpointSaveData(SavedCheckpointData data)
+    {
+        if (data == null || !data.HasCheckpoint)
+        {
+            hasCheckpoint = false;
+            currentCheckpointNumber = 0;
+            currentSpawnPosition = Vector3.zero;
+            checkpointSceneBuildIndex = -1;
+            checkpointSceneName = string.Empty;
+            return;
+        }
+
+        hasCheckpoint = true;
+        currentCheckpointNumber = Mathf.Max(0, data.CheckpointNumber);
+        currentSpawnPosition = new Vector3(data.PositionX, data.PositionY, data.PositionZ);
+        checkpointSceneBuildIndex = data.SceneBuildIndex;
+        checkpointSceneName = data.SceneName?.Trim() ?? string.Empty;
     }
 
     private void SetupDeathBgmSource()

@@ -11,6 +11,8 @@ using UnityEngine.SceneManagement;
 [DisallowMultipleComponent]
 public class GameSessionManager : MonoBehaviour
 {
+    public const int CurrentSaveVersion = 3;
+
     [Header("初回起動時の所持金")]
     [Tooltip("PlayerMoneyController が開始金額を引き継がない場合に使う初期所持金です。通常は0のままでOKです。")]
     [SerializeField, Min(0)] private int defaultStartingMoney = 0;
@@ -438,6 +440,31 @@ public class GameSessionManager : MonoBehaviour
         Log("インベントリ引き継ぎデータを消去しました。");
     }
 
+    /// <summary>
+    /// タイトル画面のニューゲーム開始時に、
+    /// 所持金・インベントリ・装備・ミッションの一時状態を初期化します。
+    /// 所持金は未初期化へ戻すため、開始SceneのPlayerMoneyControllerが
+    /// Initial Moneyを設定できます。PlayerMoneyControllerが無い場合は、
+    /// 次にEnsureMoneyInitialized()が呼ばれた時にDefault Starting Moneyを使用します。
+    /// </summary>
+    public void ResetForNewGame()
+    {
+        currentMoney = 0;
+        hasInitializedMoney = false;
+
+        inventorySessionData = new PlayerInventorySessionData();
+        hasInventorySessionData = false;
+
+        missionSessionData.Clear();
+        trackedMissionId = string.Empty;
+
+        NotifyMoneyChanged();
+        InventorySessionChanged?.Invoke();
+        MissionSessionChanged?.Invoke();
+
+        LogTransfer("ニューゲーム用にGameSessionManagerを初期化しました。");
+    }
+
     // ---------------------------------------------------------------------
     // ミッションのシーン間引き継ぎ
     // ---------------------------------------------------------------------
@@ -612,6 +639,10 @@ public class GameSessionManager : MonoBehaviour
             return false;
         }
 
+        // Start All Missions On Startなどで作られたランタイム状態を消し、
+        // セーブデータを正として復元します。
+        missionManager.ClearAllMissionRuntimeStateForLoad();
+
         int restoredCount = 0;
         int missingCount = 0;
 
@@ -619,7 +650,7 @@ public class GameSessionManager : MonoBehaviour
         {
             if (data == null ||
                 string.IsNullOrWhiteSpace(data.MissionId) ||
-                data.State != MissionSessionState.InProgress)
+                data.State == MissionSessionState.Inactive)
             {
                 continue;
             }
@@ -642,10 +673,27 @@ public class GameSessionManager : MonoBehaviour
             MissionDefinition2D mission =
                 missionManager.GetMissionDefinition(missionIndex);
 
-            bool started = missionManager.StartMission(missionIndex);
+            MissionProgressState2D managerState =
+                data.State == MissionSessionState.Completed
+                    ? MissionProgressState2D.Completed
+                    : MissionProgressState2D.InProgress;
 
-            if (!started &&
-                !missionManager.IsMissionInProgress(missionIndex))
+            bool shouldTrack =
+                managerState == MissionProgressState2D.InProgress &&
+                string.Equals(
+                    trackedMissionId,
+                    data.MissionId,
+                    StringComparison.OrdinalIgnoreCase
+                );
+
+            bool restored = missionManager.RestoreMissionState(
+                missionIndex,
+                managerState,
+                data.Progress,
+                shouldTrack
+            );
+
+            if (!restored)
             {
                 LogMissionWarning(
                     $"ミッション復元失敗: {data.DisplayName}"
@@ -653,22 +701,13 @@ public class GameSessionManager : MonoBehaviour
                 continue;
             }
 
-            if (string.Equals(
-                    trackedMissionId,
-                    data.MissionId,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                missionManager.SetTrackedMission(missionIndex);
-            }
-
             restoredCount++;
             LogMission(
                 $"復元: {(mission != null ? mission.DisplayName : data.DisplayName)} / " +
-                $"MissionId={data.MissionId}"
+                $"MissionId={data.MissionId} / 状態={data.State} / " +
+                $"進捗={data.Progress}/{data.RequiredAmount} / 追跡={shouldTrack}"
             );
         }
-
-        missionManager.RefreshAllMissionProgress();
 
         LogMission(
             $"ミッション復元完了: 反映={restoredCount}件 / 未登録={missingCount}件"
@@ -676,7 +715,6 @@ public class GameSessionManager : MonoBehaviour
 
         return restoredCount > 0 || missingCount == 0;
     }
-
 
     /// <summary>
     /// 町の報告処理などから、ミッション報酬を受け取れる状態か確認します。
@@ -870,6 +908,349 @@ public class GameSessionManager : MonoBehaviour
                    : trackedMissionId) +
                " / " +
                string.Join(" / ", lines);
+    }
+
+    // ---------------------------------------------------------------------
+    // JSON本セーブ用の書き出し・読み込み
+    // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// 現在GameSessionManagerが保持している状態を、JSON保存可能なデータへ変換します。
+    /// 保存直前にPlayerInventorySessionBridge / MissionSessionBridgeのCaptureToSessionを
+    /// 呼んでおくと、現在シーンの最新状態が入ります。
+    /// </summary>
+    public SaveGameData CreateSaveGameData(string savedSceneName)
+    {
+        EnsureMoneyInitialized();
+
+        SaveGameData saveData = new SaveGameData
+        {
+            SaveVersion = CurrentSaveVersion,
+            SavedAtUtc = DateTime.UtcNow.ToString("O"),
+            SavedSceneName = savedSceneName ?? string.Empty,
+            Money = Mathf.Max(0, currentMoney),
+            TrackedMissionId = trackedMissionId ?? string.Empty
+        };
+
+        PlayerInventorySessionData sourceInventory =
+            inventorySessionData ?? new PlayerInventorySessionData();
+
+        saveData.PlayerInventory = new SavedPlayerInventoryData
+        {
+            GridWidth = Mathf.Max(1, sourceInventory.GridWidth),
+            GridHeight = Mathf.Max(1, sourceInventory.GridHeight),
+            PrimaryWeapon = CreateSavedInventoryItem(
+                sourceInventory.PrimaryWeaponItem
+            ),
+            Helmet = CreateSavedInventoryItem(
+                sourceInventory.HelmetItem
+            )
+        };
+
+        if (sourceInventory.InventoryItems != null)
+        {
+            foreach (SessionInventoryItemData item in
+                     sourceInventory.InventoryItems)
+            {
+                SavedInventoryItemData savedItem =
+                    CreateSavedInventoryItem(item);
+
+                if (savedItem != null)
+                {
+                    saveData.PlayerInventory.InventoryItems.Add(savedItem);
+                }
+            }
+        }
+
+        foreach (MissionSessionData mission in missionSessionData)
+        {
+            if (mission == null ||
+                string.IsNullOrWhiteSpace(mission.MissionId))
+            {
+                continue;
+            }
+
+            saveData.Missions.Add(new SavedMissionData
+            {
+                MissionId = mission.MissionId.Trim(),
+                DisplayName = mission.DisplayName ?? string.Empty,
+                State = mission.State,
+                Progress = Mathf.Max(0, mission.Progress),
+                RequiredAmount = Mathf.Max(1, mission.RequiredAmount),
+                RewardClaimed = mission.RewardClaimed
+            });
+        }
+
+        LogTransfer(
+            $"本セーブ用データ作成: Money={saveData.Money:N0} / " +
+            $"Inventory={saveData.PlayerInventory.InventoryItems.Count}件 / " +
+            $"PrimaryWeapon={(saveData.PlayerInventory.PrimaryWeapon != null ? "あり" : "なし")} / " +
+            $"Helmet={(saveData.PlayerInventory.Helmet != null ? "あり" : "なし")} / " +
+            $"Missions={saveData.Missions.Count}件"
+        );
+
+        return saveData;
+    }
+
+    /// <summary>
+    /// JSONから読み取ったデータをGameSessionManagerへ戻します。
+    /// ItemDataはItemDataDatabaseを使ってItemIdから再取得します。
+    /// </summary>
+    public bool ApplySaveGameData(
+        SaveGameData saveData,
+        ItemDataDatabase itemDataDatabase,
+        out string resultMessage)
+    {
+        resultMessage = string.Empty;
+
+        if (saveData == null)
+        {
+            resultMessage = "セーブデータがnullです。";
+            return false;
+        }
+
+        if (saveData.SaveVersion <= 0 ||
+            saveData.SaveVersion > CurrentSaveVersion)
+        {
+            resultMessage =
+                $"対応していないセーブバージョンです。" +
+                $" 保存={saveData.SaveVersion} / 対応={CurrentSaveVersion}";
+            return false;
+        }
+
+        if (itemDataDatabase == null)
+        {
+            resultMessage = "ItemDataDatabaseが設定されていません。";
+            return false;
+        }
+
+        currentMoney = Mathf.Max(0, saveData.Money);
+        hasInitializedMoney = true;
+
+        SavedPlayerInventoryData savedInventory =
+            saveData.PlayerInventory ?? new SavedPlayerInventoryData();
+
+        PlayerInventorySessionData nextInventory =
+            new PlayerInventorySessionData
+            {
+                GridWidth = Mathf.Max(1, savedInventory.GridWidth),
+                GridHeight = Mathf.Max(1, savedInventory.GridHeight)
+            };
+
+        int restoredInventoryCount = 0;
+        int missingItemCount = 0;
+
+        if (savedInventory.InventoryItems != null)
+        {
+            foreach (SavedInventoryItemData savedItem in
+                     savedInventory.InventoryItems)
+            {
+                SessionInventoryItemData sessionItem =
+                    CreateSessionInventoryItem(
+                        savedItem,
+                        itemDataDatabase,
+                        out string itemError
+                    );
+
+                if (sessionItem != null)
+                {
+                    nextInventory.InventoryItems.Add(sessionItem);
+                    restoredInventoryCount++;
+                }
+                else
+                {
+                    missingItemCount++;
+                    LogTransferWarning(
+                        $"ロード時にアイテムをスキップしました: {itemError}"
+                    );
+                }
+            }
+        }
+
+        nextInventory.PrimaryWeaponItem = CreateSessionInventoryItem(
+            savedInventory.PrimaryWeapon,
+            itemDataDatabase,
+            out string primaryWeaponError
+        );
+
+        if (savedInventory.PrimaryWeapon != null &&
+            nextInventory.PrimaryWeaponItem == null)
+        {
+            missingItemCount++;
+            LogTransferWarning(
+                $"装備武器をロードできませんでした: {primaryWeaponError}"
+            );
+        }
+
+        nextInventory.HelmetItem = CreateSessionInventoryItem(
+            savedInventory.Helmet,
+            itemDataDatabase,
+            out string helmetError
+        );
+
+        if (savedInventory.Helmet != null &&
+            nextInventory.HelmetItem == null)
+        {
+            missingItemCount++;
+            LogTransferWarning(
+                $"装備ヘルメットをロードできませんでした: {helmetError}"
+            );
+        }
+
+        inventorySessionData = nextInventory;
+        hasInventorySessionData = true;
+
+        missionSessionData.Clear();
+        int restoredMissionCount = 0;
+        int skippedMissionCount = 0;
+
+        if (saveData.Missions != null)
+        {
+            foreach (SavedMissionData savedMission in saveData.Missions)
+            {
+                if (savedMission == null ||
+                    string.IsNullOrWhiteSpace(savedMission.MissionId))
+                {
+                    skippedMissionCount++;
+                    continue;
+                }
+
+                MissionSessionData mission = new MissionSessionData
+                {
+                    Mission = null,
+                    MissionId = savedMission.MissionId.Trim(),
+                    DisplayName = string.IsNullOrWhiteSpace(savedMission.DisplayName)
+                        ? savedMission.MissionId.Trim()
+                        : savedMission.DisplayName,
+                    State = savedMission.State,
+                    Progress = Mathf.Max(0, savedMission.Progress),
+                    RequiredAmount = Mathf.Max(1, savedMission.RequiredAmount),
+                    RewardClaimed = savedMission.RewardClaimed
+                };
+
+                mission.Progress = Mathf.Clamp(
+                    mission.Progress,
+                    0,
+                    mission.RequiredAmount
+                );
+
+                // 報酬受取済みなら、状態も達成済みに統一します。
+                if (mission.RewardClaimed)
+                {
+                    mission.State = MissionSessionState.Completed;
+                    mission.Progress = mission.RequiredAmount;
+                }
+
+                missionSessionData.Add(mission);
+                restoredMissionCount++;
+            }
+        }
+
+        trackedMissionId = saveData.TrackedMissionId ?? string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(trackedMissionId))
+        {
+            MissionSessionData trackedData =
+                FindMissionSessionData(trackedMissionId);
+
+            if (trackedData == null ||
+                trackedData.State != MissionSessionState.InProgress)
+            {
+                trackedMissionId = string.Empty;
+            }
+        }
+
+        NotifyMoneyChanged();
+        InventorySessionChanged?.Invoke();
+        MissionSessionChanged?.Invoke();
+
+        resultMessage =
+            $"所持金={currentMoney:N0} / " +
+            $"通常アイテム={restoredInventoryCount}件 / " +
+            $"ミッション={restoredMissionCount}件";
+
+        if (missingItemCount > 0)
+        {
+            resultMessage +=
+                $" / ItemData未登録などで{missingItemCount}件スキップ";
+        }
+
+        if (skippedMissionCount > 0)
+        {
+            resultMessage +=
+                $" / 無効ミッション{skippedMissionCount}件スキップ";
+        }
+
+        LogTransfer($"本セーブデータ読込完了: {resultMessage}");
+        return true;
+    }
+
+    private static SavedInventoryItemData CreateSavedInventoryItem(
+        SessionInventoryItemData source)
+    {
+        if (source == null ||
+            source.ItemData == null ||
+            string.IsNullOrWhiteSpace(source.ItemData.ItemId) ||
+            source.Amount <= 0)
+        {
+            return null;
+        }
+
+        return new SavedInventoryItemData
+        {
+            ItemId = source.ItemData.ItemId.Trim(),
+            GridX = source.GridX,
+            GridY = source.GridY,
+            IsRotated = source.IsRotated,
+            Amount = Mathf.Max(1, source.Amount),
+            HasStoredMagazineAmmo = source.HasStoredMagazineAmmo,
+            StoredMagazineAmmo = Mathf.Max(0, source.StoredMagazineAmmo)
+        };
+    }
+
+    private static SessionInventoryItemData CreateSessionInventoryItem(
+        SavedInventoryItemData source,
+        ItemDataDatabase itemDataDatabase,
+        out string errorMessage)
+    {
+        errorMessage = string.Empty;
+
+        if (source == null)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(source.ItemId))
+        {
+            errorMessage = "ItemIdが空です。";
+            return null;
+        }
+
+        if (itemDataDatabase == null ||
+            !itemDataDatabase.TryGetItemData(
+                source.ItemId.Trim(),
+                out ItemData itemData) ||
+            itemData == null)
+        {
+            errorMessage =
+                $"ItemId={source.ItemId} がItemDataDatabaseに登録されていません。";
+            return null;
+        }
+
+        return new SessionInventoryItemData
+        {
+            ItemData = itemData,
+            GridX = Mathf.Max(0, source.GridX),
+            GridY = Mathf.Max(0, source.GridY),
+            IsRotated = source.IsRotated,
+            Amount = Mathf.Clamp(
+                source.Amount,
+                1,
+                Mathf.Max(1, itemData.MaxStack)
+            ),
+            HasStoredMagazineAmmo = source.HasStoredMagazineAmmo,
+            StoredMagazineAmmo = Mathf.Max(0, source.StoredMagazineAmmo)
+        };
     }
 
     private MissionSessionData GetOrCreateMissionSessionData(

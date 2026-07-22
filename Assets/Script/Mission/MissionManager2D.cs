@@ -279,6 +279,108 @@ public class MissionManager2D : MonoBehaviour
     }
 
     /// <summary>
+    /// セーブデータをロードする前に、現在のランタイム状態をすべて消去します。
+    /// MissionDefinition2Dの登録一覧自体は変更しません。
+    /// </summary>
+    public void ClearAllMissionRuntimeStateForLoad()
+    {
+        inProgressMissionIndices.Clear();
+        completedMissionIndices.Clear();
+        missionRuntimeData.Clear();
+        trackedMissionIndex = -1;
+
+        ActiveMissionChanged?.Invoke(null);
+        TrackedMissionChanged?.Invoke(null);
+        MissionStateChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// セーブデータから1件のミッション状態と進捗を復元します。
+    /// 通常のStartMissionと異なり、保存済み進捗を初期化で上書きしません。
+    /// </summary>
+    public bool RestoreMissionState(
+        int missionIndex,
+        MissionProgressState2D state,
+        int savedProgress,
+        bool trackAfterRestore)
+    {
+        FindInventoryController();
+        SubscribeInventory();
+        SubscribeEnemyTargets();
+
+        if (!TryGetValidEntry(missionIndex, out MissionEntry2D entry))
+        {
+            LogWarning(
+                $"ミッション復元失敗：Mission Indexが無効です: {missionIndex}"
+            );
+            return false;
+        }
+
+        int requiredAmount = Mathf.Max(
+            1,
+            GetMissionRequiredAmount(missionIndex)
+        );
+
+        MissionRuntimeData data = GetOrCreateRuntimeData(missionIndex);
+        data.Progress = Mathf.Clamp(savedProgress, 0, requiredAmount);
+        data.LastObservedItemAmount = GetCurrentRequiredItemAmount(entry.Mission);
+        data.IsInitialized = true;
+
+        inProgressMissionIndices.Remove(missionIndex);
+        completedMissionIndices.Remove(missionIndex);
+
+        switch (state)
+        {
+            case MissionProgressState2D.InProgress:
+                inProgressMissionIndices.Add(missionIndex);
+                MissionStatusChanged?.Invoke(
+                    entry.Mission,
+                    MissionProgressState2D.InProgress
+                );
+                break;
+
+            case MissionProgressState2D.Completed:
+                data.Progress = requiredAmount;
+                completedMissionIndices.Add(missionIndex);
+                MissionStatusChanged?.Invoke(
+                    entry.Mission,
+                    MissionProgressState2D.Completed
+                );
+                break;
+
+            default:
+                data.Progress = 0;
+                break;
+        }
+
+        if (trackedMissionIndex == missionIndex &&
+            state != MissionProgressState2D.InProgress)
+        {
+            trackedMissionIndex = -1;
+        }
+
+        if (state == MissionProgressState2D.InProgress)
+        {
+            NotifyMissionProgress(missionIndex);
+
+            if (trackAfterRestore)
+            {
+                SetTrackedMission(missionIndex);
+            }
+        }
+
+        MissionStateChanged?.Invoke();
+
+        Log(
+            $"ミッション状態を復元: {entry.Mission.DisplayName} / " +
+            $"状態={state} / 進捗={data.Progress}/{requiredAmount} / " +
+            $"追跡={trackAfterRestore}"
+        );
+
+        return true;
+    }
+
+    /// <summary>
     /// 一覧内の有効な未達成ミッションをすべて開始します。
     /// 進捗は並行して進みます。
     /// </summary>
@@ -628,6 +730,23 @@ public class MissionManager2D : MonoBehaviour
         data.Progress = mission.CountItemsAlreadyHeldWhenMissionStarts
             ? Mathf.Min(mission.RequiredAmount, currentAmount)
             : 0;
+    }
+
+    private int GetCurrentRequiredItemAmount(
+        MissionDefinition2D mission)
+    {
+        if (mission == null ||
+            mission.ObjectiveType != MissionObjectiveType2D.CollectItem ||
+            mission.RequiredItem == null ||
+            inventoryController == null)
+        {
+            return 0;
+        }
+
+        return Mathf.Max(
+            0,
+            inventoryController.GetTotalAmount(mission.RequiredItem)
+        );
     }
 
     private void HandleInventoryChanged()

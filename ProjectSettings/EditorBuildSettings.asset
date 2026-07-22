@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Town_Main.unity
     guid: b2beca1c24f35a34d835c8412d9ce552
+  - enabled: 1
+    path: Assets/Scenes/Taitol.unity
+    guid: 23cb1576ba954b14a943c2d67df54342
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: b5f2ff8dbed4de943a1ee7e94004ed9a, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

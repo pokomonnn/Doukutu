@@ -13,6 +13,10 @@ public class ItemBoxInteractable : MonoBehaviour
     [Header("参照")]
     [SerializeField] private ItemBoxInventory itemBoxInventory;
     [SerializeField] private ItemBoxUIController itemBoxUIController;
+    [SerializeField] private ItemBoxSaveIdentity saveIdentity;
+
+    [Tooltip("一度開封済みの箱は待ち時間なしで開きます")]
+    [SerializeField] private bool skipOpenDelayAfterFirstOpen = true;
 
     [Header("操作")]
     [SerializeField] private KeyCode openKey = KeyCode.E;
@@ -91,6 +95,11 @@ public class ItemBoxInteractable : MonoBehaviour
         if (audioSource == null)
         {
             audioSource = GetComponent<AudioSource>();
+        }
+
+        if (saveIdentity == null)
+        {
+            saveIdentity = GetComponent<ItemBoxSaveIdentity>();
         }
 
         if (audioSource != null)
@@ -181,16 +190,23 @@ public class ItemBoxInteractable : MonoBehaviour
 
     private IEnumerator OpenRoutine()
     {
-        if (openDelay > 0f)
+        float effectiveOpenDelay =
+            skipOpenDelayAfterFirstOpen &&
+            saveIdentity != null &&
+            saveIdentity.WasOpened
+                ? 0f
+                : openDelay;
+
+        if (effectiveOpenDelay > 0f)
         {
             float elapsedTime = 0f;
 
-            while (elapsedTime < openDelay)
+            while (elapsedTime < effectiveOpenDelay)
             {
                 elapsedTime += Time.deltaTime;
 
                 openProgressUI?.SetProgress(
-                    elapsedTime / openDelay
+                    elapsedTime / effectiveOpenDelay
                 );
 
                 yield return null;
@@ -208,6 +224,7 @@ public class ItemBoxInteractable : MonoBehaviour
             !itemBoxUIController.IsOpen)
         {
             itemBoxUIController.Open(itemBoxInventory);
+            saveIdentity?.MarkOpened();
         }
 
         RefreshInteractionVisuals();

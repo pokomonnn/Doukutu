@@ -96,6 +96,40 @@ public class CharacterHealth : MonoBehaviour
         NotifyHealthChanged();
     }
 
+    /// <summary>
+    /// セーブデータなどからHPを直接復元します。
+    /// 被ダメージ音・無敵時間は発生させず、HealthChangedだけを通知します。
+    /// 0を指定した場合は死亡状態になりますが、既定ではDiedイベントを発火しません。
+    /// </summary>
+    public void RestoreHealth(
+        int healthValue,
+        bool invokeDiedEvent = false)
+    {
+        if (invincibilityCoroutine != null)
+        {
+            StopCoroutine(invincibilityCoroutine);
+            invincibilityCoroutine = null;
+        }
+
+        IsInvincible = false;
+        CurrentHealth = Mathf.Clamp(
+            healthValue,
+            0,
+            MaxHealth
+        );
+
+        bool shouldBeDead = CurrentHealth <= 0;
+        bool wasDead = IsDead;
+        IsDead = shouldBeDead;
+
+        NotifyHealthChanged();
+
+        if (shouldBeDead && !wasDead && invokeDiedEvent)
+        {
+            Died?.Invoke();
+        }
+    }
+
     private void PlayDamageSound()
     {
         if (audioSource == null || damageSound == null)

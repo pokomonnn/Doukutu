@@ -183,11 +183,20 @@ public class TorchController : MonoBehaviour
         SetTorchInternal(0f, true);
     }
 
-    [ContextMenu("Clear Torch Session Value")]
-    public void ClearSessionValue()
+    /// <summary>
+    /// タイトル画面のニューゲーム開始時などに、
+    /// シーン間で保持している松明値を静的に消去します。
+    /// </summary>
+    public static void ClearStoredSessionValue()
     {
         hasSessionValue = false;
         sessionTorchValue = 0f;
+    }
+
+    [ContextMenu("Clear Torch Session Value")]
+    public void ClearSessionValue()
+    {
+        ClearStoredSessionValue();
 
         if (showDebugLogs)
         {

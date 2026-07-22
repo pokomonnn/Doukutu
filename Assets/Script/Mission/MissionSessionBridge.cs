@@ -30,6 +30,9 @@ public class MissionSessionBridge : MonoBehaviour
     [Tooltip("Start直後に1フレーム待ってから復元します。MissionManager2DやUIの初期化順を安定させます")]
     [SerializeField] private bool waitOneFrameBeforeRestore = true;
 
+    [Tooltip("インベントリの復元完了を待つため、さらに1フレーム待ってからミッションを復元します。収集進捗の二重加算防止に有効です")]
+    [SerializeField] private bool waitAdditionalFrameForInventoryRestore = true;
+
     [Header("デバッグ")]
     [SerializeField] private bool alwaysLogSessionTransfer = true;
 
@@ -49,6 +52,11 @@ public class MissionSessionBridge : MonoBehaviour
         FindReferences(true);
 
         if (waitOneFrameBeforeRestore)
+        {
+            yield return null;
+        }
+
+        if (waitAdditionalFrameForInventoryRestore)
         {
             yield return null;
         }
@@ -167,6 +175,15 @@ public class MissionSessionBridge : MonoBehaviour
         }
 
         return restored;
+    }
+
+    /// <summary>
+    /// JSONロード後など、同じシーン内でもう一度GameSessionManagerの内容を反映します。
+    /// </summary>
+    public bool ReloadFromSession()
+    {
+        hasRestored = false;
+        return RestoreFromSession();
     }
 
     [ContextMenu("Capture Missions To Session")]

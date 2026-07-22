@@ -196,6 +196,15 @@ public class PlayerInventorySessionBridge : MonoBehaviour
         return restored;
     }
 
+    /// <summary>
+    /// JSONロード後など、同じシーン内でもう一度GameSessionManagerの内容を反映します。
+    /// </summary>
+    public bool ReloadFromSession()
+    {
+        hasRestoredForThisInstance = false;
+        return RestoreFromSession();
+    }
+
     [ContextMenu("Capture Inventory To Game Session")]
     private void CaptureFromContextMenu()
     {
