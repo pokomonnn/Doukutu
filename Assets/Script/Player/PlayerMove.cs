@@ -33,6 +33,13 @@ public class PlayerMove : MonoBehaviour
 
     public bool IsFacingRight { get; private set; } = true;
 
+    // ほふくなど、外部機能から向き変更・ジャンプを止めるための状態
+    private bool isFacingLocked;
+    private bool isJumpLocked;
+
+    public bool IsFacingLocked => isFacingLocked;
+    public bool IsJumpLocked => isJumpLocked;
+
     // ジャンプ直後、地面から離れるまでは再ジャンプを許可しない
     private bool waitingToLeaveGround = false;
 
@@ -54,6 +61,7 @@ public class PlayerMove : MonoBehaviour
 
     private void OnDisable()
     {
+        jumpRequest = false;
         ClearExternalLaunch();
     }
 
@@ -61,9 +69,15 @@ public class PlayerMove : MonoBehaviour
     {
         moveInput = Input.GetAxisRaw("Horizontal");
 
-        UpdateFacing(moveInput);
+        // ほふく中など、向きが固定されている時は
+        // A・Dで前後移動しても見た目を反転させない。
+        if (!isFacingLocked)
+        {
+            UpdateFacing(moveInput);
+        }
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Space) &&
+            !isJumpLocked)
         {
             jumpRequest = true;
         }
@@ -119,6 +133,7 @@ public class PlayerMove : MonoBehaviour
 
         // 地面にいて、ジャンプ可能な時だけジャンプ
         if (jumpRequest && isGrounded && canJump &&
+            !isJumpLocked &&
             !isExternalLaunchActive)
         {
             velocity.y = jumpPower;
@@ -184,10 +199,33 @@ public class PlayerMove : MonoBehaviour
 
     /// <summary>
     /// 外部処理から向きだけ変更したい時に使います。
+    /// 通常入力の向きロック中でも、システム側からの明示的な指定は反映します。
     /// </summary>
     public void SetFacingDirection(float horizontalDirection)
     {
         UpdateFacing(horizontalDirection);
+    }
+
+    /// <summary>
+    /// ほふく中など、横入力による左右反転を止めます。
+    /// 移動そのものは止めません。
+    /// </summary>
+    public void SetFacingLocked(bool locked)
+    {
+        isFacingLocked = locked;
+    }
+
+    /// <summary>
+    /// ほふく中など、Spaceジャンプを止めます。
+    /// </summary>
+    public void SetJumpLocked(bool locked)
+    {
+        isJumpLocked = locked;
+
+        if (locked)
+        {
+            jumpRequest = false;
+        }
     }
 
     private bool IsExternalLaunchActive()

@@ -83,6 +83,10 @@ public class PlayerWeightController : MonoBehaviour
 
     private Coroutine consumableSlowdownCoroutine;
 
+    // ほふく中だけ有効になる速度低下
+    private bool isProne;
+    private float proneMoveSpeedMultiplier = 1f;
+
     public float CurrentWeight => currentWeight;
 
     public float ImmobilizedWeightLimit =>
@@ -138,6 +142,14 @@ public class PlayerWeightController : MonoBehaviour
 
     public bool IsUsingConsumable => isUsingConsumable;
 
+    public bool IsProne => isProne;
+
+    // ほふく中だけ有効な倍率
+    public float CurrentProneMoveSpeedMultiplier =>
+        isProne
+            ? proneMoveSpeedMultiplier
+            : 1f;
+
     // 回復中の合計時間
     public float ConsumableUseDuration =>
         consumableUseDuration;
@@ -184,7 +196,8 @@ public class PlayerWeightController : MonoBehaviour
         CurrentMoveSpeedMultiplier *
         CurrentConditionMoveSpeedMultiplier *
         CurrentSurvivalMoveSpeedMultiplier *
-        CurrentConsumableUseMoveSpeedMultiplier;
+        CurrentConsumableUseMoveSpeedMultiplier *
+        CurrentProneMoveSpeedMultiplier;
 
     public event Action<float> OnWeightChanged;
     public event Action<PlayerWeightState> OnWeightStateChanged;
@@ -277,6 +290,25 @@ public class PlayerWeightController : MonoBehaviour
     private void RecalculateWeightFromContextMenu()
     {
         RecalculateWeight();
+    }
+
+    /// <summary>
+    /// ほふく状態と、ほふく中の移動速度倍率を設定します。
+    /// 重量・骨折・食料不足・回復中の倍率と掛け合わせて反映されます。
+    /// </summary>
+    public void SetProneState(
+        bool prone,
+        float speedMultiplier)
+    {
+        FindReferences();
+        CacheBaseMovementValues();
+
+        isProne = prone;
+        proneMoveSpeedMultiplier = prone
+            ? Mathf.Clamp(speedMultiplier, 0.05f, 1f)
+            : 1f;
+
+        ApplyMovementState();
     }
 
     // ConsumableItemData の Use Duration の間だけ、
