@@ -31,17 +31,30 @@ public class ShopSellTransactionController : MonoBehaviour
     [Tooltip("売却可能なアイテムがない時に表示する文言")]
     [SerializeField] private string emptyCartMessage = "売却するアイテムを入れてください。";
 
+    [Header("売却成功サウンド")]
+    [Tooltip("売却成功時の効果音を再生するAudioSourceです。未設定なら同じGameObjectから探します。")]
+    [SerializeField] private AudioSource audioSource;
+
+    [Tooltip("会計が正常に完了した時だけ再生する効果音です。")]
+    [SerializeField] private AudioClip sellSuccessClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float sellSoundVolume = 1f;
+
     [Header("デバッグ")]
     [SerializeField] private bool showDebugLogs = true;
 
     public int CurrentCheckoutTotal { get; private set; }
     public bool HasSellableItems => CurrentCheckoutTotal > 0;
     public string LastMessage { get; private set; } = string.Empty;
+    public MerchantStockInventory CurrentMerchantStock =>
+        currentMerchantStock;
 
     public event Action<int> CheckoutCompleted;
     public event Action CartReturned;
 
     private bool isSubscribed;
+    private MerchantStockInventory currentMerchantStock;
 
     private readonly struct SellEntry
     {
@@ -78,6 +91,33 @@ public class ShopSellTransactionController : MonoBehaviour
     private void OnDestroy()
     {
         RemoveButtonListener();
+    }
+
+    /// <summary>
+    /// 店を開いた時に、現在の商人を設定します。
+    /// SellCartInventoryにも同じ商人を渡し、ドラッグ時と会計時の両方で
+    /// 商人ごとの買取条件を確認できるようにします。
+    /// </summary>
+    public void SetMerchantStock(
+        MerchantStockInventory merchantStock)
+    {
+        FindReferences();
+
+        currentMerchantStock = merchantStock;
+        sellCart?.SetMerchantStock(merchantStock);
+
+        LastMessage = string.Empty;
+        RefreshUI();
+
+        if (showDebugLogs)
+        {
+            Log(
+                "現在の買取商人を設定しました: " +
+                (currentMerchantStock != null
+                    ? currentMerchantStock.ShopName
+                    : "未設定")
+            );
+        }
     }
 
     /// <summary>
@@ -174,6 +214,7 @@ public class ShopSellTransactionController : MonoBehaviour
         }
 
         CapturePlayerInventoryToSession();
+        PlaySellSuccessSound();
 
         string message =
             $"{removedItemCount}個を売却しました。+¥{removedPrice:N0}";
@@ -268,7 +309,6 @@ public class ShopSellTransactionController : MonoBehaviour
                 continue;
             }
 
-            // 万一プレイヤー側の配置に失敗した時は、元のカート位置へ戻す。
             bool restoredToCart = sellCart.CartInventory.TryMoveItem(
                 item,
                 sourceX,
@@ -311,9 +351,6 @@ public class ShopSellTransactionController : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// CloseButtonから呼びやすい別名です。
-    /// </summary>
     public bool CancelAndReturnAllItems()
     {
         return ReturnAllItemsToPlayer();
@@ -354,8 +391,13 @@ public class ShopSellTransactionController : MonoBehaviour
             statusText != null &&
             blockedEntryCount > 0)
         {
+            string merchantName = currentMerchantStock != null
+                ? currentMerchantStock.ShopName
+                : "この商人";
+
             statusText.text =
-                $"売却できないアイテムが{blockedEntryCount}枠あります。";
+                $"{merchantName}に売却できないアイテムが" +
+                $"{blockedEntryCount}枠あります。";
         }
         else if (string.IsNullOrWhiteSpace(LastMessage) &&
                  statusText != null &&
@@ -406,6 +448,7 @@ public class ShopSellTransactionController : MonoBehaviour
         }
 
         sellCart.CartChanged += HandleCartChanged;
+        sellCart.SellTransferRejected += HandleSellTransferRejected;
         isSubscribed = true;
     }
 
@@ -417,6 +460,7 @@ public class ShopSellTransactionController : MonoBehaviour
         }
 
         sellCart.CartChanged -= HandleCartChanged;
+        sellCart.SellTransferRejected -= HandleSellTransferRejected;
         isSubscribed = false;
     }
 
@@ -424,6 +468,17 @@ public class ShopSellTransactionController : MonoBehaviour
     {
         LastMessage = string.Empty;
         RefreshUI();
+    }
+
+    private void HandleSellTransferRejected(
+        InventoryItem item,
+        string reason)
+    {
+        string resolvedReason = string.IsNullOrWhiteSpace(reason)
+            ? "このアイテムは、この商人には売却できません。"
+            : reason;
+
+        SetMessage(resolvedReason);
     }
 
     private void SetupButton()
@@ -478,6 +533,28 @@ public class ShopSellTransactionController : MonoBehaviour
         RefreshUI();
     }
 
+    private void PlaySellSuccessSound()
+    {
+        if (sellSuccessClip == null)
+        {
+            return;
+        }
+
+        if (audioSource == null)
+        {
+            LogWarning(
+                "Sell Success Clipは設定されていますが、" +
+                "AudioSourceが見つからないため再生できません。"
+            );
+            return;
+        }
+
+        audioSource.PlayOneShot(
+            sellSuccessClip,
+            Mathf.Clamp01(sellSoundVolume)
+        );
+    }
+
     private void CapturePlayerInventoryToSession()
     {
         if (townPlayerInventory == null)
@@ -506,6 +583,11 @@ public class ShopSellTransactionController : MonoBehaviour
 
     private void FindReferences()
     {
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+        }
+
         if (sellCart == null)
         {
             sellCart = FindAnyObjectByType<SellCartInventory>();

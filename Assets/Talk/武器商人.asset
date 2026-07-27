@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bd60bfc4d6663934e94846057f06cc5f, type: 3}
-  m_Name: "\u5546\u4EBA"
+  m_Name: "\u6B66\u5668\u5546\u4EBA"
   m_EditorClassIdentifier: Assembly-CSharp::TownConversationData
   conversationType: 2
-  residentId: Shonin
-  residentName: "\u5546\u4EBA"
+  residentId: Bukishonin
+  residentName: "\u6B66\u5668\u5546\u4EBA"
   defaultPortrait: {fileID: 6218016037910126416, guid: f86b2b107c634e04eae8068f18432ad3, type: 3}
   firstConversationBlockId: first
   repeatConversationBlockId: repeat
@@ -29,7 +29,7 @@ MonoBehaviour:
   moneyReward: 0
   itemRewards: []
   merchantStartBlockId: merchant
-  merchantShopData: {fileID: 11400000, guid: 12d7815a255ace548b3027bd2f6ee73c, type: 2}
+  merchantShopData: {fileID: 11400000, guid: b315ab8ab0cce43418bcb12973c2af81, type: 2}
   nextButtonText: "\u6B21\u3078"
   closeButtonText: "\u9589\u3058\u308B"
   blocks:
@@ -37,21 +37,14 @@ MonoBehaviour:
     pages:
     - speakerNameOverride: 
       portraitOverride: {fileID: 0}
-      message: "\u4F55\u304B\u6B32\u3057\u3044\u3082\u306E\u304C\u3042\u308B\u304B\u3044\uFF1F"
+      message: "\u3046\u3061\u306E\u306F\u9AD8\u54C1\u8CEA\u3060\u305E\uFF01"
     choices:
-    - choiceText: "\u306F\u3044"
+    - choiceText: "\u53D6\u5F15\u3059\u308B"
       action: 3
       nextBlockId: 
       selectionSoundOverride: {fileID: 0}
-    - choiceText: "\u3044\u3044\u3048"
+    - choiceText: "\u53D6\u5F15\u3092\u3084\u3081\u308B"
       action: 4
       nextBlockId: 
       selectionSoundOverride: {fileID: 0}
     nextBlockId: 
-  - blockId: 
-    pages:
-    - speakerNameOverride: 
-      portraitOverride: {fileID: 0}
-      message: "\u4F55\u304B\u6B32\u3057\u3044\u3082\u306E\u304C\u3042\u308B\u304B\u3044\uFF1F"
-    choices: []
-    nextBlockId: merchant

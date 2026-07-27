@@ -38,14 +38,15 @@ MonoBehaviour:
   height: 1
   canRotate: 1
   maxStack: 1
-  purchasePrice: 0
-  sellPrice: 0
+  purchasePrice: 40
+  sellPrice: 20
   canSellToShop: 1
   weight: 0.1
   canDiscard: 1
   healAmount: 5
   foodRestoreAmount: 30
   waterRestoreAmount: 0
+  torchRestoreAmount: 0
   curedConditions: 0
   slowdownDuration: 5
   useMoveSpeedMultiplier: 0.5

@@ -1,58 +1,77 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
-/// 質屋パネルの開閉と、売却予定カートの安全なキャンセル処理を管理します。
-/// このコンポーネントは、最初から有効な TownCanvas / PawnShopSystem などへ付け、
-/// PawnShopPanel 自体は別Objectとして参照してください。
+/// 購入・売却パネル全体を管理します。
+/// 購入側はMerchantPurchaseController + ItemBoxInventory、
+/// 売却側は既存のSellCartInventoryを使用します。
+///
+/// このコンポーネントは非表示になるPawnShopPanel自身ではなく、
+/// 常に有効なTownCanvas / PawnShopSystemへ付けてください。
 /// </summary>
 [DisallowMultipleComponent]
 public class PawnShopUIController : MonoBehaviour
 {
-    [Header("パネル")]
-    [Tooltip("質屋画面全体のPanel。開始時は非表示にしてOKです")]
+    [Header("メインパネル")]
     [SerializeField] private GameObject pawnShopPanel;
 
-    [Header("参照")]
+    [Header("購入・売却タブ（任意）")]
+    [SerializeField] private GameObject purchasePanel;
+    [SerializeField] private GameObject sellPanel;
+    [SerializeField] private Button purchaseTabButton;
+    [SerializeField] private Button sellTabButton;
+
+    [Header("売却システム")]
     [SerializeField] private SellCartInventory sellCart;
     [SerializeField] private ShopSellTransactionController transactionController;
     [SerializeField] private TownPlayerInventoryController townPlayerInventory;
 
-    [Header("UIグリッド")]
-    [Tooltip("TownPlayerInventoryのInventoryControllerを表示するGrid UI")]
+    [Header("購入システム")]
+    [SerializeField] private MerchantPurchaseController merchantPurchaseController;
+
+    [Header("売却側のGrid UI")]
+    [Tooltip("TownPlayerInventoryのInventoryControllerを表示するGrid UIです。")]
     [SerializeField] private InventoryGridUI playerInventoryGridUI;
 
-    [Tooltip("SellCartInventoryのItemBoxInventoryを表示するGrid UI")]
+    [Tooltip("SellCartInventoryのItemBoxInventoryを表示するGrid UIです。")]
     [SerializeField] private InventoryGridUI sellCartGridUI;
 
     [Header("動作")]
     [SerializeField] private bool hidePanelOnAwake = true;
+    [SerializeField] private bool openPurchaseTabFirst = true;
 
-    [Tooltip("閉じる時やTown_Mainを離れる時、会計前のアイテムをプレイヤーへ戻します")]
+    [Tooltip("閉じる時やTown_Mainを離れる時、会計前のアイテムをプレイヤーへ戻します。")]
     [SerializeField] private bool returnCartItemsWhenClosing = true;
 
-    [Tooltip("閉じる時に、現在のプレイヤーインベントリをGameSessionManagerへ保存します")]
+    [Tooltip("閉じる時に現在のプレイヤーインベントリをGameSessionManagerへ保存します。")]
     [SerializeField] private bool captureInventoryWhenClosing = true;
 
     [Header("デバッグ")]
     [SerializeField] private bool showDebugLogs = true;
 
     public bool IsOpen => isOpen;
+    public bool IsPurchaseAvailable => purchaseAvailable;
 
     private bool isOpen;
+    private bool purchaseAvailable;
     private bool isApplicationQuitting;
 
     private void Awake()
     {
         FindReferences();
+        SetupTabButtons();
 
         if (hidePanelOnAwake)
         {
+            merchantPurchaseController?.CloseShop();
             SetPanelVisible(false);
         }
     }
 
     private void OnDestroy()
     {
+        RemoveTabButtonListeners();
+
         if (!isApplicationQuitting)
         {
             TryReturnCartBeforeLeaving();
@@ -65,59 +84,93 @@ public class PawnShopUIController : MonoBehaviour
     }
 
     /// <summary>
-    /// 建物クリック用ButtonのOnClickから呼びます。
+    /// TownConversationControllerのOpenPawnShop選択肢から呼ばれます。
+    /// TownConversationButtonが記録したMerchantStockInventoryを使用します。
     /// </summary>
     public void OpenPawnShop()
     {
         FindReferences();
+        SetupTabButtons();
 
         if (pawnShopPanel == null)
         {
-            LogWarning("Pawn Shop Panel が未設定です。");
+            LogWarning("Pawn Shop Panelが未設定です。");
             return;
         }
 
-        // 前回、何らかの理由でカートに残ったアイテムがある場合は、
-        // 先に返却を試みます。返却できない時はパネルを開いて手動で戻せるようにします。
-        if (sellCart != null && sellCart.HasItems &&
-            transactionController != null)
-        {
-            bool returned = transactionController.ReturnAllItemsToPlayer();
-
-            if (!returned)
-            {
-                LogWarning(
-                    "前回の売却予定アイテムをすべて戻せませんでした。" +
-                    "質屋画面を開くので、プレイヤーインベントリの空きを作ってください。"
-                );
-            }
-        }
+        ReturnOldSellCartIfNeeded();
 
         SetPanelVisible(true);
         isOpen = true;
 
-        BindAndRefreshGridUIs();
+        MerchantStockInventory stock =
+            MerchantShopConversationContext.CurrentStock;
+
+        // 購入側だけでなく、売却カートと会計処理にも
+        // 現在の商人を渡し、商人ごとの買取カテゴリーを反映する。
+        sellCart?.SetMerchantStock(stock);
+        transactionController?.SetMerchantStock(stock);
+
+        BindAndRefreshSellGridUIs();
         transactionController?.RefreshUI();
 
-        Log("質屋画面を開きました。");
+        purchaseAvailable =
+            merchantPurchaseController != null &&
+            merchantPurchaseController.OpenShop(stock);
+
+        if (purchaseAvailable && openPurchaseTabFirst)
+        {
+            ShowPurchaseTab();
+        }
+        else
+        {
+            ShowSellTab();
+        }
+
+        if (purchaseAvailable)
+        {
+            Log(
+                $"購入・売却画面を開きました。店舗={stock.ShopName}"
+            );
+        }
+        else
+        {
+            LogWarning(
+                "購入用のMerchantStockInventoryを開けなかったため、" +
+                "売却画面を表示しました。"
+            );
+        }
     }
 
-    /// <summary>
-    /// CloseButtonのOnClickから呼びます。
-    /// 会計前のカート内容をプレイヤーへ戻せない時は、アイテム消失防止のため閉じません。
-    /// </summary>
+    public void ShowPurchaseTab()
+    {
+        if (!purchaseAvailable)
+        {
+            ShowSellTab();
+            return;
+        }
+
+        SetTabPanels(true);
+        merchantPurchaseController?.RefreshUI();
+    }
+
+    public void ShowSellTab()
+    {
+        SetTabPanels(false);
+        BindAndRefreshSellGridUIs();
+        transactionController?.RefreshUI();
+    }
+
     public void ClosePawnShop()
     {
         TryClosePawnShop();
     }
 
-    /// <summary>
-    /// 質屋画面を閉じられた時だけtrueを返します。
-    /// SceneTransitionButtonなど、シーン移動前に安全確認したい処理から使います。
-    /// </summary>
     public bool TryClosePawnShop()
     {
-        if (!isOpen && pawnShopPanel != null && !pawnShopPanel.activeSelf)
+        if (!isOpen &&
+            pawnShopPanel != null &&
+            !pawnShopPanel.activeSelf)
         {
             return true;
         }
@@ -129,29 +182,53 @@ public class PawnShopUIController : MonoBehaviour
 
         CaptureTownInventory();
 
+        merchantPurchaseController?.CloseShop();
+        transactionController?.SetMerchantStock(null);
+        sellCart?.ClearMerchantStock();
+        MerchantShopConversationContext.Clear();
+
+        purchaseAvailable = false;
         isOpen = false;
         SetPanelVisible(false);
 
-        Log("質屋画面を閉じました。");
+        Log("購入・売却画面を閉じました。");
         return true;
     }
 
-    /// <summary>
-    /// CheckoutButtonのOnClickに直接登録したい場合にも使える中継メソッドです。
-    /// </summary>
     public void Checkout()
     {
         FindReferences();
 
         if (transactionController == null)
         {
-            LogWarning("ShopSellTransactionController が未設定です。");
+            LogWarning("ShopSellTransactionControllerが未設定です。");
             return;
         }
 
         if (transactionController.Checkout())
         {
             CaptureTownInventory();
+        }
+    }
+
+    private void ReturnOldSellCartIfNeeded()
+    {
+        if (sellCart == null ||
+            !sellCart.HasItems ||
+            transactionController == null)
+        {
+            return;
+        }
+
+        bool returned =
+            transactionController.ReturnAllItemsToPlayer();
+
+        if (!returned)
+        {
+            LogWarning(
+                "前回の売却予定アイテムをすべて戻せませんでした。" +
+                "プレイヤーインベントリの空きを作ってください。"
+            );
         }
     }
 
@@ -168,18 +245,19 @@ public class PawnShopUIController : MonoBehaviour
         {
             LogWarning(
                 "売却予定のアイテムがありますが、" +
-                "ShopSellTransactionController が未設定のため戻せません。"
+                "ShopSellTransactionControllerが未設定です。"
             );
             return false;
         }
 
-        bool returned = transactionController.ReturnAllItemsToPlayer();
+        bool returned =
+            transactionController.ReturnAllItemsToPlayer();
 
         if (!returned)
         {
             LogWarning(
-                "売却予定のアイテムをすべてプレイヤーへ戻せないため、" +
-                "アイテム消失防止のため質屋画面を閉じません。"
+                "売却予定アイテムをすべて戻せないため、" +
+                "アイテム消失防止のため画面を閉じません。"
             );
         }
 
@@ -197,13 +275,10 @@ public class PawnShopUIController : MonoBehaviour
         PlayerInventorySessionBridge bridge =
             townPlayerInventory.SessionBridge;
 
-        if (bridge != null)
-        {
-            bridge.CaptureToSession();
-        }
+        bridge?.CaptureToSession();
     }
 
-    private void BindAndRefreshGridUIs()
+    private void BindAndRefreshSellGridUIs()
     {
         if (sellCartGridUI != null &&
             sellCart != null &&
@@ -218,51 +293,101 @@ public class PawnShopUIController : MonoBehaviour
         sellCartGridUI?.RefreshInventoryUI();
     }
 
-    private void SetPanelVisible(bool visible)
+    private void SetTabPanels(bool showPurchase)
     {
-        if (pawnShopPanel == null)
+        if (purchasePanel != null)
         {
-            return;
+            purchasePanel.SetActive(
+                showPurchase && purchaseAvailable
+            );
         }
 
-        if (pawnShopPanel.activeSelf != visible)
+        if (sellPanel != null)
+        {
+            sellPanel.SetActive(!showPurchase);
+        }
+
+        if (purchaseTabButton != null)
+        {
+            purchaseTabButton.interactable =
+                purchaseAvailable && !showPurchase;
+        }
+
+        if (sellTabButton != null)
+        {
+            sellTabButton.interactable = showPurchase;
+        }
+    }
+
+    private void SetPanelVisible(bool visible)
+    {
+        if (pawnShopPanel != null &&
+            pawnShopPanel.activeSelf != visible)
         {
             pawnShopPanel.SetActive(visible);
         }
+    }
+
+    private void SetupTabButtons()
+    {
+        RemoveTabButtonListeners();
+        purchaseTabButton?.onClick.AddListener(ShowPurchaseTab);
+        sellTabButton?.onClick.AddListener(ShowSellTab);
+    }
+
+    private void RemoveTabButtonListeners()
+    {
+        purchaseTabButton?.onClick.RemoveListener(ShowPurchaseTab);
+        sellTabButton?.onClick.RemoveListener(ShowSellTab);
     }
 
     private void FindReferences()
     {
         if (sellCart == null)
         {
-            sellCart = FindAnyObjectByType<SellCartInventory>();
+            sellCart = FindAnyObjectByType<SellCartInventory>(
+                FindObjectsInactive.Include
+            );
         }
 
         if (transactionController == null)
         {
             transactionController =
-                FindAnyObjectByType<ShopSellTransactionController>();
+                FindAnyObjectByType<ShopSellTransactionController>(
+                    FindObjectsInactive.Include
+                );
         }
 
         if (townPlayerInventory == null)
         {
             townPlayerInventory =
-                FindAnyObjectByType<TownPlayerInventoryController>();
+                FindAnyObjectByType<TownPlayerInventoryController>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        if (merchantPurchaseController == null)
+        {
+            merchantPurchaseController =
+                FindAnyObjectByType<MerchantPurchaseController>(
+                    FindObjectsInactive.Include
+                );
         }
     }
 
     private void Log(string message)
     {
-        if (!showDebugLogs)
+        if (showDebugLogs)
         {
-            return;
+            Debug.Log($"[PawnShopUIController] {message}", this);
         }
-
-        Debug.Log($"[PawnShopUIController] {message}", this);
     }
 
     private void LogWarning(string message)
     {
-        Debug.LogWarning($"[PawnShopUIController] {message}", this);
+        Debug.LogWarning(
+            $"[PawnShopUIController] {message}",
+            this
+        );
     }
 }

@@ -16,17 +16,43 @@ MonoBehaviour:
   displayName: Naegi
   description: "\t\t"
   icon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
   width: 1
   height: 1
   canRotate: 1
   maxStack: 1
-  purchasePrice: 0
-  sellPrice: 0
+  purchasePrice: 80
+  sellPrice: 60
   canSellToShop: 1
   weight: 0
   canDiscard: 1
   healAmount: 10
+  foodRestoreAmount: 0
+  waterRestoreAmount: 0
+  torchRestoreAmount: 0
   curedConditions: -1
-  useDuration: 3
+  slowdownDuration: 3
+  useMoveSpeedMultiplier: 0.5
   consumeOnUse: 1
   useSound: {fileID: 8300000, guid: a7cb8358a64492b48b3d173bb68eeb74, type: 3}
+  useAnimationTrigger: UseItem
+  references:
+    version: 2
+    RefIds: []

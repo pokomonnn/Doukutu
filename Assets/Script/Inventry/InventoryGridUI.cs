@@ -59,7 +59,7 @@ public class InventoryGridUI : MonoBehaviour
 
     public bool IsItemBoxInventory => itemBoxInventory != null;
 
-    // Shop は売買機能を作るまで無料ドラッグ移動を禁止します。
+    // Shop は売買処理を通さず無料でドラッグ移動できないようにします。
     public bool AllowsDirectTransfer =>
         itemBoxInventory == null ||
         itemBoxInventory.AllowsDirectItemTransfer;
@@ -233,6 +233,9 @@ public class InventoryGridUI : MonoBehaviour
     /// <summary>
     /// 別のGrid UIへ、同じInventoryItemを移動します。
     /// 武器のStoredMagazineAmmoなど個別情報も維持されます。
+    ///
+    /// v2.3では、移動先がSellCartInventoryの場合、移動前に
+    /// 現在の商人がそのアイテムを買い取るか確認します。
     /// </summary>
     public bool TryTransferItemTo(
         InventoryItem item,
@@ -258,10 +261,26 @@ public class InventoryGridUI : MonoBehaviour
             );
         }
 
-        // Shopは、売買実装前に無料で取れてしまわないようにする
+        // Shopは、売買処理を通さず無料で取れてしまわないようにする
         if (!AllowsDirectTransfer ||
             !targetGridUI.AllowsDirectTransfer)
         {
+            return false;
+        }
+
+        // プレイヤー側から売却カートへ入れる直前に、
+        // 共通売却条件と商人ごとの買取条件を確認する。
+        if (targetGridUI.TryGetSellCartInventory(
+                out SellCartInventory targetSellCart) &&
+            !targetSellCart.CanAcceptItem(
+                item,
+                out string rejectionReason))
+        {
+            targetSellCart.ReportRejectedTransfer(
+                item,
+                rejectionReason
+            );
+
             return false;
         }
 
@@ -574,6 +593,20 @@ public class InventoryGridUI : MonoBehaviour
 
         grid = inventoryController.Grid;
         return grid != null;
+    }
+
+    private bool TryGetSellCartInventory(
+        out SellCartInventory sellCart)
+    {
+        sellCart = null;
+
+        if (itemBoxInventory == null)
+        {
+            return false;
+        }
+
+        sellCart = itemBoxInventory.GetComponent<SellCartInventory>();
+        return sellCart != null;
     }
 
     private void FindContextMenuUI()

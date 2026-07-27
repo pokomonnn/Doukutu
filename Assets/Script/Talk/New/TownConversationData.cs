@@ -58,6 +58,10 @@ public class TownConversationData : ScriptableObject
     [Header("商人：開始ブロック")]
     [SerializeField] private string merchantStartBlockId = "merchant";
 
+    [Header("商人：販売商品")]
+    [Tooltip("この商人が販売する商品データです。OpenPawnShopの選択肢から購入・売却画面を開きます。")]
+    [SerializeField] private MerchantShopData merchantShopData;
+
     [Header("共通ボタン表示")]
     [SerializeField] private string nextButtonText = "次へ";
     [SerializeField] private string closeButtonText = "閉じる";
@@ -95,6 +99,7 @@ public class TownConversationData : ScriptableObject
     public string MissionReadyToReportBlockId => missionReadyToReportBlockId;
     public string MissionRewardClaimedBlockId => missionRewardClaimedBlockId;
     public string MerchantStartBlockId => merchantStartBlockId;
+    public MerchantShopData MerchantShopData => merchantShopData;
 
     public string NextButtonText => string.IsNullOrWhiteSpace(nextButtonText)
         ? "次へ"
