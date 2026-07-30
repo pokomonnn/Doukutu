@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class StoneThrower : MonoBehaviour
@@ -22,7 +23,13 @@ public class StoneThrower : MonoBehaviour
 
     private float lastThrowTime;
     private float chargeStartTime;
-    private bool isCharging = false;
+    private bool isCharging;
+
+    // ロープ接続表示中など、複数の機能からF投擲を止めるためのロックです。
+    private readonly HashSet<object> throwControlLocks =
+        new HashSet<object>();
+
+    public bool IsThrowControlLocked => throwControlLocks.Count > 0;
 
     private void Awake()
     {
@@ -32,8 +39,19 @@ public class StoneThrower : MonoBehaviour
         }
     }
 
+    private void OnDisable()
+    {
+        isCharging = false;
+    }
+
     private void Update()
     {
+        if (IsThrowControlLocked)
+        {
+            isCharging = false;
+            return;
+        }
+
         if (Input.GetKeyDown(throwKey))
         {
             StartCharge();
@@ -45,8 +63,34 @@ public class StoneThrower : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ロープ操作など、Fキーを使用する別機能から石投げを一時停止します。
+    /// ownerごとに管理するため、別のロックが残っている間は再開しません。
+    /// </summary>
+    public void SetThrowControlLock(object owner, bool locked)
+    {
+        if (owner == null)
+        {
+            return;
+        }
+
+        bool changed = locked
+            ? throwControlLocks.Add(owner)
+            : throwControlLocks.Remove(owner);
+
+        if (changed && locked)
+        {
+            isCharging = false;
+        }
+    }
+
     private void StartCharge()
     {
+        if (IsThrowControlLocked)
+        {
+            return;
+        }
+
         // 投げる間隔中ならチャージ開始しない
         if (Time.time < lastThrowTime + throwInterval)
         {
@@ -59,8 +103,9 @@ public class StoneThrower : MonoBehaviour
 
     private void ReleaseThrow()
     {
-        if (!isCharging)
+        if (!isCharging || IsThrowControlLocked)
         {
+            isCharging = false;
             return;
         }
 
@@ -69,21 +114,47 @@ public class StoneThrower : MonoBehaviour
         float chargeTime = Time.time - chargeStartTime;
 
         // 0〜1のチャージ率にする
-        float chargeRate = Mathf.Clamp01(chargeTime / maxChargeTime);
+        float chargeRate = Mathf.Clamp01(
+            chargeTime / Mathf.Max(0.01f, maxChargeTime)
+        );
 
         // チャージ率に応じて速度を決める
-        float throwSpeed = Mathf.Lerp(minThrowSpeed, maxThrowSpeed, chargeRate);
+        float throwSpeed = Mathf.Lerp(
+            minThrowSpeed,
+            maxThrowSpeed,
+            chargeRate
+        );
 
         ThrowStone(throwSpeed);
     }
 
     private void ThrowStone(float throwSpeed)
     {
+        if (stonePrefab == null || playerMove == null)
+        {
+            Debug.LogWarning(
+                "[StoneThrower] Stone Prefab または PlayerMove が未設定です。",
+                this
+            );
+            return;
+        }
+
         lastThrowTime = Time.time;
 
         bool isFacingRight = playerMove.IsFacingRight;
 
-        Transform selectedThrowPoint = isFacingRight ? rightThrowPoint : leftThrowPoint;
+        Transform selectedThrowPoint = isFacingRight
+            ? rightThrowPoint
+            : leftThrowPoint;
+
+        if (selectedThrowPoint == null)
+        {
+            Debug.LogWarning(
+                "[StoneThrower] Throw Point が未設定です。",
+                this
+            );
+            return;
+        }
 
         float xDirection = isFacingRight ? 1f : -1f;
 
@@ -97,22 +168,46 @@ public class StoneThrower : MonoBehaviour
 
         Rigidbody2D rb = stone.GetComponent<Rigidbody2D>();
 
-        Vector2 throwDirection = new Vector2(xDirection, throwUpPower).normalized;
+        if (rb == null)
+        {
+            Debug.LogWarning(
+                "[StoneThrower] Stone Prefab にRigidbody2Dがありません。",
+                stone
+            );
+            return;
+        }
+
+        Vector2 throwDirection =
+            new Vector2(xDirection, throwUpPower).normalized;
 
         rb.linearVelocity = throwDirection * throwSpeed;
     }
 
     private void IgnoreCollisionWithPlayer(GameObject stone)
     {
-        Collider2D[] playerColliders = GetComponentsInChildren<Collider2D>();
-        Collider2D[] stoneColliders = stone.GetComponentsInChildren<Collider2D>();
+        Collider2D[] playerColliders =
+            GetComponentsInChildren<Collider2D>();
+
+        Collider2D[] stoneColliders =
+            stone.GetComponentsInChildren<Collider2D>();
 
         foreach (Collider2D playerCol in playerColliders)
         {
             foreach (Collider2D stoneCol in stoneColliders)
             {
-                Physics2D.IgnoreCollision(playerCol, stoneCol);
+                if (playerCol != null && stoneCol != null)
+                {
+                    Physics2D.IgnoreCollision(playerCol, stoneCol);
+                }
             }
         }
+    }
+
+    private void OnValidate()
+    {
+        minThrowSpeed = Mathf.Max(0f, minThrowSpeed);
+        maxThrowSpeed = Mathf.Max(minThrowSpeed, maxThrowSpeed);
+        maxChargeTime = Mathf.Max(0.01f, maxChargeTime);
+        throwInterval = Mathf.Max(0f, throwInterval);
     }
 }

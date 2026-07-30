@@ -62,6 +62,9 @@ public class WorldItemPickup : MonoBehaviour
     [SerializeField] private SpriteRenderer itemSpriteRenderer;
     [SerializeField] private InventoryController inventoryController;
 
+    [Tooltip("ロープモード中にEキー拾得を止めるための参照です。未設定なら自動取得します")]
+    [SerializeField] private PlayerRopePullController ropePullController;
+
     [Header("プレイヤー判定")]
     [SerializeField] private string playerTag = "Player";
 
@@ -261,6 +264,13 @@ public class WorldItemPickup : MonoBehaviour
     private void Update()
     {
         RefreshPickupPrompt();
+
+        // ロープモード中はEキーをロープ短縮へ使用するため、
+        // 地面アイテムの拾得入力を受け取りません。
+        if (IsRopeModeBlockingPickup())
+        {
+            return;
+        }
 
         if (droppedItem == null ||
             droppedItem.ItemData == null ||
@@ -521,6 +531,18 @@ public class WorldItemPickup : MonoBehaviour
         return other.GetComponentInParent<PlayerMove>() != null;
     }
 
+    private bool IsRopeModeBlockingPickup()
+    {
+        if (ropePullController == null)
+        {
+            ropePullController =
+                FindAnyObjectByType<PlayerRopePullController>();
+        }
+
+        return ropePullController != null &&
+               ropePullController.IsRopeMode;
+    }
+
     private bool FindInventoryController()
     {
         if (inventoryController != null)
@@ -606,7 +628,8 @@ public class WorldItemPickup : MonoBehaviour
             droppedItem.ItemData != null &&
             !isPickingUp &&
             IsPlayerInRange &&
-            canShowAfterDelay;
+            canShowAfterDelay &&
+            !IsRopeModeBlockingPickup();
 
         if (shouldShow)
         {

@@ -1,0 +1,124 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2723078334032803192
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7019918202450780908}
+  - component: {fileID: 1069380920473202015}
+  - component: {fileID: 4153831169276706154}
+  m_Layer: 5
+  m_Name: TownDialogueSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &7019918202450780908
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2723078334032803192}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1069380920473202015
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2723078334032803192}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 528bf68bd79cb2842bccf5d276b0d1d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TownDialogueController
+  dialoguePanel: {fileID: 0}
+  portraitImage: {fileID: 0}
+  residentNameText: {fileID: 0}
+  dialogueText: {fileID: 0}
+  nextButton: {fileID: 0}
+  nextButtonText: {fileID: 0}
+  closeButton: {fileID: 0}
+  choiceButtonsRoot: {fileID: 0}
+  choiceButtonPrefab: {fileID: 2996475493907468456, guid: 29453859bf9f64a4a89947be7457c43f, type: 3}
+  pawnShopUIController: {fileID: 0}
+  missionAcceptController: {fileID: 0}
+  missionRewardController: {fileID: 0}
+  missionManager: {fileID: 0}
+  statusText: {fileID: 0}
+  nextLabel: "\u6B21\u3078"
+  closeLabel: "\u9589\u3058\u308B"
+  hidePanelOnAwake: 1
+  showDebugLogs: 1
+--- !u!114 &4153831169276706154
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2723078334032803192}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53b749dc8a91f5b48a73c9a21d95d482, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TownConversationController
+  dialoguePanel: {fileID: 0}
+  portraitImage: {fileID: 0}
+  residentNameText: {fileID: 0}
+  dialogueText: {fileID: 0}
+  nextButton: {fileID: 0}
+  nextButtonText: {fileID: 0}
+  closeButton: {fileID: 0}
+  closeButtonText: {fileID: 0}
+  choiceButtonsRoot: {fileID: 0}
+  choiceButtonPrefab: {fileID: 2996475493907468456, guid: 29453859bf9f64a4a89947be7457c43f, type: 3}
+  missionAcceptController: {fileID: 0}
+  pawnShopUIController: {fileID: 0}
+  rewardInventoryController: {fileID: 0}
+  gameSessionManager: {fileID: 0}
+  historyManager: {fileID: 0}
+  portraitCanvasGroup: {fileID: 0}
+  portraitFadeInDuration: 0.35
+  fadePortraitOnConversationStart: 1
+  fadePortraitWhenChanged: 1
+  useUnscaledTimeForPortrait: 1
+  statusText: {fileID: 0}
+  statusTextRectTransform: {fileID: 0}
+  statusCanvasGroup: {fileID: 0}
+  statusFadeInDuration: 0.5
+  statusVisibleDuration: 5
+  statusFadeOutDuration: 0.45
+  statusStartYOffset: 45
+  useUnscaledTimeForStatus: 1
+  dialogueAudioSource: {fileID: 0}
+  nextSound: {fileID: 0}
+  choiceSelectSound: {fileID: 0}
+  closeSound: {fileID: 0}
+  nextSoundVolume: 0.8
+  choiceSoundVolume: 0.8
+  closeSoundVolume: 0.8
+  hidePanelOnAwake: 1
+  recordNormalConversationOnClose: 1
+  rewardClaimedFormat: "{0} \u306E\u5831\u916C\u3092\u53D7\u3051\u53D6\u308A\u307E\u3057\u305F\u3002"
+  moneyRewardFormat: "\u6240\u6301\u91D1 +\xA5{0}"
+  itemRewardFormat: "\u30A2\u30A4\u30C6\u30E0 {0} \xD7{1}"
+  showDebugLogs: 0
+  showDetailedDiagnostics: 0
+  logUiStateOnEveryPage: 0

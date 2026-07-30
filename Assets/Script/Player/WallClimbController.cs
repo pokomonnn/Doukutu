@@ -95,6 +95,16 @@ public class WallClimbController : MonoBehaviour
 
     public bool IsWallClimbing => isWallClimbing;
 
+    /// <summary>
+    /// プレイヤーが壁へ張り付いて、壁登り状態を開始した瞬間に通知します。
+    /// </summary>
+    public event Action<WallClimbController> WallClimbStarted;
+
+    /// <summary>
+    /// 壁登り状態を終了した瞬間に通知します。
+    /// </summary>
+    public event Action<WallClimbController> WallClimbEnded;
+
     private struct WallContact
     {
         public Collider2D Collider;
@@ -282,6 +292,8 @@ public class WallClimbController : MonoBehaviour
 
         SnapToWall(currentWall);
 
+        WallClimbStarted?.Invoke(this);
+
         Log(wallDirection > 0
             ? "右側の壁へ張り付きました。"
             : "左側の壁へ張り付きました。"
@@ -370,6 +382,8 @@ public class WallClimbController : MonoBehaviour
 
     private void StopWallClimb(bool restorePhysics)
     {
+        bool wasActuallyClimbing = isWallClimbing;
+
         bool wasUsingWall =
             isWallClimbing ||
             hasDisabledPlayerMove ||
@@ -398,6 +412,11 @@ public class WallClimbController : MonoBehaviour
         currentWall = default;
         hasCachedPhysics = false;
         jumpOffRequested = false;
+
+        if (wasActuallyClimbing)
+        {
+            WallClimbEnded?.Invoke(this);
+        }
     }
 
     private bool TryGetWallContact(int directionToWall, out WallContact contact)

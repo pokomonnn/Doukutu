@@ -47,6 +47,11 @@ public class PlayerEquipmentVisualController : MonoBehaviour
     private readonly HashSet<object> weaponControlLocks =
         new HashSet<object>();
 
+    // ロープモードなど、複数の機能から銃の見た目を
+    // 安全に非表示へできるようにするロック一覧。
+    private readonly HashSet<object> weaponVisibilityLocks =
+        new HashSet<object>();
+
     private void Awake()
     {
         FindEquipmentController();
@@ -121,6 +126,27 @@ public class PlayerEquipmentVisualController : MonoBehaviour
         bool changed = locked
             ? weaponControlLocks.Add(owner)
             : weaponControlLocks.Remove(owner);
+
+        if (changed)
+        {
+            ApplyWeaponControlState();
+        }
+    }
+
+    /// <summary>
+    /// ロープモードなどで、装備中の銃を見た目ごと隠すためのロックです。
+    /// 複数ownerへ対応するため、別機能の非表示状態を誤って解除しません。
+    /// </summary>
+    public void SetWeaponVisibilityLock(object owner, bool hidden)
+    {
+        if (owner == null)
+        {
+            return;
+        }
+
+        bool changed = hidden
+            ? weaponVisibilityLocks.Add(owner)
+            : weaponVisibilityLocks.Remove(owner);
 
         if (changed)
         {
@@ -354,11 +380,15 @@ public class PlayerEquipmentVisualController : MonoBehaviour
 
     private void ApplyWeaponControlState()
     {
+        bool weaponIsVisible =
+            !isWeaponHiddenForConsumableUse &&
+            weaponVisibilityLocks.Count == 0;
+
         bool canUseWeapon =
             currentWeaponData != null &&
             weaponControlsEnabled &&
             weaponControlLocks.Count == 0 &&
-            !isWeaponHiddenForConsumableUse;
+            weaponIsVisible;
 
         currentGunShooter?.SetGunEquipped(
             canUseWeapon
@@ -379,7 +409,8 @@ public class PlayerEquipmentVisualController : MonoBehaviour
         }
 
         bool shouldShowWeapon =
-            !isWeaponHiddenForConsumableUse;
+            !isWeaponHiddenForConsumableUse &&
+            weaponVisibilityLocks.Count == 0;
 
         if (activeWeaponObject.activeSelf !=
             shouldShowWeapon)

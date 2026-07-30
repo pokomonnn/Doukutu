@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -10,6 +11,15 @@ using UnityEngine.Localization;
 [RequireComponent(typeof(AudioSource))]
 public class ItemBoxInteractable : MonoBehaviour
 {
+    /// <summary>
+    /// ItemBoxのUIが正常に開いた直後に通知します。
+    /// チュートリアルなど、特定の箱が開かれたことを監視する処理から使用できます。
+    /// </summary>
+    public event Action<ItemBoxInteractable> Opened;
+
+    public bool WasOpened =>
+        saveIdentity != null && saveIdentity.WasOpened;
+
     [Header("参照")]
     [SerializeField] private ItemBoxInventory itemBoxInventory;
     [SerializeField] private ItemBoxUIController itemBoxUIController;
@@ -225,6 +235,7 @@ public class ItemBoxInteractable : MonoBehaviour
         {
             itemBoxUIController.Open(itemBoxInventory);
             saveIdentity?.MarkOpened();
+            Opened?.Invoke(this);
         }
 
         RefreshInteractionVisuals();

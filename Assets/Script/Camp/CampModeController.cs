@@ -1,4 +1,5 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using Unity.Cinemachine;
 
@@ -51,6 +52,21 @@ public class CampModeController : MonoBehaviour
     [Header("キャンプUI")]
     [Tooltip("キャンプ中だけ表示するPanel")]
     [SerializeField] private GameObject campPanel;
+
+    [Header("キャンプ中の操作案内Text")]
+    [Tooltip("キャンプ中だけ表示するTextMeshPro。Canvas内のTMP Textを設定します")]
+    [SerializeField] private TMP_Text campGuideText;
+
+    [TextArea(2, 4)]
+    [SerializeField] private string campGuideMessage =
+        "Q：眠る\nG：キャンプを終了";
+
+    [TextArea(1, 3)]
+    [SerializeField] private string sleepSelectionGuideMessage =
+        "G / Esc：戻る";
+
+    [Tooltip("睡眠演出中は操作案内Textを非表示にします")]
+    [SerializeField] private bool hideCampGuideWhileSleeping = true;
 
     [Header("睡眠時間選択UI")]
     [Tooltip("SleepTimePanelに付けたCampSleepTimeSelectorUIを設定します")]
@@ -154,7 +170,7 @@ public class CampModeController : MonoBehaviour
     private bool savedCameraSizeUsesCinemachine;
 
     // 現在のキャンプ地で鳴らしている焚き火のAudioSource
-    private AudioSource activeCampfireAudioSource;
+    private AudioSource currentCampfireAudioSource;
 
     private void Awake()
     {
@@ -167,6 +183,7 @@ public class CampModeController : MonoBehaviour
             campPanel.SetActive(false);
         }
 
+        SetCampGuideVisible(false);
         sleepTimeSelectorUI?.HideSelectionImmediately();
     }
 
@@ -210,6 +227,7 @@ public class CampModeController : MonoBehaviour
             ForceRestorePlayerState();
         }
 
+        SetCampGuideVisible(false);
         SetFadeAlpha(0f);
     }
 
@@ -317,6 +335,7 @@ public class CampModeController : MonoBehaviour
 
         IsSleepTimeSelectionOpen = true;
         sleepTimeSelectorUI.ShowSelection();
+        RefreshCampGuide();
     }
 
     /// <summary>
@@ -326,6 +345,7 @@ public class CampModeController : MonoBehaviour
     {
         IsSleepTimeSelectionOpen = false;
         sleepTimeSelectorUI?.HideSelection();
+        RefreshCampGuide();
     }
 
     /// <summary>
@@ -401,6 +421,7 @@ public class CampModeController : MonoBehaviour
 
         IsCamping = true;
         IsBusy = false;
+        RefreshCampGuide();
     }
 
     private IEnumerator SleepRoutine(float gameHours)
@@ -408,6 +429,7 @@ public class CampModeController : MonoBehaviour
         IsBusy = true;
         IsSleeping = true;
         SleepProgress = 0f;
+        RefreshCampGuide();
 
         if (hideCampPanelWhileSleeping && campPanel != null)
         {
@@ -453,6 +475,7 @@ public class CampModeController : MonoBehaviour
         SleepProgress = 0f;
         IsSleeping = false;
         IsBusy = false;
+        RefreshCampGuide();
     }
 
     private void ApplySleepEffects(float gameHours)
@@ -475,6 +498,7 @@ public class CampModeController : MonoBehaviour
     private IEnumerator ExitRoutine()
     {
         IsBusy = true;
+        SetCampGuideVisible(false);
 
         CloseSleepTimeSelection();
 
@@ -560,6 +584,7 @@ public class CampModeController : MonoBehaviour
             campPanel.SetActive(false);
         }
 
+        SetCampGuideVisible(false);
         RestoreCameraZoom();
 
         if (playerMove != null && playerPositionWasSaved)
@@ -620,6 +645,48 @@ public class CampModeController : MonoBehaviour
         yield return new WaitForSecondsRealtime(
             blackScreenHoldDuration
         );
+    }
+
+    private void RefreshCampGuide()
+    {
+        if (campGuideText == null)
+        {
+            return;
+        }
+
+        bool shouldShow = IsCamping && !IsBusy;
+
+        if (IsSleeping && hideCampGuideWhileSleeping)
+        {
+            shouldShow = false;
+        }
+
+        if (!shouldShow)
+        {
+            SetCampGuideVisible(false);
+            return;
+        }
+
+        campGuideText.text = IsSleepTimeSelectionOpen
+            ? sleepSelectionGuideMessage
+            : campGuideMessage;
+
+        SetCampGuideVisible(true);
+    }
+
+    private void SetCampGuideVisible(bool visible)
+    {
+        if (campGuideText == null)
+        {
+            return;
+        }
+
+        GameObject guideObject = campGuideText.gameObject;
+
+        if (guideObject.activeSelf != visible)
+        {
+            guideObject.SetActive(visible);
+        }
     }
 
     private void SetupFadeCanvas()
@@ -781,18 +848,18 @@ public class CampModeController : MonoBehaviour
             campfireSource.Play();
         }
 
-        activeCampfireAudioSource = campfireSource;
+        currentCampfireAudioSource = campfireSource;
     }
 
     private void StopCampfireSound()
     {
-        if (activeCampfireAudioSource != null &&
-            activeCampfireAudioSource.isPlaying)
+        if (currentCampfireAudioSource != null &&
+            currentCampfireAudioSource.isPlaying)
         {
-            activeCampfireAudioSource.Stop();
+            currentCampfireAudioSource.Stop();
         }
 
-        activeCampfireAudioSource = null;
+        currentCampfireAudioSource = null;
     }
 
     private void PlayAnimatorTrigger(string triggerName)
