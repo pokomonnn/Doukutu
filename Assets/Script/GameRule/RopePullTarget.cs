@@ -12,6 +12,9 @@ public class RopePullTarget : MonoBehaviour
     [Header("参照")]
     [SerializeField] private Rigidbody2D targetRigidbody;
 
+    [Tooltip("同じObjectを持ち運べる場合に使用します。未設定なら自動取得します")]
+    [SerializeField] private CarryableObject2D carryableObject;
+
     [Tooltip("ロープを結ぶ位置です。未設定ならこのObjectの中心を使います")]
     [SerializeField] private Transform ropeAttachmentPoint;
 
@@ -78,6 +81,11 @@ public class RopePullTarget : MonoBehaviour
     public bool TryReserve(PlayerRopePullController controller)
     {
         if (controller == null)
+        {
+            return false;
+        }
+
+        if (carryableObject != null && carryableObject.IsCarried)
         {
             return false;
         }
@@ -153,6 +161,11 @@ public class RopePullTarget : MonoBehaviour
         if (targetRigidbody == null)
         {
             targetRigidbody = GetComponent<Rigidbody2D>();
+        }
+
+        if (carryableObject == null)
+        {
+            carryableObject = GetComponent<CarryableObject2D>();
         }
 
         FindPromptText();

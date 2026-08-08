@@ -87,6 +87,10 @@ public class PlayerWeightController : MonoBehaviour
     private bool isProne;
     private float proneMoveSpeedMultiplier = 1f;
 
+    // 手持ち／背負いなど、インベントリ外の運搬物による速度低下
+    private bool isCarryingExternalLoad;
+    private float carryLoadSpeedMultiplier = 1f;
+
     public float CurrentWeight => currentWeight;
 
     public float ImmobilizedWeightLimit =>
@@ -150,6 +154,13 @@ public class PlayerWeightController : MonoBehaviour
             ? proneMoveSpeedMultiplier
             : 1f;
 
+    public bool IsCarryingExternalLoad => isCarryingExternalLoad;
+
+    public float CurrentCarryLoadMoveSpeedMultiplier =>
+        isCarryingExternalLoad
+            ? carryLoadSpeedMultiplier
+            : 1f;
+
     // 回復中の合計時間
     public float ConsumableUseDuration =>
         consumableUseDuration;
@@ -197,7 +208,8 @@ public class PlayerWeightController : MonoBehaviour
         CurrentConditionMoveSpeedMultiplier *
         CurrentSurvivalMoveSpeedMultiplier *
         CurrentConsumableUseMoveSpeedMultiplier *
-        CurrentProneMoveSpeedMultiplier;
+        CurrentProneMoveSpeedMultiplier *
+        CurrentCarryLoadMoveSpeedMultiplier;
 
     public event Action<float> OnWeightChanged;
     public event Action<PlayerWeightState> OnWeightStateChanged;
@@ -305,6 +317,25 @@ public class PlayerWeightController : MonoBehaviour
 
         isProne = prone;
         proneMoveSpeedMultiplier = prone
+            ? Mathf.Clamp(speedMultiplier, 0.05f, 1f)
+            : 1f;
+
+        ApplyMovementState();
+    }
+
+    /// <summary>
+    /// インベントリ外の運搬物による移動速度倍率を設定します。
+    /// 重量・骨折・食料不足・回復中・ほふく中の倍率と掛け合わせて反映されます。
+    /// </summary>
+    public void SetCarryLoadState(
+        bool carrying,
+        float speedMultiplier)
+    {
+        FindReferences();
+        CacheBaseMovementValues();
+
+        isCarryingExternalLoad = carrying;
+        carryLoadSpeedMultiplier = carrying
             ? Mathf.Clamp(speedMultiplier, 0.05f, 1f)
             : 1f;
 

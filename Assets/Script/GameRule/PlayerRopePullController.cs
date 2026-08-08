@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -53,6 +54,40 @@ public class PlayerRopePullController : MonoBehaviour
 
     [SerializeField] private bool enableCollisionBetweenBodies;
 
+    [Header("ロープとGroundの当たり判定")]
+    [Tooltip("オンなら、ロープを物理セグメントに分割してGround・壁・段差へ衝突させます")]
+    [SerializeField] private bool usePhysicalCollisionRope = true;
+
+    [Tooltip("ロープと衝突させたいGround系Layerです。空欄ならPlayerMoveのGround Layerを使います")]
+    [SerializeField] private LayerMask ropeGroundLayers;
+
+    [Tooltip("推奨は専用のRope Layerです。存在しない場合はPlayerと同じLayerを使います")]
+    [SerializeField] private string ropeSegmentLayerName = "Rope";
+
+    [Tooltip("Physics 2DのLayer Collision MatrixでRopeとGroundの衝突がOFFでも、実行中だけ自動的にONへします")]
+    [SerializeField] private bool forceEnableGroundCollisionAtRuntime = true;
+
+    [Tooltip("短いほど滑らかに地面へ沿いますが、生成される物理Objectが増えます")]
+    [SerializeField, Min(0.08f)] private float preferredPhysicalSegmentLength = 0.35f;
+
+    [SerializeField, Range(2, 64)] private int minimumPhysicalSegmentCount = 3;
+    [SerializeField, Range(2, 64)] private int maximumPhysicalSegmentCount = 40;
+
+    [Tooltip("物理ロープの当たり判定の太さです")]
+    [SerializeField, Min(0.01f)] private float physicalRopeThickness = 0.08f;
+
+    [SerializeField, Min(0.001f)] private float physicalSegmentMass = 0.04f;
+    [SerializeField, Min(0f)] private float physicalSegmentGravityScale = 1f;
+    [SerializeField, Min(0f)] private float physicalSegmentLinearDamping = 1.5f;
+    [SerializeField, Min(0f)] private float physicalSegmentAngularDamping = 0.5f;
+    [SerializeField] private PhysicsMaterial2D physicalRopeMaterial;
+
+    [Tooltip("Player自身と物理ロープの衝突を無視して、手元で暴れにくくします")]
+    [SerializeField] private bool ignorePhysicalRopeCollisionWithPlayer = true;
+
+    [Tooltip("引っ張る物体自身と物理ロープの衝突を無視して、接続部分を安定させます")]
+    [SerializeField] private bool ignorePhysicalRopeCollisionWithTarget = true;
+
     [Header("Line Renderer")]
     [SerializeField] private LineRenderer ropeLineRenderer;
     [SerializeField, Range(4, 40)] private int ropeVisualPointCount = 18;
@@ -68,6 +103,14 @@ public class PlayerRopePullController : MonoBehaviour
     [SerializeField] private TMP_Text modeText;
     [SerializeField] private string attachPrompt = "F：ロープをつなぐ";
     [SerializeField] private string detachPrompt = "F：切り離す";
+
+    [Tooltip("同じ物がCarryableObject2Dにも対応している時の表示です")]
+    [SerializeField] private string carryableAttachPrompt =
+        "E：持つ　F：ロープをつなぐ";
+
+    [Tooltip("持てる物へロープが接続済みの時の表示です")]
+    [SerializeField] private string carryableDetachPrompt =
+        "E：持つ　F：切り離す";
     [SerializeField] private string weaponModeLabel = "1：武器モード　2：ロープモード";
     [SerializeField] private string ropeModeLabel = "ロープモード　E：短くする　R：長くする　1：武器";
 
@@ -135,7 +178,9 @@ public class PlayerRopePullController : MonoBehaviour
     [SerializeField] private bool showInteractionGizmo = true;
 
     public bool IsRopeMode => isRopeMode;
-    public bool IsRopeAttached => attachedTarget != null && ropeJoint != null;
+    public bool IsRopeControlLocked => ropeControlLocks.Count > 0;
+    public bool IsRopeAttached =>
+        attachedTarget != null && HasActiveRopeConstraint();
     public float CurrentRopeLength => currentRopeLength;
     public RopePullTarget AttachedTarget => attachedTarget;
 
@@ -143,11 +188,18 @@ public class PlayerRopePullController : MonoBehaviour
     private RopePullTarget promptTarget;
     private DistanceJoint2D ropeJoint;
 
+    private GameObject physicalRopeObject;
+    private RopePullPhysicalRope2D physicalRope;
+
     private GameObject anchorObject;
     private Rigidbody2D anchorRigidbody;
 
     private bool isRopeMode;
     private float currentRopeLength;
+
+    // 物を持っている時など、外部機能からロープ操作を止めるowner方式のロックです。
+    private readonly HashSet<object> ropeControlLocks =
+        new HashSet<object>();
 
     private Vector3[] displayedRopePoints;
     private Material runtimeLineMaterial;
@@ -159,6 +211,7 @@ public class PlayerRopePullController : MonoBehaviour
     {
         FindReferences();
         CreatePlayerAnchorIfNeeded();
+        CreatePhysicalRopeIfNeeded();
         SetupLineRenderer();
         SetupAudioSources();
         SetRopeMode(false, true);
@@ -169,6 +222,7 @@ public class PlayerRopePullController : MonoBehaviour
     {
         FindReferences();
         CreatePlayerAnchorIfNeeded();
+        CreatePhysicalRopeIfNeeded();
         SetupLineRenderer();
         SetupAudioSources();
         RefreshModeText();
@@ -179,12 +233,26 @@ public class PlayerRopePullController : MonoBehaviour
         FindReferences();
 
         if (attachedTarget != null &&
-            (!attachedTarget.isActiveAndEnabled || ropeJoint == null))
+            (!attachedTarget.isActiveAndEnabled ||
+             !HasActiveRopeConstraint()))
         {
             DetachRope(false, false);
         }
 
         UpdateDraggingSound();
+
+        if (IsRopeControlLocked)
+        {
+            if (isRopeMode)
+            {
+                SetRopeMode(false, true);
+            }
+
+            ClearPromptTarget();
+            UpdateStoneThrowLock();
+            RefreshModeText();
+            return;
+        }
 
         if (HandleForcedStopConditions())
         {
@@ -213,11 +281,23 @@ public class PlayerRopePullController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        Vector2 holdPosition = GetPlayerHoldPosition();
+
         if (anchorRigidbody != null && !allowObjectToPullPlayer)
         {
-            anchorRigidbody.MovePosition(GetPlayerHoldPosition());
+            anchorRigidbody.MovePosition(holdPosition);
             anchorRigidbody.linearVelocity = Vector2.zero;
             anchorRigidbody.angularVelocity = 0f;
+        }
+
+        if (physicalRope != null &&
+            physicalRope.IsActive &&
+            attachedTarget != null)
+        {
+            physicalRope.UpdateAnchors(
+                holdPosition,
+                attachedTarget.RopeAttachmentWorldPosition
+            );
         }
     }
 
@@ -240,6 +320,11 @@ public class PlayerRopePullController : MonoBehaviour
         if (anchorObject != null)
         {
             Destroy(anchorObject);
+        }
+
+        if (physicalRopeObject != null)
+        {
+            Destroy(physicalRopeObject);
         }
 
         if (runtimeLineMaterial != null)
@@ -265,6 +350,12 @@ public class PlayerRopePullController : MonoBehaviour
 
     public void SetRopeMode()
     {
+        if (IsRopeControlLocked)
+        {
+            Log("別の行動中のためロープモードへ切り替えられません。");
+            return;
+        }
+
         if (blockRopeModeWhileProne &&
             proneController != null &&
             proneController.IsProne)
@@ -274,6 +365,41 @@ public class PlayerRopePullController : MonoBehaviour
         }
 
         SetRopeMode(true, false);
+    }
+
+    /// <summary>
+    /// 物を持つ機能などから、ロープ接続・モード切替・長さ変更を一時停止します。
+    /// ownerごとに管理するため、別のロックが残っている間は解除されません。
+    /// </summary>
+    public void SetRopeControlLock(object owner, bool locked)
+    {
+        if (owner == null)
+        {
+            return;
+        }
+
+        bool changed = locked
+            ? ropeControlLocks.Add(owner)
+            : ropeControlLocks.Remove(owner);
+
+        if (!changed)
+        {
+            return;
+        }
+
+        if (locked)
+        {
+            if (IsRopeAttached)
+            {
+                DetachRope(false, false);
+            }
+
+            SetRopeMode(false, true);
+            ClearPromptTarget();
+        }
+
+        UpdateStoneThrowLock();
+        RefreshModeText();
     }
 
     public void ToggleRopeMode(bool ropeMode)
@@ -290,6 +416,11 @@ public class PlayerRopePullController : MonoBehaviour
 
     public bool AttachRope(RopePullTarget target)
     {
+        if (IsRopeControlLocked)
+        {
+            return false;
+        }
+
         if (target == null || !target.isActiveAndEnabled)
         {
             return false;
@@ -335,34 +466,23 @@ public class PlayerRopePullController : MonoBehaviour
             maximumRopeLength
         );
 
-        ropeJoint = targetBody.gameObject.AddComponent<DistanceJoint2D>();
-        ropeJoint.autoConfigureDistance = false;
-        ropeJoint.autoConfigureConnectedAnchor = false;
-        ropeJoint.enableCollision = enableCollisionBetweenBodies;
-        ropeJoint.maxDistanceOnly = true;
-        ropeJoint.distance = currentRopeLength;
-        ropeJoint.anchor = ropeJoint.transform.InverseTransformPoint(
-            target.RopeAttachmentWorldPosition
-        );
+        bool created = usePhysicalCollisionRope
+            ? CreatePhysicalRopeConstraint(targetBody)
+            : CreateLegacyDistanceJoint(targetBody);
 
-        if (allowObjectToPullPlayer)
+        if (!created)
         {
-            ropeJoint.connectedBody = playerRigidbody;
-            ropeJoint.connectedAnchor = playerRigidbody.transform.InverseTransformPoint(
-                GetPlayerHoldPosition()
+            attachedTarget = null;
+            currentRopeLength = 0f;
+            target.Release(this);
+
+            Debug.LogWarning(
+                $"[PlayerRopePullController] {target.name} へのロープ生成に失敗しました。",
+                this
             );
-        }
-        else
-        {
-            ropeJoint.connectedBody = anchorRigidbody;
-            ropeJoint.connectedAnchor = Vector2.zero;
-        }
 
-        ropeJoint.breakForce = ropeBreakForce > 0f
-            ? ropeBreakForce
-            : Mathf.Infinity;
-
-        ropeJoint.breakTorque = Mathf.Infinity;
+            return false;
+        }
 
         if (ropeLineRenderer != null)
         {
@@ -376,6 +496,266 @@ public class PlayerRopePullController : MonoBehaviour
 
         Log($"ロープ接続: {target.name} / 長さ={currentRopeLength:0.00}");
         return true;
+    }
+
+    private bool CreateLegacyDistanceJoint(
+        Rigidbody2D targetBody)
+    {
+        if (targetBody == null)
+        {
+            return false;
+        }
+
+        ropeJoint =
+            targetBody.gameObject.AddComponent<DistanceJoint2D>();
+
+        ropeJoint.autoConfigureDistance = false;
+        ropeJoint.autoConfigureConnectedAnchor = false;
+        ropeJoint.enableCollision = enableCollisionBetweenBodies;
+        ropeJoint.maxDistanceOnly = true;
+        ropeJoint.distance = currentRopeLength;
+        ropeJoint.anchor =
+            ropeJoint.transform.InverseTransformPoint(
+                attachedTarget.RopeAttachmentWorldPosition
+            );
+
+        if (allowObjectToPullPlayer)
+        {
+            ropeJoint.connectedBody = playerRigidbody;
+            ropeJoint.connectedAnchor =
+                playerRigidbody.transform.InverseTransformPoint(
+                    GetPlayerHoldPosition()
+                );
+        }
+        else
+        {
+            ropeJoint.connectedBody = anchorRigidbody;
+            ropeJoint.connectedAnchor = Vector2.zero;
+        }
+
+        ropeJoint.breakForce = ropeBreakForce > 0f
+            ? ropeBreakForce
+            : Mathf.Infinity;
+
+        ropeJoint.breakTorque = Mathf.Infinity;
+        return ropeJoint != null;
+    }
+
+    private bool CreatePhysicalRopeConstraint(
+        Rigidbody2D targetBody)
+    {
+        CreatePhysicalRopeIfNeeded();
+
+        if (physicalRope == null ||
+            targetBody == null ||
+            attachedTarget == null)
+        {
+            return false;
+        }
+
+        Rigidbody2D startBody = allowObjectToPullPlayer
+            ? playerRigidbody
+            : anchorRigidbody;
+
+        if (startBody == null)
+        {
+            return false;
+        }
+
+        int segmentLayer = ResolvePhysicalRopeLayer();
+        ValidatePhysicalRopeLayerCollision(segmentLayer);
+
+        RopePullPhysicalRope2D.Settings settings =
+            new RopePullPhysicalRope2D.Settings
+            {
+                SegmentLayer = segmentLayer,
+                PreferredSegmentLength =
+                    preferredPhysicalSegmentLength,
+                MinimumSegmentCount =
+                    minimumPhysicalSegmentCount,
+                MaximumSegmentCount =
+                    maximumPhysicalSegmentCount,
+                Thickness = physicalRopeThickness,
+                SegmentMass = physicalSegmentMass,
+                GravityScale =
+                    physicalSegmentGravityScale,
+                LinearDamping =
+                    physicalSegmentLinearDamping,
+                AngularDamping =
+                    physicalSegmentAngularDamping,
+                BreakForce = ropeBreakForce,
+                PhysicsMaterial = physicalRopeMaterial,
+                IgnoredColliders =
+                    BuildPhysicalRopeIgnoredColliders()
+            };
+
+        ropeJoint = null;
+
+        return physicalRope.Build(
+            startBody,
+            GetPlayerHoldPosition(),
+            targetBody,
+            attachedTarget.RopeAttachmentWorldPosition,
+            currentRopeLength,
+            settings
+        );
+    }
+
+    private Collider2D[] BuildPhysicalRopeIgnoredColliders()
+    {
+        List<Collider2D> ignored =
+            new List<Collider2D>();
+
+        if (ignorePhysicalRopeCollisionWithPlayer)
+        {
+            Collider2D[] playerColliders =
+                GetComponentsInChildren<Collider2D>(true);
+
+            foreach (Collider2D collider in playerColliders)
+            {
+                if (collider != null &&
+                    !ignored.Contains(collider))
+                {
+                    ignored.Add(collider);
+                }
+            }
+        }
+
+        if (ignorePhysicalRopeCollisionWithTarget &&
+            attachedTarget != null)
+        {
+            Collider2D[] targetColliders =
+                attachedTarget.GetComponentsInChildren<
+                    Collider2D
+                >(true);
+
+            foreach (Collider2D collider in targetColliders)
+            {
+                if (collider != null &&
+                    !ignored.Contains(collider))
+                {
+                    ignored.Add(collider);
+                }
+            }
+        }
+
+        return ignored.ToArray();
+    }
+
+    private void CreatePhysicalRopeIfNeeded()
+    {
+        if (physicalRope != null)
+        {
+            return;
+        }
+
+        physicalRopeObject = new GameObject(
+            "RopePull_PhysicalRope"
+        );
+
+        physicalRopeObject.hideFlags =
+            HideFlags.HideInHierarchy;
+
+        physicalRopeObject.transform.position = Vector3.zero;
+        physicalRope =
+            physicalRopeObject.AddComponent<
+                RopePullPhysicalRope2D
+            >();
+    }
+
+    private int ResolvePhysicalRopeLayer()
+    {
+        int configuredLayer = string.IsNullOrWhiteSpace(
+            ropeSegmentLayerName
+        )
+            ? -1
+            : LayerMask.NameToLayer(
+                ropeSegmentLayerName.Trim()
+            );
+
+        if (configuredLayer >= 0)
+        {
+            return configuredLayer;
+        }
+
+        if (!string.IsNullOrWhiteSpace(ropeSegmentLayerName))
+        {
+            Debug.LogWarning(
+                $"[PlayerRopePullController] Layer『{ropeSegmentLayerName}』が見つかりません。" +
+                $"物理ロープにはPlayerと同じLayer『{LayerMask.LayerToName(gameObject.layer)}』を使用します。",
+                this
+            );
+        }
+
+        return gameObject.layer;
+    }
+
+    private void ValidatePhysicalRopeLayerCollision(
+        int segmentLayer)
+    {
+        int groundMask = ropeGroundLayers.value;
+
+        if (groundMask == 0 && playerMove != null)
+        {
+            groundMask = playerMove.groundLayer.value;
+        }
+
+        if (groundMask == 0)
+        {
+            Debug.LogWarning(
+                "[PlayerRopePullController] Rope Ground Layersが空です。" +
+                "Groundレイヤーを設定してください。",
+                this
+            );
+            return;
+        }
+
+        for (int layer = 0; layer < 32; layer++)
+        {
+            if ((groundMask & (1 << layer)) == 0)
+            {
+                continue;
+            }
+
+            if (!Physics2D.GetIgnoreLayerCollision(
+                    segmentLayer,
+                    layer))
+            {
+                continue;
+            }
+
+            if (forceEnableGroundCollisionAtRuntime)
+            {
+                Physics2D.IgnoreLayerCollision(
+                    segmentLayer,
+                    layer,
+                    false
+                );
+
+                Log(
+                    $"実行中のLayer衝突をONにしました: " +
+                    $"{LayerMask.LayerToName(segmentLayer)} × " +
+                    $"{LayerMask.LayerToName(layer)}"
+                );
+            }
+            else
+            {
+                Debug.LogWarning(
+                    $"[PlayerRopePullController] Physics 2DのLayer Collision Matrixで、" +
+                    $"『{LayerMask.LayerToName(segmentLayer)}』と" +
+                    $"『{LayerMask.LayerToName(layer)}』の衝突がOFFです。" +
+                    "この2つが衝突するようにチェックを入れてください。",
+                    this
+                );
+            }
+        }
+    }
+
+    private bool HasActiveRopeConstraint()
+    {
+        return ropeJoint != null ||
+               (physicalRope != null &&
+                physicalRope.IsValid);
     }
 
     public void DetachRope()
@@ -404,9 +784,11 @@ public class PlayerRopePullController : MonoBehaviour
 
         if (ropeJoint != null)
         {
+            ropeJoint.enabled = false;
             Destroy(ropeJoint);
         }
 
+        physicalRope?.DestroyRope();
         ropeJoint = null;
         attachedTarget = null;
         currentRopeLength = 0f;
@@ -489,7 +871,12 @@ public class PlayerRopePullController : MonoBehaviour
             maximumRopeLength
         );
 
-        if (ropeJoint != null)
+        if (physicalRope != null &&
+            physicalRope.IsActive)
+        {
+            physicalRope.SetLength(currentRopeLength);
+        }
+        else if (ropeJoint != null)
         {
             ropeJoint.distance = currentRopeLength;
         }
@@ -497,6 +884,11 @@ public class PlayerRopePullController : MonoBehaviour
 
     private void SetRopeMode(bool ropeMode, bool force)
     {
+        if (ropeMode && IsRopeControlLocked)
+        {
+            return;
+        }
+
         if (!force && isRopeMode == ropeMode)
         {
             return;
@@ -592,10 +984,20 @@ public class PlayerRopePullController : MonoBehaviour
             return;
         }
 
+        CarryableObject2D carryable =
+            promptTarget.GetComponent<CarryableObject2D>();
+
+        bool canCarry = carryable != null && carryable.CanBePickedUp;
+        bool isAttachedPrompt = attachedTarget == promptTarget;
+
         promptTarget.ShowPrompt(
-            attachedTarget == promptTarget
-                ? detachPrompt
-                : attachPrompt
+            canCarry
+                ? (isAttachedPrompt
+                    ? carryableDetachPrompt
+                    : carryableAttachPrompt)
+                : (isAttachedPrompt
+                    ? detachPrompt
+                    : attachPrompt)
         );
     }
 
@@ -771,6 +1173,31 @@ public class PlayerRopePullController : MonoBehaviour
             return;
         }
 
+        if (physicalRope != null &&
+            physicalRope.IsValid)
+        {
+            int physicalPointCount =
+                Mathf.Max(2, physicalRope.VisualPointCount);
+
+            displayedRopePoints =
+                new Vector3[physicalPointCount];
+
+            int copied = physicalRope.CopyVisualPoints(
+                displayedRopePoints
+            );
+
+            ropeLineRenderer.positionCount = copied;
+
+            if (copied > 0)
+            {
+                ropeLineRenderer.SetPositions(
+                    displayedRopePoints
+                );
+            }
+
+            return;
+        }
+
         int count = Mathf.Max(4, ropeVisualPointCount);
         displayedRopePoints = new Vector3[count];
 
@@ -802,10 +1229,42 @@ public class PlayerRopePullController : MonoBehaviour
             return;
         }
 
-        int count = Mathf.Max(4, ropeVisualPointCount);
+        if (physicalRope != null &&
+            physicalRope.IsValid)
+        {
+            int count = physicalRope.VisualPointCount;
+
+            if (displayedRopePoints == null ||
+                displayedRopePoints.Length != count)
+            {
+                displayedRopePoints = new Vector3[count];
+            }
+
+            int copied = physicalRope.CopyVisualPoints(
+                displayedRopePoints
+            );
+
+            ropeLineRenderer.positionCount = copied;
+
+            if (copied > 0)
+            {
+                ropeLineRenderer.SetPositions(
+                    displayedRopePoints
+                );
+                ropeLineRenderer.enabled = true;
+            }
+            else
+            {
+                ropeLineRenderer.enabled = false;
+            }
+
+            return;
+        }
+
+        int visualCount = Mathf.Max(4, ropeVisualPointCount);
 
         if (displayedRopePoints == null ||
-            displayedRopePoints.Length != count)
+            displayedRopePoints.Length != visualCount)
         {
             InitializeRopeVisualPoints();
         }
@@ -820,14 +1279,14 @@ public class PlayerRopePullController : MonoBehaviour
             -visualFollowSpeed * Mathf.Max(0f, Time.deltaTime)
         );
 
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < visualCount; i++)
         {
-            float t = i / (float)(count - 1);
+            float t = i / (float)(visualCount - 1);
             Vector3 targetPoint = Vector3.Lerp(start, end, t);
             targetPoint += Vector3.down *
                 (Mathf.Sin(Mathf.PI * t) * sag);
 
-            if (i == 0 || i == count - 1)
+            if (i == 0 || i == visualCount - 1)
             {
                 displayedRopePoints[i] = targetPoint;
             }
@@ -841,7 +1300,7 @@ public class PlayerRopePullController : MonoBehaviour
             }
         }
 
-        ropeLineRenderer.positionCount = count;
+        ropeLineRenderer.positionCount = visualCount;
         ropeLineRenderer.SetPositions(displayedRopePoints);
         ropeLineRenderer.enabled = true;
     }
@@ -944,11 +1403,18 @@ public class PlayerRopePullController : MonoBehaviour
                 ? targetBody.linearVelocity.magnitude
                 : 0f;
 
+            float ropePathLength =
+                physicalRope != null &&
+                physicalRope.IsValid
+                    ? physicalRope.GetApproximatePathLength()
+                    : Vector2.Distance(
+                        GetPlayerHoldPosition(),
+                        attachedTarget.RopeAttachmentWorldPosition
+                    );
+
             bool ropeIsTaut = !requireTautRopeForDraggingSound ||
-                Vector2.Distance(
-                    GetPlayerHoldPosition(),
-                    attachedTarget.RopeAttachmentWorldPosition
-                ) >= currentRopeLength - ropeTensionTolerance;
+                ropePathLength >=
+                currentRopeLength - ropeTensionTolerance;
 
             bool touchesSurface =
                 !requireSurfaceContactForDraggingSound ||
@@ -1154,6 +1620,50 @@ public class PlayerRopePullController : MonoBehaviour
         initialSlack = Mathf.Max(0f, initialSlack);
         ropeLengthChangeSpeed = Mathf.Max(0.01f, ropeLengthChangeSpeed);
         ropeBreakForce = Mathf.Max(0f, ropeBreakForce);
+
+        preferredPhysicalSegmentLength = Mathf.Max(
+            0.08f,
+            preferredPhysicalSegmentLength
+        );
+        minimumPhysicalSegmentCount = Mathf.Clamp(
+            minimumPhysicalSegmentCount,
+            2,
+            64
+        );
+        maximumPhysicalSegmentCount = Mathf.Clamp(
+            maximumPhysicalSegmentCount,
+            minimumPhysicalSegmentCount,
+            64
+        );
+        physicalRopeThickness = Mathf.Max(
+            0.01f,
+            physicalRopeThickness
+        );
+        physicalSegmentMass = Mathf.Max(
+            0.001f,
+            physicalSegmentMass
+        );
+        physicalSegmentGravityScale = Mathf.Max(
+            0f,
+            physicalSegmentGravityScale
+        );
+        physicalSegmentLinearDamping = Mathf.Max(
+            0f,
+            physicalSegmentLinearDamping
+        );
+        physicalSegmentAngularDamping = Mathf.Max(
+            0f,
+            physicalSegmentAngularDamping
+        );
+        ropeSegmentLayerName =
+            ropeSegmentLayerName?.Trim() ?? string.Empty;
+
+        if (ropeGroundLayers.value == 0 &&
+            playerMove != null)
+        {
+            ropeGroundLayers = playerMove.groundLayer;
+        }
+
         ropeVisualPointCount = Mathf.Clamp(ropeVisualPointCount, 4, 40);
         ropeWidth = Mathf.Max(0.001f, ropeWidth);
         sagMultiplier = Mathf.Max(0f, sagMultiplier);

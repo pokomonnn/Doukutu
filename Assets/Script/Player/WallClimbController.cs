@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -94,6 +95,7 @@ public class WallClimbController : MonoBehaviour
     [SerializeField] private bool showWallCheckGizmo = true;
 
     public bool IsWallClimbing => isWallClimbing;
+    public bool IsWallClimbLocked => wallClimbLocks.Count > 0;
 
     /// <summary>
     /// プレイヤーが壁へ張り付いて、壁登り状態を開始した瞬間に通知します。
@@ -113,6 +115,11 @@ public class WallClimbController : MonoBehaviour
     }
 
     private bool isWallClimbing;
+
+    // 手前持ちなど、複数機能から壁登り開始を止めるowner方式のロックです。
+    private readonly HashSet<object> wallClimbLocks =
+        new HashSet<object>();
+
     private int wallDirection;
     private WallContact currentWall;
 
@@ -153,6 +160,12 @@ public class WallClimbController : MonoBehaviour
     private void Update()
     {
         FindReferences();
+
+        if (IsWallClimbLocked)
+        {
+            StopWallClimb(true);
+            return;
+        }
 
         horizontalInputDirection = GetHorizontalInputDirection();
         upHeld = Input.GetKey(climbUpKey);
@@ -222,6 +235,27 @@ public class WallClimbController : MonoBehaviour
     }
 
     /// <summary>
+    /// 手前持ちなど、外部機能から壁登りを一時停止します。
+    /// ownerごとに管理するため、別のロックが残っている間は再開しません。
+    /// </summary>
+    public void SetWallClimbLock(object owner, bool locked)
+    {
+        if (owner == null)
+        {
+            return;
+        }
+
+        bool changed = locked
+            ? wallClimbLocks.Add(owner)
+            : wallClimbLocks.Remove(owner);
+
+        if (changed && locked)
+        {
+            StopWallClimb(true);
+        }
+    }
+
+    /// <summary>
     /// 外部処理から壁登りを中断したい時に呼べます。
     /// </summary>
     public void StopWallClimbNow()
@@ -231,7 +265,8 @@ public class WallClimbController : MonoBehaviour
 
     private void TryStartWallClimb()
     {
-        if (Time.time < regrabAllowedTime ||
+        if (IsWallClimbLocked ||
+            Time.time < regrabAllowedTime ||
             playerRigidbody == null ||
             horizontalInputDirection == 0)
         {
