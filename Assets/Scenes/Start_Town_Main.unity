@@ -304,7 +304,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fed480729c3baaa499877275dad92684, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneTransitionButton
-  targetSceneName: SampleScene
+  targetSceneName: Start_Doukustu
   loadSceneMode: 0
   captureInventoryBeforeLoad: 1
   closeOpenPawnShopBeforeLoad: 1

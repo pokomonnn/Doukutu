@@ -23,6 +23,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/OpeningCutScene.unity
     guid: 9276fff54548d1d41b727d82d1e27aa0
+  - enabled: 1
+    path: Assets/Scenes/Start_Doukustu.unity
+    guid: 0b47bd0c5975e54498c55283dff802cf
+  - enabled: 1
+    path: Assets/Scenes/Result.unity
+    guid: 837ed1185e3f6bc49bc884a0a610c67f
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: b5f2ff8dbed4de943a1ee7e94004ed9a, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

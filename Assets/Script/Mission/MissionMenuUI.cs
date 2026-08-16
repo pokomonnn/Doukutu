@@ -77,6 +77,7 @@ public class MissionMenuUI : MonoBehaviour
 
     [Header("表示文")]
     [SerializeField] private string collectFormat = "{0}  {1} / {2}";
+    [SerializeField] private string deliverFormat = "納品 {0}  {1} / {2}";
     [SerializeField] private string defeatFormat = "討伐  {0} / {1}";
     [SerializeField] private string inactiveLabel = "未開始";
     [SerializeField] private string inProgressLabel = "進行中";
@@ -616,6 +617,20 @@ public class MissionMenuUI : MonoBehaviour
 
             return string.Format(
                 collectFormat,
+                itemName,
+                Mathf.Max(0, progress),
+                Mathf.Max(0, required)
+            );
+        }
+
+        if (mission.ObjectiveType == MissionObjectiveType2D.DeliverItem)
+        {
+            string itemName = mission.RequiredItem != null
+                ? mission.RequiredItem.DisplayName
+                : "アイテム";
+
+            return string.Format(
+                deliverFormat,
                 itemName,
                 Mathf.Max(0, progress),
                 Mathf.Max(0, required)

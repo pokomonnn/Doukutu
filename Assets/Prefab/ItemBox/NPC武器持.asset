@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 246ede3254d8f8f47b56cb1fe6b3836f, type: 3}
+  m_Name: "NPC\u6B66\u5668\u6301"
+  m_EditorClassIdentifier: Assembly-CSharp::ItemBoxLootTable
+  entries:
+  - itemData: {fileID: 11400000, guid: a3b808ca916280a46816c5033eac419a, type: 2}
+    chancePercent: 100
+    minAmount: 8
+    maxAmount: 25
+  - itemData: {fileID: 11400000, guid: c375d2bc72fdf754a9bb76c08017179c, type: 2}
+    chancePercent: 100
+    minAmount: 1
+    maxAmount: 1
+  minimumSuccessfulEntries: 1
+  maximumSuccessfulEntries: 3

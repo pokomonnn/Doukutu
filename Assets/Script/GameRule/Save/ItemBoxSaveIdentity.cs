@@ -17,7 +17,11 @@ public class ItemBoxSaveIdentity : MonoBehaviour
 
     private void Awake()
     {
-        if (itemBoxInventory == null) itemBoxInventory = GetComponent<ItemBoxInventory>();
+        if (itemBoxInventory == null)
+        {
+            itemBoxInventory = GetComponent<ItemBoxInventory>();
+        }
+
         ApplyVisual();
     }
 
@@ -27,25 +31,59 @@ public class ItemBoxSaveIdentity : MonoBehaviour
         ApplyVisual();
     }
 
+    /// <summary>
+    /// ランタイム生成されたItemBoxへ、SpawnPoint由来の固定IDを設定します。
+    /// ItemBoxSpawnManager2Dから使用します。
+    /// </summary>
+    public void AssignPersistentId(string newPersistentId)
+    {
+        if (string.IsNullOrWhiteSpace(newPersistentId))
+        {
+            Debug.LogWarning(
+                "[ItemBoxSaveIdentity] 空のPersistent Idは設定できません。",
+                this
+            );
+            return;
+        }
+
+        persistentId = newPersistentId.Trim();
+    }
+
     public SavedItemBoxData CreateSaveData()
     {
-        if (itemBoxInventory == null) itemBoxInventory = GetComponent<ItemBoxInventory>();
-        if (itemBoxInventory == null || string.IsNullOrWhiteSpace(PersistentId)) return null;
+        if (itemBoxInventory == null)
+        {
+            itemBoxInventory = GetComponent<ItemBoxInventory>();
+        }
+
+        if (itemBoxInventory == null ||
+            string.IsNullOrWhiteSpace(PersistentId))
+        {
+            return null;
+        }
 
         SavedItemBoxData result = new SavedItemBoxData
         {
             SceneName = gameObject.scene.name,
             PersistentId = PersistentId,
             WasOpened = wasOpened,
-            GridWidth = itemBoxInventory.Grid != null ? itemBoxInventory.Grid.Width : 1,
-            GridHeight = itemBoxInventory.Grid != null ? itemBoxInventory.Grid.Height : 1
+            GridWidth = itemBoxInventory.Grid != null
+                ? itemBoxInventory.Grid.Width
+                : 1,
+            GridHeight = itemBoxInventory.Grid != null
+                ? itemBoxInventory.Grid.Height
+                : 1
         };
 
         if (itemBoxInventory.Grid?.Items != null)
         {
             foreach (InventoryItem item in itemBoxInventory.Grid.Items)
             {
-                if (item?.ItemData == null) continue;
+                if (item?.ItemData == null)
+                {
+                    continue;
+                }
+
                 result.Items.Add(new SavedInventoryItemData
                 {
                     ItemId = item.ItemData.ItemId,
@@ -62,26 +100,72 @@ public class ItemBoxSaveIdentity : MonoBehaviour
         return result;
     }
 
-    public bool RestoreFromSaveData(SavedItemBoxData saved, ItemDataDatabase database)
+    public bool RestoreFromSaveData(
+        SavedItemBoxData saved,
+        ItemDataDatabase database)
     {
-        if (saved == null || database == null) return false;
-        if (itemBoxInventory == null) itemBoxInventory = GetComponent<ItemBoxInventory>();
-        if (itemBoxInventory == null) return false;
+        if (saved == null || database == null)
+        {
+            return false;
+        }
+
+        if (itemBoxInventory == null)
+        {
+            itemBoxInventory = GetComponent<ItemBoxInventory>();
+        }
+
+        if (itemBoxInventory == null)
+        {
+            return false;
+        }
 
         List<InventoryItem> restored = new List<InventoryItem>();
+
         if (saved.Items != null)
         {
             foreach (SavedInventoryItemData itemData in saved.Items)
             {
-                if (itemData == null || !database.TryGetItemData(itemData.ItemId, out ItemData definition)) continue;
-                InventoryItem item = new InventoryItem(definition, itemData.GridX, itemData.GridY, Mathf.Clamp(itemData.Amount, 1, definition.MaxStack));
-                if (itemData.IsRotated && item.CanRotate) item.TryRotate();
-                if (itemData.HasStoredMagazineAmmo) item.SetStoredMagazineAmmo(itemData.StoredMagazineAmmo);
+                if (itemData == null ||
+                    !database.TryGetItemData(
+                        itemData.ItemId,
+                        out ItemData definition))
+                {
+                    continue;
+                }
+
+                InventoryItem item = new InventoryItem(
+                    definition,
+                    itemData.GridX,
+                    itemData.GridY,
+                    Mathf.Clamp(
+                        itemData.Amount,
+                        1,
+                        definition.MaxStack
+                    )
+                );
+
+                if (itemData.IsRotated && item.CanRotate)
+                {
+                    item.TryRotate();
+                }
+
+                if (itemData.HasStoredMagazineAmmo)
+                {
+                    item.SetStoredMagazineAmmo(
+                        itemData.StoredMagazineAmmo
+                    );
+                }
+
                 restored.Add(item);
             }
         }
 
-        itemBoxInventory.RestoreInventoryFromSave(saved.GridWidth, saved.GridHeight, restored);
+        itemBoxInventory.RestoreInventoryFromSave(
+            saved.GridWidth,
+            saved.GridHeight,
+            restored
+        );
+
         wasOpened = saved.WasOpened;
         ApplyVisual();
         return true;
@@ -91,6 +175,7 @@ public class ItemBoxSaveIdentity : MonoBehaviour
     public void GenerateNewPersistentId()
     {
         persistentId = Guid.NewGuid().ToString("N");
+
 #if UNITY_EDITOR
         UnityEditor.EditorUtility.SetDirty(this);
 #endif
@@ -98,14 +183,29 @@ public class ItemBoxSaveIdentity : MonoBehaviour
 
     private void ApplyVisual()
     {
-        if (closedVisual != null) closedVisual.SetActive(!wasOpened);
-        if (openedVisual != null) openedVisual.SetActive(wasOpened);
+        if (closedVisual != null)
+        {
+            closedVisual.SetActive(!wasOpened);
+        }
+
+        if (openedVisual != null)
+        {
+            openedVisual.SetActive(wasOpened);
+        }
     }
 
     private void OnValidate()
     {
-        if (itemBoxInventory == null) itemBoxInventory = GetComponent<ItemBoxInventory>();
-        if (string.IsNullOrWhiteSpace(persistentId)) persistentId = Guid.NewGuid().ToString("N");
+        if (itemBoxInventory == null)
+        {
+            itemBoxInventory = GetComponent<ItemBoxInventory>();
+        }
+
+        if (string.IsNullOrWhiteSpace(persistentId))
+        {
+            persistentId = Guid.NewGuid().ToString("N");
+        }
+
         persistentId = persistentId.Trim();
     }
 }

@@ -218,6 +218,11 @@ public class CampModeController : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        SetupFadeCanvas();
+    }
+
     private void OnDisable()
     {
         StopAllCoroutines();

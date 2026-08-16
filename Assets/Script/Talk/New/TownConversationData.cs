@@ -39,10 +39,19 @@ public class TownConversationData : ScriptableObject
     [SerializeField] private bool trackMissionAfterAccept = true;
 
     [Header("ミッション住人：状態別の開始ブロック")]
+    [Tooltip("このミッションをまだ受注していない時に、最初に表示するBlock IDです。")]
     [SerializeField] private string missionNotAcceptedBlockId = "mission_offer";
+
+    [Tooltip("ミッションを受注した直後に表示するBlock IDです。受注選択肢の移動先が空欄の場合にも使用されます。")]
     [SerializeField] private string missionAcceptedJustNowBlockId = "mission_accepted";
+
+    [Tooltip("ミッション受注後、まだ目的を達成していない時に会話を開始するBlock IDです。納品ミッションでは、通常ここから納品確認用Blockへ進めます。")]
     [SerializeField] private string missionInProgressBlockId = "mission_progress";
+
+    [Tooltip("ミッションの目的を達成済みで、まだ報酬を受け取っていない時に会話を開始するBlock IDです。")]
     [SerializeField] private string missionReadyToReportBlockId = "mission_report";
+
+    [Tooltip("ミッション報酬を受け取り済みの時に会話を開始するBlock IDです。")]
     [SerializeField] private string missionRewardClaimedBlockId = "mission_finished";
 
     [Header("ミッション報酬")]
@@ -230,6 +239,29 @@ public class TownConversationBlock
     [Tooltip("例：first、mission_offer、ask_about_town。重複しない文字列にします。")]
     [SerializeField] private string blockId = "block";
 
+    [Header("洞窟会話の表示設定")]
+    [Tooltip("オン：重要会話。洞窟ではプレイヤーを停止し、会話パネルのクリックで次へ進みます。オフ：通常会話。プレイヤーは動けて、自動で次へ進みます。町ではこの設定は使いません。")]
+    [SerializeField] private bool importantConversation;
+
+    [Tooltip("オンにすると、このBlockの文章が表示された時に、おびえたような揺れ演出を行います。洞窟用です。")]
+    [SerializeField] private bool fearShake;
+
+    [Tooltip("重要会話がオフの時、1ページを読み終えてから次のページ・Blockへ自動で進むまでの秒数です。")]
+    [SerializeField, Min(0f)] private float autoAdvanceDelay = 2.5f;
+
+    [Tooltip("重要会話がオフで、このBlockが会話全体の最後の場合だけ使います。最後の文章を何秒表示してから閉じるかを指定します。")]
+    [SerializeField, Min(0f)] private float finalBlockDisplayDuration = 3f;
+
+    [Header("納品ミッション：Block終了時の自動判定")]
+    [Tooltip("オンにすると、このBlockの最後から次へ進む瞬間に、現在のMission Residentの納品ミッションを自動判定します。必要アイテムがそろっていれば消費してSuccess Blockへ、足りなければFailure Blockへ進みます。")]
+    [SerializeField] private bool checkMissionDeliveryOnBlockEnd;
+
+    [Tooltip("納品成功時に進むBlock IDです。必要数をすべて所持している場合、アイテムを消費してミッション達成後にこのBlockへ進みます。")]
+    [SerializeField] private string deliverySuccessBlockId;
+
+    [Tooltip("納品失敗時に進むBlock IDです。必要アイテムを持っていない、または必要数に足りない場合に進みます。アイテムは消費しません。")]
+    [SerializeField] private string deliveryFailureBlockId;
+
     [Header("このブロックで順番に表示する文章")]
     [SerializeField]
     private List<TownConversationPage> pages =
@@ -246,6 +278,13 @@ public class TownConversationBlock
 
     public string BlockId => blockId?.Trim() ?? string.Empty;
     public string NextBlockId => nextBlockId?.Trim() ?? string.Empty;
+    public bool ImportantConversation => importantConversation;
+    public bool FearShake => fearShake;
+    public float AutoAdvanceDelay => Mathf.Max(0f, autoAdvanceDelay);
+    public float FinalBlockDisplayDuration => Mathf.Max(0f, finalBlockDisplayDuration);
+    public bool CheckMissionDeliveryOnBlockEnd => checkMissionDeliveryOnBlockEnd;
+    public string DeliverySuccessBlockId => deliverySuccessBlockId?.Trim() ?? string.Empty;
+    public string DeliveryFailureBlockId => deliveryFailureBlockId?.Trim() ?? string.Empty;
     public int PageCount => pages != null ? pages.Count : 0;
     public int ChoiceCount => choices != null ? choices.Count : 0;
 
@@ -273,6 +312,10 @@ public class TownConversationBlock
     {
         blockId = blockId?.Trim() ?? string.Empty;
         nextBlockId = nextBlockId?.Trim() ?? string.Empty;
+        deliverySuccessBlockId = deliverySuccessBlockId?.Trim() ?? string.Empty;
+        deliveryFailureBlockId = deliveryFailureBlockId?.Trim() ?? string.Empty;
+        autoAdvanceDelay = Mathf.Max(0f, autoAdvanceDelay);
+        finalBlockDisplayDuration = Mathf.Max(0f, finalBlockDisplayDuration);
 
         if (pages == null)
         {

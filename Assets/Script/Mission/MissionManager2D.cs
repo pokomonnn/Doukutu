@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -49,7 +49,7 @@ public enum MissionProgressState2D
 }
 
 /// <summary>
-/// 複数の収集・指定敵討伐ミッションの進行を同時に管理します。
+/// 複数の収集・納品・指定敵討伐ミッションの進行を同時に管理します。
 ///
 /// ・開始済みのミッションはすべて並行して進みます。
 /// ・その中から1件だけを「追跡中」に選び、コンパスと既存MissionHUDへ表示します。
@@ -497,8 +497,8 @@ public class MissionManager2D : MonoBehaviour
     }
 
     /// <summary>
-    /// すべての進行中ミッションの収集進捗を再計算します。
-    /// 外部処理で直接Inventoryを変更した直後などに使えます。
+    /// すべての進行中ミッションを更新します。
+    /// CollectItemだけ所持数を再計算します。DeliverItemは所持しただけでは進みません。
     /// </summary>
     public void RefreshAllMissionProgress()
     {
@@ -534,11 +534,525 @@ public class MissionManager2D : MonoBehaviour
         RefreshAllMissionProgress();
     }
 
+    /// <summary>
+    /// DeliverItemミッションを納品できるか確認します。
+    /// アイテムを所持しているだけではミッションは完了しません。
+    /// </summary>
+    public bool CanDeliverMission(
+        int missionIndex,
+        out string resultMessage)
+    {
+        FindInventoryController();
+        return CanDeliverMissionInternal(
+            missionIndex,
+            inventoryController,
+            out resultMessage
+        );
+    }
+
+    /// <summary>
+    /// NPC会話側など、使用するInventoryControllerを明示して納品可否を確認します。
+    /// Town側のInventoryを使う場合に利用できます。
+    /// </summary>
+    public bool CanDeliverMission(
+        int missionIndex,
+        InventoryController sourceInventory,
+        out string resultMessage)
+    {
+        return CanDeliverMissionInternal(
+            missionIndex,
+            sourceInventory,
+            out resultMessage
+        );
+    }
+
+    private bool CanDeliverMissionInternal(
+        int missionIndex,
+        InventoryController sourceInventory,
+        out string resultMessage)
+    {
+        resultMessage = string.Empty;
+
+        if (!TryGetValidEntry(missionIndex, out MissionEntry2D entry))
+        {
+            resultMessage = "ミッションが見つかりません。";
+            return false;
+        }
+
+        MissionDefinition2D mission = entry.Mission;
+
+        if (mission.ObjectiveType != MissionObjectiveType2D.DeliverItem)
+        {
+            resultMessage = $"{mission.DisplayName} は納品ミッションではありません。";
+            return false;
+        }
+
+        if (GetMissionState(missionIndex) != MissionProgressState2D.InProgress)
+        {
+            resultMessage = GetMissionState(missionIndex) == MissionProgressState2D.Completed
+                ? $"{mission.DisplayName} はすでに達成済みです。"
+                : $"{mission.DisplayName} はまだ受注されていません。";
+            return false;
+        }
+
+        if (mission.RequiredItem == null)
+        {
+            resultMessage = $"{mission.DisplayName} のRequired Itemが未設定です。";
+            return false;
+        }
+
+        if (sourceInventory == null)
+        {
+            resultMessage = "InventoryControllerが見つかりません。";
+            return false;
+        }
+
+        int requiredAmount = mission.RequiredAmount;
+        int heldAmount = sourceInventory.GetTotalAmount(mission.RequiredItem);
+
+        if (heldAmount < requiredAmount)
+        {
+            resultMessage =
+                $"{mission.RequiredItem.DisplayName} が足りません。" +
+                $" 所持数 {heldAmount} / 必要数 {requiredAmount}";
+            return false;
+        }
+
+        resultMessage =
+            $"{mission.RequiredItem.DisplayName} を {requiredAmount} 個納品できます。";
+        return true;
+    }
+
+    /// <summary>
+    /// DeliverItemミッションの必要アイテムをInventoryから削除し、
+    /// 削除に成功した時だけミッションを達成状態にします。
+    /// </summary>
+    public bool TryDeliverMission(
+        int missionIndex,
+        out string resultMessage)
+    {
+        FindInventoryController();
+        return TryDeliverMissionInternal(
+            missionIndex,
+            inventoryController,
+            out _,
+            out resultMessage
+        );
+    }
+
+    /// <summary>
+    /// 使用するInventoryControllerを明示して納品します。
+    /// Town側のプレイヤーInventoryから納品する場合に利用できます。
+    /// </summary>
+    public bool TryDeliverMission(
+        int missionIndex,
+        InventoryController sourceInventory,
+        out int deliveredAmount,
+        out string resultMessage)
+    {
+        return TryDeliverMissionInternal(
+            missionIndex,
+            sourceInventory,
+            out deliveredAmount,
+            out resultMessage
+        );
+    }
+
+    private bool TryDeliverMissionInternal(
+        int missionIndex,
+        InventoryController sourceInventory,
+        out int deliveredAmount,
+        out string resultMessage)
+    {
+        deliveredAmount = 0;
+
+        if (!CanDeliverMissionInternal(
+                missionIndex,
+                sourceInventory,
+                out resultMessage))
+        {
+            return false;
+        }
+
+        MissionDefinition2D mission = GetMissionDefinition(missionIndex);
+        int requiredAmount = mission.RequiredAmount;
+
+        int removedAmount = sourceInventory.RemoveAmountByItemData(
+            mission.RequiredItem,
+            requiredAmount
+        );
+
+        if (removedAmount != requiredAmount)
+        {
+            // 万一一部だけ削除された場合は、可能な範囲で元へ戻します。
+            if (removedAmount > 0)
+            {
+                sourceInventory.TryAddItem(
+                    mission.RequiredItem,
+                    removedAmount,
+                    out _
+                );
+            }
+
+            resultMessage =
+                $"納品処理に失敗しました。必要数={requiredAmount} / 削除数={removedAmount}";
+            LogWarning(resultMessage);
+            return false;
+        }
+
+        deliveredAmount = removedAmount;
+
+        MissionRuntimeData data = GetOrCreateRuntimeData(missionIndex);
+        data.Progress = requiredAmount;
+        data.LastObservedItemAmount = 0;
+        data.IsInitialized = true;
+
+        NotifyMissionProgress(missionIndex);
+        CompleteMission(missionIndex);
+
+        resultMessage =
+            $"{mission.RequiredItem.DisplayName} を {requiredAmount} 個納品しました。";
+        Log($"納品完了: {mission.DisplayName} / {resultMessage}");
+        return true;
+    }
+
+    /// <summary>
+    /// MissionDefinition2Dから納品するための補助メソッドです。
+    /// </summary>
+    public bool TryDeliverMission(
+        MissionDefinition2D mission,
+        out string resultMessage)
+    {
+        int missionIndex = FindMissionIndex(mission);
+
+        if (missionIndex < 0)
+        {
+            resultMessage = mission == null
+                ? "納品するMissionDefinition2Dが未設定です。"
+                : $"MissionManager2Dに {mission.DisplayName} が登録されていません。";
+            return false;
+        }
+
+        return TryDeliverMission(missionIndex, out resultMessage);
+    }
+
+    // ---------------------------------------------------------------------
+    // NPC会話側との互換API
+    // ---------------------------------------------------------------------
+
+    public bool TryDeliverMissionItems(
+        int missionIndex,
+        out string resultMessage)
+    {
+        return TryDeliverMission(missionIndex, out resultMessage);
+    }
+
+    public bool TryDeliverMissionItems(
+        MissionDefinition2D mission,
+        out string resultMessage)
+    {
+        return TryDeliverMission(mission, out resultMessage);
+    }
+
+    public bool TryDeliverMissionItems(int missionIndex)
+    {
+        return TryDeliverMission(missionIndex, out _);
+    }
+
+    public bool TryDeliverMissionItems(MissionDefinition2D mission)
+    {
+        return TryDeliverMission(mission, out _);
+    }
+
+    /// <summary>
+    /// 4引数版互換：旧/会話側スクリプトが
+    /// (MissionDefinition2D, bool, out int, out string) で呼ぶ形式に対応します。
+    /// bool引数は互換維持用です。DeliverItemは成功時に必要Itemを削除して
+    /// ミッション完了にする現在仕様を常に使用します。
+    /// </summary>
+    public bool TryDeliverMissionItems(
+        MissionDefinition2D mission,
+        bool compatibilityFlag,
+        out int deliveredAmount,
+        out string resultMessage)
+    {
+        deliveredAmount = 0;
+
+        int missionIndex = FindMissionIndex(mission);
+
+        if (missionIndex < 0)
+        {
+            resultMessage = mission == null
+                ? "納品するMissionDefinition2Dが未設定です。"
+                : $"MissionManager2Dに {mission.DisplayName} が登録されていません。";
+            return false;
+        }
+
+        FindInventoryController();
+
+        return TryDeliverMissionInternal(
+            missionIndex,
+            inventoryController,
+            out deliveredAmount,
+            out resultMessage
+        );
+    }
+
+    /// <summary>
+    /// MissionIndexを使う同形式の互換版です。
+    /// </summary>
+    public bool TryDeliverMissionItems(
+        int missionIndex,
+        bool compatibilityFlag,
+        out int deliveredAmount,
+        out string resultMessage)
+    {
+        FindInventoryController();
+
+        return TryDeliverMissionInternal(
+            missionIndex,
+            inventoryController,
+            out deliveredAmount,
+            out resultMessage
+        );
+    }
+
+    /// <summary>
+    /// 4引数版：Town側などから使用するInventoryControllerを明示し、
+    /// 実際に納品した個数と結果メッセージを返します。
+    /// </summary>
+    public bool TryDeliverMissionItems(
+        int missionIndex,
+        InventoryController sourceInventory,
+        out int deliveredAmount,
+        out string resultMessage)
+    {
+        return TryDeliverMission(
+            missionIndex,
+            sourceInventory,
+            out deliveredAmount,
+            out resultMessage
+        );
+    }
+
+    public bool TryDeliverMissionItems(
+        MissionDefinition2D mission,
+        InventoryController sourceInventory,
+        out int deliveredAmount,
+        out string resultMessage)
+    {
+        deliveredAmount = 0;
+        int missionIndex = FindMissionIndex(mission);
+
+        if (missionIndex < 0)
+        {
+            resultMessage = mission == null
+                ? "納品するMissionDefinition2Dが未設定です。"
+                : $"MissionManager2Dに {mission.DisplayName} が登録されていません。";
+            return false;
+        }
+
+        return TryDeliverMission(
+            missionIndex,
+            sourceInventory,
+            out deliveredAmount,
+            out resultMessage
+        );
+    }
+
+    /// <summary>
+    /// 4引数版互換：呼び出し側がItemDataと個数を渡す旧形式にも対応します。
+    /// 実際の必要Item/必要数はMissionDefinition2Dを正として扱います。
+    /// </summary>
+    public bool TryDeliverMissionItems(
+        int missionIndex,
+        ItemData itemData,
+        int requestedAmount,
+        out string resultMessage)
+    {
+        if (!ValidateDeliveryHints(
+                missionIndex,
+                itemData,
+                requestedAmount,
+                out resultMessage))
+        {
+            return false;
+        }
+
+        return TryDeliverMission(missionIndex, out resultMessage);
+    }
+
+    public bool TryDeliverMissionItems(
+        MissionDefinition2D mission,
+        ItemData itemData,
+        int requestedAmount,
+        out string resultMessage)
+    {
+        int missionIndex = FindMissionIndex(mission);
+
+        if (missionIndex < 0)
+        {
+            resultMessage = mission == null
+                ? "納品するMissionDefinition2Dが未設定です。"
+                : $"MissionManager2Dに {mission.DisplayName} が登録されていません。";
+            return false;
+        }
+
+        return TryDeliverMissionItems(
+            missionIndex,
+            itemData,
+            requestedAmount,
+            out resultMessage
+        );
+    }
+
+    /// <summary>
+    /// 4引数版互換：ItemDataを渡し、納品数をoutで受け取る形式です。
+    /// </summary>
+    public bool TryDeliverMissionItems(
+        int missionIndex,
+        ItemData itemData,
+        out int deliveredAmount,
+        out string resultMessage)
+    {
+        deliveredAmount = 0;
+
+        if (!ValidateDeliveryHints(
+                missionIndex,
+                itemData,
+                -1,
+                out resultMessage))
+        {
+            return false;
+        }
+
+        FindInventoryController();
+        return TryDeliverMissionInternal(
+            missionIndex,
+            inventoryController,
+            out deliveredAmount,
+            out resultMessage
+        );
+    }
+
+    public bool TryDeliverMissionItems(
+        MissionDefinition2D mission,
+        ItemData itemData,
+        out int deliveredAmount,
+        out string resultMessage)
+    {
+        deliveredAmount = 0;
+        int missionIndex = FindMissionIndex(mission);
+
+        if (missionIndex < 0)
+        {
+            resultMessage = mission == null
+                ? "納品するMissionDefinition2Dが未設定です。"
+                : $"MissionManager2Dに {mission.DisplayName} が登録されていません。";
+            return false;
+        }
+
+        return TryDeliverMissionItems(
+            missionIndex,
+            itemData,
+            out deliveredAmount,
+            out resultMessage
+        );
+    }
+
+    private bool ValidateDeliveryHints(
+        int missionIndex,
+        ItemData itemData,
+        int requestedAmount,
+        out string resultMessage)
+    {
+        resultMessage = string.Empty;
+        MissionDefinition2D mission = GetMissionDefinition(missionIndex);
+
+        if (mission == null)
+        {
+            resultMessage = "ミッションが見つかりません。";
+            return false;
+        }
+
+        if (itemData != null &&
+            mission.RequiredItem != null &&
+            itemData != mission.RequiredItem)
+        {
+            resultMessage =
+                $"納品Itemがミッション設定と一致しません。" +
+                $" 指定={itemData.DisplayName} / 必要={mission.RequiredItem.DisplayName}";
+            return false;
+        }
+
+        if (requestedAmount > 0 && requestedAmount != mission.RequiredAmount)
+        {
+            resultMessage =
+                $"納品数がミッション設定と一致しません。" +
+                $" 指定={requestedAmount} / 必要={mission.RequiredAmount}";
+            return false;
+        }
+
+        return true;
+    }
+
     public MissionDefinition2D GetMissionDefinition(int missionIndex)
     {
         return TryGetValidEntry(missionIndex, out MissionEntry2D entry)
             ? entry.Mission
             : null;
+    }
+
+    /// <summary>
+    /// 指定したMissionDefinition2DがMissions一覧の何番目に登録されているか返します。
+    /// 見つからない場合は-1を返します。
+    /// NPC会話・納品処理など、MissionDefinition2DからMission Indexを取得したい時に使います。
+    /// </summary>
+    public int FindMissionIndex(MissionDefinition2D mission)
+    {
+        if (mission == null || missions == null)
+        {
+            return -1;
+        }
+
+        // まず同じScriptableObject参照を最優先で探す。
+        for (int i = 0; i < missions.Count; i++)
+        {
+            MissionEntry2D entry = missions[i];
+
+            if (entry != null && entry.Mission == mission)
+            {
+                return i;
+            }
+        }
+
+        // セーブ・ロードや別参照経由でも扱いやすいよう、
+        // MissionIdが設定されている場合はID一致も予備判定に使う。
+        string missionId = mission.MissionId;
+
+        if (string.IsNullOrWhiteSpace(missionId))
+        {
+            return -1;
+        }
+
+        for (int i = 0; i < missions.Count; i++)
+        {
+            MissionEntry2D entry = missions[i];
+            MissionDefinition2D registeredMission =
+                entry != null ? entry.Mission : null;
+
+            if (registeredMission != null &&
+                string.Equals(
+                    registeredMission.MissionId,
+                    missionId,
+                    StringComparison.Ordinal
+                ))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     public MissionEntry2D GetMissionEntry(int missionIndex)
@@ -607,8 +1121,8 @@ public class MissionManager2D : MonoBehaviour
             return 0;
         }
 
-        return mission.ObjectiveType ==
-            MissionObjectiveType2D.CollectItem
+        return mission.ObjectiveType == MissionObjectiveType2D.CollectItem ||
+            mission.ObjectiveType == MissionObjectiveType2D.DeliverItem
             ? mission.RequiredAmount
             : 1;
     }
@@ -689,6 +1203,13 @@ public class MissionManager2D : MonoBehaviour
         {
             case MissionObjectiveType2D.CollectItem:
                 InitializeCollectItemProgress(missionIndex, mission);
+                break;
+
+            case MissionObjectiveType2D.DeliverItem:
+                // 納品ミッションは所持数では進行しない。
+                // NPC会話などからTryDeliverMissionが成功した時だけ達成する。
+                data.Progress = 0;
+                data.LastObservedItemAmount = 0;
                 break;
 
             case MissionObjectiveType2D.DefeatTargetEnemy:

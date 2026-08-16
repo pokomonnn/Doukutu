@@ -21,6 +21,7 @@ public class MissionHUD2D : MonoBehaviour
 
     [Header("表示文")]
     [SerializeField] private string collectFormat = "{0} {1} / {2}";
+    [SerializeField] private string deliverFormat = "納品 {0}  {1} / {2}";
     [SerializeField] private string defeatFormat = "討伐 {0} / {1}";
 
     private bool isSubscribed;
@@ -90,6 +91,21 @@ public class MissionHUD2D : MonoBehaviour
 
             return string.Format(
                 collectFormat,
+                itemName,
+                progress,
+                required
+            );
+        }
+
+        if (mission.ObjectiveType ==
+            MissionObjectiveType2D.DeliverItem)
+        {
+            string itemName = mission.RequiredItem != null
+                ? mission.RequiredItem.DisplayName
+                : "Item";
+
+            return string.Format(
+                deliverFormat,
                 itemName,
                 progress,
                 required

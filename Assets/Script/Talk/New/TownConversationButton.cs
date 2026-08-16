@@ -4,6 +4,7 @@ using UnityEngine.UI;
 /// <summary>
 /// 町の建物やNPCに重ねたButtonから、統一会話を開きます。
 /// 商人会話ではMerchantStockInventoryも一緒に記録します。
+/// Unity 6000.4以降のFindObjectsByType APIに対応しています。
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Button))]
@@ -147,10 +148,10 @@ public class TownConversationButton : MonoBehaviour
             return null;
         }
 
+        // Unity 6000.4以降ではFindObjectsSortMode指定版が非推奨。
         MerchantStockInventory[] candidates =
             FindObjectsByType<MerchantStockInventory>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None
+                FindObjectsInactive.Include
             );
 
         foreach (MerchantStockInventory candidate in candidates)

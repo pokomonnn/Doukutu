@@ -10,6 +10,10 @@ using UnityEngine.UI;
 ///
 /// 商品の選択は、Merchant Inventory Grid上のアイテムを左クリックします。
 /// InventoryGridUI / InventoryItemUI本体を変更せずに動作します。
+///
+/// 購入数は従来の +/- Button に加えてSliderでも変更できます。
+/// Sliderの最大値は、在庫・店舗購入上限・所持金・インベントリ空き容量から
+/// 「現在実際に購入できる最大数」を自動計算します。
 /// </summary>
 [DisallowMultipleComponent]
 public class MerchantPurchaseController : MonoBehaviour
@@ -42,6 +46,19 @@ public class MerchantPurchaseController : MonoBehaviour
     [SerializeField] private Button decreaseAmountButton;
     [SerializeField] private Button increaseAmountButton;
     [SerializeField] private Button purchaseButton;
+
+    [Header("購入数Slider")]
+    [Tooltip("購入数を一気に変更するSliderです。未設定でも従来の+/-Buttonだけで動作します。")]
+    [SerializeField] private Slider purchaseAmountSlider;
+
+    [Tooltip("Slider全体をまとめた親Objectです。銃・防具など1個購入の商品では非表示にしたい場合に設定します。未設定ならSlider自身を表示/非表示にします。")]
+    [SerializeField] private GameObject purchaseAmountSliderRoot;
+
+    [Tooltip("オンなら、スタック不可または最大1個しか購入できない商品ではSliderを隠します。")]
+    [SerializeField] private bool hideSliderForSinglePurchaseItems = true;
+
+    [Tooltip("オンならSliderの最大値を、在庫だけでなく所持金とインベントリ空き容量にも合わせます。")]
+    [SerializeField] private bool limitSliderByMoneyAndInventory = true;
 
     [Header("購入成功サウンド")]
     [Tooltip("購入成功時の効果音を再生するAudioSourceです。未設定なら同じGameObjectから探します。")]
@@ -93,6 +110,7 @@ public class MerchantPurchaseController : MonoBehaviour
     {
         FindReferences();
         SetupButtons();
+        SetupSlider();
         RefreshUI();
     }
 
@@ -100,6 +118,7 @@ public class MerchantPurchaseController : MonoBehaviour
     {
         FindReferences();
         SetupButtons();
+        SetupSlider();
         SubscribeMoney();
         RefreshUI();
     }
@@ -113,6 +132,7 @@ public class MerchantPurchaseController : MonoBehaviour
     private void OnDestroy()
     {
         RemoveButtonListeners();
+        RemoveSliderListener();
     }
 
     private void Update()
@@ -135,6 +155,7 @@ public class MerchantPurchaseController : MonoBehaviour
     public bool OpenShop(MerchantStockInventory stockInventory)
     {
         FindReferences();
+        SetupSlider();
         UnsubscribeStock();
 
         currentStock = stockInventory;
@@ -261,6 +282,11 @@ public class MerchantPurchaseController : MonoBehaviour
         TryPurchaseSelectedItem();
     }
 
+    public void SetPurchaseAmountFromSlider(float sliderValue)
+    {
+        SetPurchaseAmount(Mathf.RoundToInt(sliderValue));
+    }
+
     public bool TryPurchaseSelectedItem()
     {
         FindReferences();
@@ -273,19 +299,17 @@ public class MerchantPurchaseController : MonoBehaviour
             return false;
         }
 
-        int maxAmount = GetMaximumPurchaseAmount();
-        int amount = Mathf.Clamp(
-            purchaseAmount,
-            1,
-            Mathf.Max(1, maxAmount)
-        );
+        int stockLimitedMax = GetStockLimitedMaximumPurchaseAmount();
+        int amount = Mathf.Max(1, purchaseAmount);
 
-        if (maxAmount <= 0 || selectedItem.Amount < amount)
+        if (stockLimitedMax <= 0 || selectedItem.Amount < amount)
         {
             SetStatus(soldOutMessage, true);
             HandleStockChanged();
             return false;
         }
+
+        amount = Mathf.Min(amount, stockLimitedMax);
 
         int unitPrice = currentStock.GetUnitBuyPrice(itemData);
         int totalPrice = MultiplyPrice(unitPrice, amount);
@@ -405,12 +429,20 @@ public class MerchantPurchaseController : MonoBehaviour
         }
         else
         {
-            SetPurchaseAmount(
-                Mathf.Min(
+            int selectableMax = GetSelectableMaximumPurchaseAmount();
+
+            if (selectableMax > 0)
+            {
+                purchaseAmount = Mathf.Clamp(
                     purchaseAmount,
-                    GetMaximumPurchaseAmount()
-                )
-            );
+                    1,
+                    selectableMax
+                );
+            }
+            else
+            {
+                purchaseAmount = 1;
+            }
         }
 
         RefreshUI();
@@ -561,7 +593,7 @@ public class MerchantPurchaseController : MonoBehaviour
 
     private void SetPurchaseAmount(int value)
     {
-        int maxAmount = GetMaximumPurchaseAmount();
+        int maxAmount = GetSelectableMaximumPurchaseAmount();
 
         purchaseAmount = maxAmount <= 0
             ? 1
@@ -570,7 +602,10 @@ public class MerchantPurchaseController : MonoBehaviour
         RefreshSelectedItemUI();
     }
 
-    private int GetMaximumPurchaseAmount()
+    /// <summary>
+    /// 在庫数と店舗側の購入上限だけで決まる最大値です。
+    /// </summary>
+    private int GetStockLimitedMaximumPurchaseAmount()
     {
         if (selectedItem == null ||
             selectedItem.ItemData == null ||
@@ -588,6 +623,93 @@ public class MerchantPurchaseController : MonoBehaviour
             0,
             Mathf.Min(selectedItem.Amount, shopLimit)
         );
+    }
+
+    /// <summary>
+    /// Sliderや+/-Buttonで現在選択できる最大購入数です。
+    /// 必要に応じて所持金とインベントリ空きも考慮します。
+    /// </summary>
+    private int GetSelectableMaximumPurchaseAmount()
+    {
+        int upperLimit = GetStockLimitedMaximumPurchaseAmount();
+
+        if (upperLimit <= 0 ||
+            selectedItem == null ||
+            selectedItem.ItemData == null)
+        {
+            return 0;
+        }
+
+        if (!limitSliderByMoneyAndInventory)
+        {
+            return upperLimit;
+        }
+
+        ItemData itemData = selectedItem.ItemData;
+
+        if (currentStock != null && gameSessionManager != null)
+        {
+            int unitPrice = currentStock.GetUnitBuyPrice(itemData);
+
+            if (unitPrice > 0)
+            {
+                int affordableAmount =
+                    Mathf.Max(0, gameSessionManager.CurrentMoney / unitPrice);
+
+                upperLimit = Mathf.Min(upperLimit, affordableAmount);
+            }
+        }
+
+        InventoryController playerInventory =
+            townPlayerInventory != null
+                ? townPlayerInventory.InventoryController
+                : null;
+
+        if (upperLimit > 0 &&
+            playerInventory != null &&
+            playerInventory.Grid != null)
+        {
+            upperLimit = GetMaximumFittableAmount(
+                playerInventory.Grid,
+                itemData,
+                upperLimit
+            );
+        }
+
+        return Mathf.Max(0, upperLimit);
+    }
+
+    /// <summary>
+    /// 指定上限までのうち、現在のGridへ実際に収まる最大個数を二分探索します。
+    /// </summary>
+    private static int GetMaximumFittableAmount(
+        InventoryGrid grid,
+        ItemData itemData,
+        int upperLimit)
+    {
+        if (grid == null || itemData == null || upperLimit <= 0)
+        {
+            return 0;
+        }
+
+        int low = 0;
+        int high = upperLimit;
+
+        while (low < high)
+        {
+            int mid = low + (high - low + 1) / 2;
+
+            if (CanFitItemAmount(grid, itemData, mid))
+            {
+                low = mid;
+            }
+            else
+            {
+                high = mid - 1;
+            }
+        }
+
+        return low;
     }
 
     private void RefreshSelectedItemUI()
@@ -626,14 +748,15 @@ public class MerchantPurchaseController : MonoBehaviour
             ? currentStock.GetUnitBuyPrice(itemData)
             : 0;
 
-        int maxAmount = GetMaximumPurchaseAmount();
+        int stockLimitedMax = GetStockLimitedMaximumPurchaseAmount();
+        int selectableMax = GetSelectableMaximumPurchaseAmount();
 
-        if (maxAmount > 0)
+        if (selectableMax > 0)
         {
             purchaseAmount = Mathf.Clamp(
                 purchaseAmount,
                 1,
-                maxAmount
+                selectableMax
             );
         }
         else
@@ -659,25 +782,80 @@ public class MerchantPurchaseController : MonoBehaviour
         );
         SetFormattedText(totalPriceText, totalPriceFormat, totalPrice);
 
+        RefreshPurchaseSlider(
+            hasSelection,
+            itemData,
+            stockLimitedMax,
+            selectableMax
+        );
+
         if (decreaseAmountButton != null)
         {
             decreaseAmountButton.interactable =
-                hasSelection && purchaseAmount > 1;
+                hasSelection &&
+                selectableMax > 0 &&
+                purchaseAmount > 1;
         }
 
         if (increaseAmountButton != null)
         {
             increaseAmountButton.interactable =
-                hasSelection && purchaseAmount < maxAmount;
+                hasSelection &&
+                selectableMax > 0 &&
+                purchaseAmount < selectableMax;
         }
 
         if (purchaseButton != null)
         {
             purchaseButton.interactable =
                 hasSelection &&
+                selectableMax > 0 &&
                 gameSessionManager != null &&
                 gameSessionManager.CanAfford(totalPrice);
         }
+    }
+
+    private void RefreshPurchaseSlider(
+        bool hasSelection,
+        ItemData itemData,
+        int stockLimitedMax,
+        int selectableMax)
+    {
+        if (purchaseAmountSlider == null)
+        {
+            return;
+        }
+
+        bool supportsMultiple =
+            hasSelection &&
+            itemData != null &&
+            itemData.CanStack &&
+            stockLimitedMax > 1;
+
+        bool shouldShow =
+            !hideSliderForSinglePurchaseItems || supportsMultiple;
+
+        GameObject sliderDisplayRoot = purchaseAmountSliderRoot != null
+            ? purchaseAmountSliderRoot
+            : purchaseAmountSlider.gameObject;
+
+        if (sliderDisplayRoot != null &&
+            sliderDisplayRoot.activeSelf != shouldShow)
+        {
+            sliderDisplayRoot.SetActive(shouldShow);
+        }
+
+        purchaseAmountSlider.wholeNumbers = true;
+        purchaseAmountSlider.minValue = 1f;
+        purchaseAmountSlider.maxValue = Mathf.Max(1, selectableMax);
+        purchaseAmountSlider.interactable =
+            shouldShow && hasSelection && selectableMax > 1;
+
+        float sliderValue = selectableMax > 0
+            ? Mathf.Clamp(purchaseAmount, 1, selectableMax)
+            : 1f;
+
+        purchaseAmountSlider.SetValueWithoutNotify(sliderValue);
     }
 
     private void RefreshMoneyText()
@@ -803,6 +981,35 @@ public class MerchantPurchaseController : MonoBehaviour
         purchaseButton?.onClick.RemoveListener(
             PurchaseSelectedItem
         );
+    }
+
+    private void SetupSlider()
+    {
+        if (purchaseAmountSlider == null)
+        {
+            return;
+        }
+
+        purchaseAmountSlider.wholeNumbers = true;
+        purchaseAmountSlider.minValue = 1f;
+
+        purchaseAmountSlider.onValueChanged.RemoveListener(
+            SetPurchaseAmountFromSlider
+        );
+
+        purchaseAmountSlider.onValueChanged.AddListener(
+            SetPurchaseAmountFromSlider
+        );
+    }
+
+    private void RemoveSliderListener()
+    {
+        if (purchaseAmountSlider != null)
+        {
+            purchaseAmountSlider.onValueChanged.RemoveListener(
+                SetPurchaseAmountFromSlider
+            );
+        }
     }
 
     private void CapturePlayerInventory()
@@ -1175,5 +1382,16 @@ public class MerchantPurchaseController : MonoBehaviour
             $"[MerchantPurchaseController] {message}",
             this
         );
+    }
+
+    private void OnValidate()
+    {
+        purchaseSoundVolume = Mathf.Clamp01(purchaseSoundVolume);
+
+        if (purchaseAmountSlider != null)
+        {
+            purchaseAmountSlider.wholeNumbers = true;
+            purchaseAmountSlider.minValue = 1f;
+        }
     }
 }

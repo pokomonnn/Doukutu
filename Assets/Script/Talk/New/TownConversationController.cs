@@ -31,6 +31,10 @@ public class TownConversationController : MonoBehaviour
 
     [Header("既存システムへの接続")]
     [SerializeField] private TownMissionAcceptController missionAcceptController;
+
+    [Tooltip("探索シーンで納品ミッションをNPCへ渡す時に使います。未設定ならシーン内から自動取得します。")]
+    [SerializeField] private MissionManager2D missionManager;
+
     [SerializeField] private PawnShopUIController pawnShopUIController;
 
     [Tooltip("ミッションのアイテム報酬を入れるTownPlayerInventoryのInventoryControllerです。")]
@@ -122,9 +126,25 @@ public class TownConversationController : MonoBehaviour
 
     public bool IsOpen => isOpen;
     public TownConversationData CurrentConversation => currentConversation;
+    public TownConversationBlock CurrentBlock => currentBlock;
+    public int CurrentPageIndex => currentPageIndex;
+    public TownConversationPage CurrentPage =>
+        currentBlock != null && currentPageIndex >= 0
+            ? currentBlock.GetPage(currentPageIndex)
+            : null;
+    public bool ExternalNavigationMode => externalNavigationMode;
     public string CurrentBlockId => currentBlock != null
         ? currentBlock.BlockId
         : string.Empty;
+
+    /// <summary>
+    /// 洞窟側などの外部表示Controllerが、会話の開始・Block変更・Page表示・終了を受け取るための通知です。
+    /// 町側では購読しなくても従来どおり動作します。
+    /// </summary>
+    public event Action<TownConversationController> ConversationOpened;
+    public event Action<TownConversationController, TownConversationBlock> BlockChanged;
+    public event Action<TownConversationController, TownConversationBlock, TownConversationPage, int> PageShown;
+    public event Action<TownConversationController> ConversationClosed;
 
     private readonly List<Button> spawnedChoiceButtons =
         new List<Button>();
@@ -133,6 +153,7 @@ public class TownConversationController : MonoBehaviour
     private TownConversationBlock currentBlock;
     private int currentPageIndex = -1;
     private bool isOpen;
+    private bool externalNavigationMode;
     private bool hasRecordedCurrentNormalConversation;
 
     private Coroutine portraitFadeCoroutine;
@@ -238,6 +259,8 @@ public class TownConversationController : MonoBehaviour
             }
         }
 
+        ConversationOpened?.Invoke(this);
+
         Log(
             $"会話開始: {conversationData.ResidentName} / " +
             $"Type={conversationData.ConversationType} / Block={CurrentBlockId}"
@@ -249,6 +272,30 @@ public class TownConversationController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 洞窟会話のようにNext/Close Buttonを使わず、クリックや自動送りを外部で管理する時にONにします。
+    /// 町ではOFFのままなので、既存UIの挙動は変わりません。
+    /// </summary>
+    public void SetExternalNavigationMode(bool enabled)
+    {
+        externalNavigationMode = enabled;
+
+        if (closeButton != null)
+        {
+            closeButton.gameObject.SetActive(!enabled);
+        }
+
+        if (enabled && nextButton != null)
+        {
+            nextButton.gameObject.SetActive(false);
+        }
+
+        if (isOpen)
+        {
+            RefreshNextButton();
+        }
+    }
+
     public void AdvanceConversation()
     {
         if (!isOpen || currentConversation == null || currentBlock == null)
@@ -256,9 +303,21 @@ public class TownConversationController : MonoBehaviour
             return;
         }
 
+        bool isAtLastPage =
+            currentPageIndex >= currentBlock.PageCount - 1;
+
+        // 納品判定Blockでは、最後のページから進む操作を
+        // 選択肢より優先してNPCへの納品判定として扱う。
+        if (currentBlock.CheckMissionDeliveryOnBlockEnd &&
+            isAtLastPage)
+        {
+            PlaySound(nextSound, nextSoundVolume);
+            HandleMissionDeliveryAtBlockEnd();
+            return;
+        }
+
         // 選択肢表示中はNextで進めない。
-        if (currentBlock.ChoiceCount > 0 &&
-            currentPageIndex >= currentBlock.PageCount - 1)
+        if (currentBlock.ChoiceCount > 0 && isAtLastPage)
         {
             return;
         }
@@ -341,6 +400,142 @@ public class TownConversationController : MonoBehaviour
                 LogWarning("未対応の選択肢Actionです。");
                 break;
         }
+    }
+
+    /// <summary>
+    /// 現在のBlock終了時に、Mission Residentへ納品アイテムを渡せるか判定します。
+    /// 必要数がすべて揃っている時だけアイテムを消費し、ミッションを達成させてSuccess Blockへ進みます。
+    /// 足りない場合は何も消費せずFailure Blockへ進みます。
+    /// </summary>
+    private void HandleMissionDeliveryAtBlockEnd()
+    {
+        TownConversationBlock deliveryBlock = currentBlock;
+
+        if (currentConversation == null || deliveryBlock == null)
+        {
+            CloseConversation(true, false);
+            return;
+        }
+
+        if (currentConversation.ConversationType !=
+            TownConversationType.MissionResident)
+        {
+            LogWarning(
+                $"Block『{deliveryBlock.BlockId}』で納品判定がONですが、" +
+                "Conversation TypeがMission Residentではありません。"
+            );
+            GoToDeliveryFailureBlockOrClose(deliveryBlock);
+            return;
+        }
+
+        MissionDefinition2D mission = currentConversation.Mission;
+
+        if (mission == null)
+        {
+            LogWarning(
+                $"Block『{deliveryBlock.BlockId}』で納品判定がONですが、" +
+                "Conversation DataのMissionが未設定です。"
+            );
+            GoToDeliveryFailureBlockOrClose(deliveryBlock);
+            return;
+        }
+
+        if (mission.ObjectiveType != MissionObjectiveType2D.DeliverItem)
+        {
+            LogWarning(
+                $"{mission.DisplayName} はDeliver Itemミッションではありません。" +
+                "Mission DefinitionのObjective TypeをDeliver Itemにしてください。"
+            );
+            GoToDeliveryFailureBlockOrClose(deliveryBlock);
+            return;
+        }
+
+        FindReferences();
+
+        if (missionManager == null)
+        {
+            LogWarning(
+                "MissionManager2Dが見つからないためNPCへ納品できません。" +
+                "探索シーンのTownConversationControllerへMissionManager2Dを設定してください。"
+            );
+            GoToDeliveryFailureBlockOrClose(deliveryBlock);
+            return;
+        }
+
+        bool delivered = missionManager.TryDeliverMissionItems(
+            mission,
+            false,
+            out int deliveredAmount,
+            out string resultMessage
+        );
+
+        if (!delivered)
+        {
+            Log(
+                $"NPC納品失敗: {mission.DisplayName} / {resultMessage}"
+            );
+            GoToDeliveryFailureBlockOrClose(deliveryBlock);
+            return;
+        }
+
+        // 納品直後にGameSessionManagerへ同期しておくことで、
+        // 同じNPCへすぐ話しかけ直した場合も達成済み状態から開始できる。
+        FindSessionManager();
+
+        if (gameSessionManager != null)
+        {
+            gameSessionManager.CaptureMissionsFromManager(
+                missionManager
+            );
+        }
+
+        Log(
+            $"NPC納品成功: {mission.DisplayName} / " +
+            $"納品数={deliveredAmount} / {resultMessage}"
+        );
+
+        string successBlockId =
+            deliveryBlock.DeliverySuccessBlockId;
+
+        if (string.IsNullOrWhiteSpace(successBlockId))
+        {
+            // Success Block未設定時だけ従来のNext Blockを予備として使う。
+            successBlockId = deliveryBlock.NextBlockId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(successBlockId) &&
+            OpenBlock(successBlockId))
+        {
+            return;
+        }
+
+        LogWarning(
+            $"納品成功後のBlockが設定されていません。" +
+            $" Block={deliveryBlock.BlockId}"
+        );
+        CloseConversation(true, false);
+    }
+
+    private void GoToDeliveryFailureBlockOrClose(
+        TownConversationBlock deliveryBlock)
+    {
+        if (deliveryBlock != null &&
+            !string.IsNullOrWhiteSpace(
+                deliveryBlock.DeliveryFailureBlockId) &&
+            OpenBlock(deliveryBlock.DeliveryFailureBlockId))
+        {
+            return;
+        }
+
+        if (deliveryBlock != null)
+        {
+            LogWarning(
+                $"納品失敗時のFailure Blockが設定されていません。" +
+                $" Block={deliveryBlock.BlockId}"
+            );
+        }
+
+        CloseConversation(true, false);
     }
 
     private string ResolveStartBlockId(TownConversationData data)
@@ -437,6 +632,8 @@ public class TownConversationController : MonoBehaviour
         currentBlock = block;
         currentPageIndex = -1;
         ClearChoiceButtons();
+
+        BlockChanged?.Invoke(this, currentBlock);
 
         if (showDetailedDiagnostics)
         {
@@ -537,6 +734,13 @@ public class TownConversationController : MonoBehaviour
         RefreshNextButton();
         ForceCanvasRefresh();
 
+        PageShown?.Invoke(
+            this,
+            currentBlock,
+            page,
+            currentPageIndex
+        );
+
         if (showDetailedDiagnostics)
         {
             Log(
@@ -628,8 +832,19 @@ public class TownConversationController : MonoBehaviour
 
     private void RefreshNextButton()
     {
+        if (closeButton != null)
+        {
+            closeButton.gameObject.SetActive(!externalNavigationMode);
+        }
+
         if (nextButton == null || currentBlock == null)
         {
+            return;
+        }
+
+        if (externalNavigationMode)
+        {
+            nextButton.gameObject.SetActive(false);
             return;
         }
 
@@ -1194,6 +1409,8 @@ public class TownConversationController : MonoBehaviour
         currentPageIndex = -1;
         isOpen = false;
         hasRecordedCurrentNormalConversation = false;
+
+        ConversationClosed?.Invoke(this);
     }
 
     private void RecordNormalConversationIfNeeded()
@@ -2119,6 +2336,31 @@ public class TownConversationController : MonoBehaviour
                 FindAnyObjectByType<TownMissionAcceptController>(
                     FindObjectsInactive.Include
                 );
+        }
+
+        if (missionManager == null)
+        {
+            MissionManager2D[] managers =
+                FindObjectsByType<MissionManager2D>(
+                    FindObjectsInactive.Include,
+                    FindObjectsSortMode.None
+                );
+
+            // TownConversationControllerと同じSceneのManagerを優先する。
+            foreach (MissionManager2D candidate in managers)
+            {
+                if (candidate != null &&
+                    candidate.gameObject.scene == gameObject.scene)
+                {
+                    missionManager = candidate;
+                    break;
+                }
+            }
+
+            if (missionManager == null && managers.Length > 0)
+            {
+                missionManager = managers[0];
+            }
         }
 
         if (pawnShopUIController == null)

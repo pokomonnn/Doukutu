@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -167,6 +168,17 @@ public class PlayerCarryController2D : MonoBehaviour
     public float InteractionRadius => interactionRadius;
     public LayerMask CarryableObjectLayers => carryableObjectLayers;
 
+    /// <summary>
+    /// CarryableObject2Dを下ろした直後に通知します。
+    /// 第3引数はFキーによる手動Dropならtrueです。
+    /// </summary>
+    public event Action<CarryableObject2D, PlayerCarryState2D, bool> CarryableDropped;
+
+    /// <summary>
+    /// Scene内の受取システム（エレベーター等）が購読する共通Dropイベントです。
+    /// </summary>
+    public static event Action<PlayerCarryController2D, CarryableObject2D, PlayerCarryState2D, bool> AnyCarryableDropped;
+
     public bool IsLayerAllowedForCarry(int layer)
     {
         return carryableObjectLayers.value == 0 ||
@@ -227,7 +239,7 @@ public class PlayerCarryController2D : MonoBehaviour
         {
             if (IsCarrying)
             {
-                DropCarriedObject();
+                DropCarriedObject(false);
             }
 
             ClearPromptTarget();
@@ -314,7 +326,7 @@ public class PlayerCarryController2D : MonoBehaviour
 
         if (dropWhenControllerDisabled && IsCarrying)
         {
-            DropCarriedObject();
+            DropCarriedObject(false);
         }
         else
         {
@@ -553,6 +565,11 @@ public class PlayerCarryController2D : MonoBehaviour
 
     public void DropCarriedObject()
     {
+        DropCarriedObject(false);
+    }
+
+    public void DropCarriedObject(bool manualDrop)
+    {
         if (!IsCarrying)
         {
             return;
@@ -586,6 +603,9 @@ public class PlayerCarryController2D : MonoBehaviour
 
         ReleaseAllActionLocks();
         RefreshCarryText();
+
+        CarryableDropped?.Invoke(target, droppedFromState, manualDrop);
+        AnyCarryableDropped?.Invoke(this, target, droppedFromState, manualDrop);
 
         Log(droppedFromState == PlayerCarryState2D.Backpack
             ? $"{target.name} を真下へ落としました。"
@@ -641,7 +661,7 @@ public class PlayerCarryController2D : MonoBehaviour
         if (Input.GetKeyDown(dropKey))
         {
             consumedCarryInputThisFrame = true;
-            DropCarriedObject();
+            DropCarriedObject(true);
         }
     }
 

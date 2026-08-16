@@ -58,11 +58,12 @@ public class CarryableObject2D : MonoBehaviour
             : transform.position;
 
     public bool IsCarried => currentCarrier != null;
-    public bool IsReserved => currentCarrier != null;
+    public bool IsExternallyReserved => externalReservationOwner != null;
+    public bool IsReserved => currentCarrier != null || externalReservationOwner != null;
     public bool CanBePickedUp =>
         isActiveAndEnabled &&
         targetRigidbody != null &&
-        !IsCarried &&
+        !IsReserved &&
         Time.time >= nextPickupAllowedTime;
 
     public float RemainingRepickupDelay => Mathf.Max(
@@ -73,6 +74,7 @@ public class CarryableObject2D : MonoBehaviour
     public PlayerCarryController2D CurrentCarrier => currentCarrier;
 
     private PlayerCarryController2D currentCarrier;
+    private MonoBehaviour externalReservationOwner;
     private float nextPickupAllowedTime;
 
     private Transform originalParent;
@@ -135,8 +137,7 @@ public class CarryableObject2D : MonoBehaviour
 
         PlayerCarryController2D[] controllers =
             FindObjectsByType<PlayerCarryController2D>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None
+                FindObjectsInactive.Include
             );
 
         if (controllers == null || controllers.Length == 0)
@@ -195,6 +196,7 @@ public class CarryableObject2D : MonoBehaviour
     private void OnDisable()
     {
         HidePrompt();
+        externalReservationOwner = null;
         RestoreIgnoredPlayerCollisions();
 
         if (currentCarrier != null)
@@ -223,12 +225,57 @@ public class CarryableObject2D : MonoBehaviour
             return $"運搬中（Carrier={currentCarrier.name}）";
         }
 
+        if (IsExternallyReserved)
+        {
+            return $"外部システムが使用中（Owner={externalReservationOwner.name}）";
+        }
+
         if (RemainingRepickupDelay > 0f)
         {
             return $"再取得待ち {RemainingRepickupDelay:0.00}秒";
         }
 
         return "取得可能";
+    }
+
+    /// <summary>
+    /// エレベーターなど、Player以外のシステムが一時的にこの物体を確保します。
+    /// 確保中はPlayerから拾い直せません。
+    /// </summary>
+    public bool TryReserveForExternalSystem(MonoBehaviour owner)
+    {
+        if (owner == null || IsCarried)
+        {
+            return false;
+        }
+
+        if (externalReservationOwner != null &&
+            externalReservationOwner != owner)
+        {
+            return false;
+        }
+
+        externalReservationOwner = owner;
+        HidePrompt();
+        return true;
+    }
+
+    /// <summary>
+    /// TryReserveForExternalSystemで確保した状態を解除します。
+    /// </summary>
+    public void ReleaseExternalReservation(MonoBehaviour owner)
+    {
+        if (externalReservationOwner == null)
+        {
+            return;
+        }
+
+        if (owner != null && externalReservationOwner != owner)
+        {
+            return;
+        }
+
+        externalReservationOwner = null;
     }
 
     public bool TryBeginCarry(PlayerCarryController2D carrier)

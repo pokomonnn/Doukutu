@@ -2,13 +2,15 @@ using UnityEngine;
 
 public enum MissionObjectiveType2D
 {
-    CollectItem,
-    DefeatTargetEnemy
+    // 既存Assetのシリアライズ値を壊さないため数値を固定します。
+    CollectItem = 0,
+    DefeatTargetEnemy = 1,
+    DeliverItem = 2
 }
 
 /// <summary>
 /// ミッションの基本データです。
-/// 収集ミッションと、特定の敵を倒すミッションに対応します。
+/// 収集ミッション、NPCなどへの納品ミッション、特定の敵を倒すミッションに対応します。
 /// 実際のコンパスの行き先や対象敵は、MissionManager2D側でシーンごとに設定します。
 /// </summary>
 [CreateAssetMenu(
@@ -32,14 +34,14 @@ public class MissionDefinition2D : ScriptableObject
     private MissionObjectiveType2D objectiveType =
         MissionObjectiveType2D.CollectItem;
 
-    [Header("アイテム回収ミッション")]
-    [Tooltip("Collect Itemの時に必要なItemDataです")]
+    [Header("アイテム回収・納品ミッション")]
+    [Tooltip("Collect Item / Deliver Item の時に必要なItemDataです")]
     [SerializeField] private ItemData requiredItem;
 
     [Tooltip("必要な個数です")]
     [SerializeField, Min(1)] private int requiredAmount = 1;
 
-    [Tooltip("オンならミッション開始時にすでに持っている必要アイテムも進捗に数えます。オフなら開始後に増えた個数だけを数えます")]
+    [Tooltip("Collect Item専用です。オンならミッション開始時にすでに持っている必要アイテムも進捗に数えます。Deliver Itemでは使用しません")]
     [SerializeField] private bool countItemsAlreadyHeldWhenMissionStarts;
 
     public string MissionId => missionId;

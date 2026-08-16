@@ -28,6 +28,9 @@ public class InventoryItemUI : MonoBehaviour,
     [Header("デバッグ")]
     [SerializeField] private bool showDebugLogs = true;
 
+    [Tooltip("InventorySoundPlayerの取得先と再生要求を詳しくログへ出します。原因特定後はOFFにできます。") ]
+    [SerializeField] private bool showSoundDiagnostics = true;
+
     private InventoryItem inventoryItem;
     private InventoryGridUI gridUI;
     private InventorySoundPlayer soundPlayer;
@@ -135,7 +138,7 @@ public class InventoryItemUI : MonoBehaviour,
                 this
             );
 
-            soundPlayer?.PlayFailed();
+            PlayInventorySound("Failed", player => player.PlayFailed());
             return;
         }
 
@@ -246,7 +249,7 @@ public class InventoryItemUI : MonoBehaviour,
 
         UpdateDragPosition(eventData.position);
 
-        soundPlayer?.PlayPickUp();
+        PlayInventorySound("PickUp", player => player.PlayPickUp());
 
         Log(
             $"ドラッグ開始：{inventoryItem.ItemData.DisplayName} / " +
@@ -278,7 +281,7 @@ public class InventoryItemUI : MonoBehaviour,
                 eventData,
                 out bool wasOverEquipmentSlot))
         {
-            soundPlayer?.PlayPlace();
+            PlayInventorySound("Place", player => player.PlayPlace());
 
             Log(
                 $"装備成功：{inventoryItem.ItemData.DisplayName}"
@@ -292,7 +295,7 @@ public class InventoryItemUI : MonoBehaviour,
         // 種類違い・枠が埋まっているなどで失敗した場合
         if (wasOverEquipmentSlot)
         {
-            soundPlayer?.PlayFailed();
+            PlayInventorySound("Failed", player => player.PlayFailed());
             FinishDrag();
             return;
         }
@@ -329,7 +332,7 @@ public class InventoryItemUI : MonoBehaviour,
 
             if (moved)
             {
-                soundPlayer?.PlayPlace();
+                PlayInventorySound("Place", player => player.PlayPlace());
 
                 Log(
                     $"ドロップ成功：{inventoryItem.ItemData.DisplayName} / " +
@@ -338,7 +341,7 @@ public class InventoryItemUI : MonoBehaviour,
             }
             else
             {
-                soundPlayer?.PlayFailed();
+                PlayInventorySound("Failed", player => player.PlayFailed());
 
                 Log(
                     $"ドロップ失敗：{inventoryItem.ItemData.DisplayName}"
@@ -347,7 +350,7 @@ public class InventoryItemUI : MonoBehaviour,
         }
         else
         {
-            soundPlayer?.PlayFailed();
+            PlayInventorySound("Failed", player => player.PlayFailed());
             Log("ドロップ失敗：グリッド外です。");
         }
 
@@ -457,7 +460,7 @@ public class InventoryItemUI : MonoBehaviour,
 
         if (!inventoryItem.CanRotate)
         {
-            soundPlayer?.PlayFailed();
+            PlayInventorySound("Failed", player => player.PlayFailed());
 
             Log(
                 $"Rキー検知：{inventoryItem.ItemData.DisplayName} は " +
@@ -515,7 +518,7 @@ public class InventoryItemUI : MonoBehaviour,
 
         UpdateDragPosition(mousePosition);
 
-        soundPlayer?.PlayRotate();
+        PlayInventorySound("Rotate", player => player.PlayRotate());
 
         Log(
             $"Rキー回転成功：{inventoryItem.ItemData.DisplayName} / " +
@@ -632,25 +635,147 @@ public class InventoryItemUI : MonoBehaviour,
     {
         if (soundPlayer != null)
         {
+            LogSoundDiagnostic(
+                $"既存SoundPlayerを使用：{GetTransformPath(soundPlayer.transform)} / " +
+                $"GridUI={(gridUI != null ? GetTransformPath(gridUI.transform) : "null")}"
+            );
             return;
         }
 
         if (gridUI != null)
         {
             soundPlayer = gridUI.GetComponent<InventorySoundPlayer>();
+
+            if (soundPlayer != null)
+            {
+                LogSoundDiagnostic(
+                    $"GridUIと同じObjectからSoundPlayer取得：{GetTransformPath(soundPlayer.transform)}"
+                );
+            }
         }
 
         if (soundPlayer == null)
         {
             soundPlayer = GetComponentInParent<InventorySoundPlayer>();
+
+            if (soundPlayer != null)
+            {
+                LogSoundDiagnostic(
+                    $"親階層からSoundPlayer取得：{GetTransformPath(soundPlayer.transform)}"
+                );
+            }
         }
 
         if (soundPlayer == null)
         {
-            soundPlayer = FindAnyObjectByType<InventorySoundPlayer>(
-                FindObjectsInactive.Include
+            InventorySoundPlayer[] candidates =
+                FindObjectsByType<InventorySoundPlayer>(
+                    FindObjectsInactive.Include,
+                    FindObjectsSortMode.None
+                );
+
+            if (candidates.Length > 0)
+            {
+                soundPlayer = candidates[0];
+
+                LogSoundWarning(
+                    $"GridUI/親階層にSoundPlayerが無かったため、Scene内候補から自動取得しました。" +
+                    $"選択={GetTransformPath(soundPlayer.transform)} / 候補数={candidates.Length}。" +
+                    "複数ある場合は意図しないSoundPlayerを掴む可能性があります。"
+                );
+
+                if (showSoundDiagnostics && candidates.Length > 1)
+                {
+                    for (int i = 0; i < candidates.Length; i++)
+                    {
+                        InventorySoundPlayer candidate = candidates[i];
+                        if (candidate == null)
+                        {
+                            continue;
+                        }
+
+                        Debug.Log(
+                            $"[InventorySound診断][ItemUI] SoundPlayer候補[{i}]=" +
+                            $"{GetTransformPath(candidate.transform)} / " +
+                            $"Active={candidate.gameObject.activeInHierarchy} / Enabled={candidate.enabled}",
+                            this
+                        );
+                    }
+                }
+            }
+        }
+
+        if (soundPlayer == null)
+        {
+            LogSoundWarning(
+                $"InventorySoundPlayerが見つかりません。ItemUI={GetTransformPath(transform)} / " +
+                $"GridUI={(gridUI != null ? GetTransformPath(gridUI.transform) : "null")}"
             );
         }
+    }
+
+    private void PlayInventorySound(
+        string soundName,
+        System.Action<InventorySoundPlayer> playAction)
+    {
+        FindSoundPlayer();
+
+        if (soundPlayer == null)
+        {
+            LogSoundWarning(
+                $"再生要求 [{soundName}] 失敗：soundPlayer=null / " +
+                $"Item={(inventoryItem != null && inventoryItem.ItemData != null ? inventoryItem.ItemData.DisplayName : "未設定")}"
+            );
+            return;
+        }
+
+        LogSoundDiagnostic(
+            $"再生要求 [{soundName}] → SoundPlayer={GetTransformPath(soundPlayer.transform)} / " +
+            $"SoundPlayerActive={soundPlayer.gameObject.activeInHierarchy} / " +
+            $"SoundPlayerEnabled={soundPlayer.enabled} / " +
+            $"Item={(inventoryItem != null && inventoryItem.ItemData != null ? inventoryItem.ItemData.DisplayName : "未設定")}"
+        );
+
+        playAction?.Invoke(soundPlayer);
+    }
+
+    private void LogSoundDiagnostic(string message)
+    {
+        if (!showSoundDiagnostics || string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        Debug.Log($"[InventorySound診断][ItemUI] {message}", this);
+    }
+
+    private void LogSoundWarning(string message)
+    {
+        if (!showSoundDiagnostics || string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        Debug.LogWarning($"[InventorySound診断][ItemUI] {message}", this);
+    }
+
+    private static string GetTransformPath(Transform target)
+    {
+        if (target == null)
+        {
+            return "null";
+        }
+
+        string path = target.name;
+        Transform current = target.parent;
+
+        while (current != null)
+        {
+            path = current.name + "/" + path;
+            current = current.parent;
+        }
+
+        return path;
     }
 
     private void EnsureVisuals()

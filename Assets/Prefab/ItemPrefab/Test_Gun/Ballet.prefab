@@ -182,7 +182,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BulletDestroyOnLayer
   destroyLayers:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 67648
   hitEffectPrefab: {fileID: 1410812373965111304, guid: 4749406402d9b35499debe1aad133720, type: 3}
 --- !u!114 &4727902328635156361
 MonoBehaviour:
@@ -199,6 +199,6 @@ MonoBehaviour:
   damage: 10
   targetLayers:
     serializedVersion: 2
-    m_Bits: 2048
+    m_Bits: 67584
   hitOnlyOncePerTarget: 1
   destroyOnHit: 1

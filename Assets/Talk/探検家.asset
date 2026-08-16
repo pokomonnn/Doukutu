@@ -34,6 +34,13 @@ MonoBehaviour:
   closeButtonText: "\u9589\u3058\u308B"
   blocks:
   - blockId: first
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
     pages:
     - speakerNameOverride: 
       portraitOverride: {fileID: 0}
@@ -44,13 +51,16 @@ MonoBehaviour:
     - speakerNameOverride: 
       portraitOverride: {fileID: 0}
       message: "\u4FFA\u306F\u3082\u3046\u52D5\u3051\u306D\u3047"
-    choices:
-    - choiceText: "\u9023\u308C\u3066\u5E30\u308B"
-      action: 4
-      nextBlockId: 2
-      selectionSoundOverride: {fileID: 0}
+    choices: []
     nextBlockId: 
   - blockId: 2
+    importantConversation: 0
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
     pages:
     - speakerNameOverride: 
       portraitOverride: {fileID: 0}
