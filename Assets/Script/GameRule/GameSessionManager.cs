@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement;
 [DisallowMultipleComponent]
 public class GameSessionManager : MonoBehaviour
 {
-    public const int CurrentSaveVersion = 3;
+    public const int CurrentSaveVersion = 4;
 
     [Header("初回起動時の所持金")]
     [Tooltip("PlayerMoneyController が開始金額を引き継がない場合に使う初期所持金です。通常は0のままでOKです。")]
@@ -32,6 +32,9 @@ public class GameSessionManager : MonoBehaviour
     /// <summary>現在の所持金です。負の値にはなりません。</summary>
     public int CurrentMoney => currentMoney;
 
+    /// <summary>これまで町へ持ち帰った死亡NPCの累計人数です。</summary>
+    public int TotalDeadNpcCount => totalDeadNpcCount;
+
     /// <summary>所持金の初期化が済んでいるかどうかです。</summary>
     public bool HasInitializedMoney => hasInitializedMoney;
 
@@ -40,6 +43,9 @@ public class GameSessionManager : MonoBehaviour
 
     /// <summary>所持金が変化した時に、現在の所持金を通知します。</summary>
     public event Action<int> MoneyChanged;
+
+    /// <summary>墓場へ登録された死亡NPC累計人数が変化した時に通知します。</summary>
+    public event Action<int> DeadNpcCountChanged;
 
     /// <summary>インベントリ・装備の引き継ぎデータを保存または復元した時に通知します。</summary>
     public event Action InventorySessionChanged;
@@ -55,6 +61,7 @@ public class GameSessionManager : MonoBehaviour
 
     private int currentMoney;
     private bool hasInitializedMoney;
+    private int totalDeadNpcCount;
 
     private PlayerInventorySessionData inventorySessionData =
         new PlayerInventorySessionData();
@@ -197,6 +204,52 @@ public class GameSessionManager : MonoBehaviour
     {
         EnsureMoneyInitialized();
         SetMoneyInternal(Mathf.Max(0, amount));
+    }
+
+    // ---------------------------------------------------------------------
+    // 墓場：死亡NPC累計
+    // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// 今回町へ持ち帰った死亡NPC数を、墓場の累計人数へ加算します。
+    /// Result SceneからTown_Mainへ戻る直前に呼ぶ想定です。
+    /// </summary>
+    public bool AddDeadNpcCount(int amount)
+    {
+        if (amount <= 0)
+        {
+            return false;
+        }
+
+        long nextCount = (long)totalDeadNpcCount + amount;
+        totalDeadNpcCount = nextCount > int.MaxValue
+            ? int.MaxValue
+            : (int)nextCount;
+
+        NotifyDeadNpcCountChanged();
+
+        Log(
+            $"墓場の死亡NPC数を {amount:N0} 人増やしました。" +
+            $"累計 {totalDeadNpcCount:N0} 人"
+        );
+
+        return true;
+    }
+
+    /// <summary>
+    /// 墓場の死亡NPC累計人数を直接設定します。ロード・デバッグ用です。
+    /// </summary>
+    public void SetTotalDeadNpcCount(int amount)
+    {
+        int safeValue = Mathf.Max(0, amount);
+
+        if (totalDeadNpcCount == safeValue)
+        {
+            return;
+        }
+
+        totalDeadNpcCount = safeValue;
+        NotifyDeadNpcCountChanged();
     }
 
     // ---------------------------------------------------------------------
@@ -451,6 +504,7 @@ public class GameSessionManager : MonoBehaviour
     {
         currentMoney = 0;
         hasInitializedMoney = false;
+        totalDeadNpcCount = 0;
 
         inventorySessionData = new PlayerInventorySessionData();
         hasInventorySessionData = false;
@@ -459,6 +513,7 @@ public class GameSessionManager : MonoBehaviour
         trackedMissionId = string.Empty;
 
         NotifyMoneyChanged();
+        NotifyDeadNpcCountChanged();
         InventorySessionChanged?.Invoke();
         MissionSessionChanged?.Invoke();
 
@@ -929,6 +984,7 @@ public class GameSessionManager : MonoBehaviour
             SavedAtUtc = DateTime.UtcNow.ToString("O"),
             SavedSceneName = savedSceneName ?? string.Empty,
             Money = Mathf.Max(0, currentMoney),
+            TotalDeadNpcCount = Mathf.Max(0, totalDeadNpcCount),
             TrackedMissionId = trackedMissionId ?? string.Empty
         };
 
@@ -983,6 +1039,7 @@ public class GameSessionManager : MonoBehaviour
 
         LogTransfer(
             $"本セーブ用データ作成: Money={saveData.Money:N0} / " +
+            $"DeadNpcTotal={saveData.TotalDeadNpcCount:N0}人 / " +
             $"Inventory={saveData.PlayerInventory.InventoryItems.Count}件 / " +
             $"PrimaryWeapon={(saveData.PlayerInventory.PrimaryWeapon != null ? "あり" : "なし")} / " +
             $"Helmet={(saveData.PlayerInventory.Helmet != null ? "あり" : "なし")} / " +
@@ -1026,6 +1083,7 @@ public class GameSessionManager : MonoBehaviour
 
         currentMoney = Mathf.Max(0, saveData.Money);
         hasInitializedMoney = true;
+        totalDeadNpcCount = Mathf.Max(0, saveData.TotalDeadNpcCount);
 
         SavedPlayerInventoryData savedInventory =
             saveData.PlayerInventory ?? new SavedPlayerInventoryData();
@@ -1161,11 +1219,13 @@ public class GameSessionManager : MonoBehaviour
         }
 
         NotifyMoneyChanged();
+        NotifyDeadNpcCountChanged();
         InventorySessionChanged?.Invoke();
         MissionSessionChanged?.Invoke();
 
         resultMessage =
             $"所持金={currentMoney:N0} / " +
+            $"墓場の死亡NPC={totalDeadNpcCount:N0}人 / " +
             $"通常アイテム={restoredInventoryCount}件 / " +
             $"ミッション={restoredMissionCount}件";
 
@@ -1712,6 +1772,11 @@ public class GameSessionManager : MonoBehaviour
     private void NotifyMoneyChanged()
     {
         MoneyChanged?.Invoke(currentMoney);
+    }
+
+    private void NotifyDeadNpcCountChanged()
+    {
+        DeadNpcCountChanged?.Invoke(totalDeadNpcCount);
     }
 
     private void Log(string message)

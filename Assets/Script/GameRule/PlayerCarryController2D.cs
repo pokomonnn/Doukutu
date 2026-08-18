@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -983,14 +983,28 @@ public class PlayerCarryController2D : MonoBehaviour
             return;
         }
 
-        promptTarget?.HidePrompt();
+        if (promptTarget != null)
+        {
+            promptTarget.HidePrompt();
+        }
+
         promptTarget = nextTarget;
-        promptTarget?.ShowPrompt(pickupPrompt);
+
+        if (promptTarget != null)
+        {
+            promptTarget.ShowPrompt(pickupPrompt);
+        }
     }
 
     private void ClearPromptTarget()
     {
-        promptTarget?.HidePrompt();
+        // UnityのDestroy済みObjectを確実に弾くため、
+        // null条件演算子ではなくUnity式の明示null判定を使います。
+        if (promptTarget != null)
+        {
+            promptTarget.HidePrompt();
+        }
+
         promptTarget = null;
     }
 

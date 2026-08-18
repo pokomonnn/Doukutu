@@ -228,6 +228,10 @@ MonoBehaviour:
   objectsToEnableOnDeath: []
   animator: {fileID: 2761404752860740789}
   deathTriggerName: Death
+  changeSpriteColorOnDeath: 1
+  spriteRenderersToTint: []
+  deathColor: {r: 0.45, g: 0.45, b: 0.45, a: 1}
+  deathColorFadeDuration: 0.25
   showDebugLogs: 0
 --- !u!95 &2761404752860740789
 Animator:
@@ -270,10 +274,10 @@ Rigidbody2D:
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 65536
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 65536
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
@@ -300,8 +304,8 @@ MonoBehaviour:
   carryWeightKg: 10
   applyPromptLocalPosition: 1
   promptLocalPosition: {x: 0, y: 1.1, z: 0}
-  showDebugLogs: 1
-  showDetailedDiagnostics: 1
+  showDebugLogs: 0
+  showDetailedDiagnostics: 0
 --- !u!1 &1133281558187549016
 GameObject:
   m_ObjectHideFlags: 0

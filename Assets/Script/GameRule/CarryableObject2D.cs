@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -511,6 +511,14 @@ public class CarryableObject2D : MonoBehaviour
 
     public void HidePrompt()
     {
+        // Scene切替などでNative側がDestroy済みでもManaged参照だけ残る場合があります。
+        // Destroy済みComponentへGetComponent系を呼ぶとMissingReferenceExceptionになるため、
+        // UnityEngine.Objectのnull判定で先に抜けます。
+        if (this == null)
+        {
+            return;
+        }
+
         FindPromptText();
 
         if (interactionText == null)
@@ -818,6 +826,12 @@ public class CarryableObject2D : MonoBehaviour
 
     private void FindPromptText()
     {
+        if (this == null)
+        {
+            interactionText = null;
+            return;
+        }
+
         if (interactionText == null)
         {
             interactionText = GetComponentInChildren<TMP_Text>(true);

@@ -1815,7 +1815,7 @@ MonoBehaviour:
   ropeClimbController: {fileID: 76742667}
   proneKey: 304
   allowRightAlt: 1
-  proneMoveSpeedMultiplier: 0.329
+  proneMoveSpeedMultiplier: 0.289
   proneAimAngle: 90
   requireGroundedToEnter: 1
   exitProneWhenAirborne: 1
@@ -2078,17 +2078,12 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   minimumCarrySpeedMultiplier: 0.25
-  showDebugLogs: 1
-  showDetailedDiagnostics: 1
-  logInputEvents: 1
+  showDebugLogs: 0
+  showDetailedDiagnostics: 0
+  logInputEvents: 0
   logTargetScanDetails: 0
   repeatedDiagnosticInterval: 1.5
-  showInteractionGizmo: 1
---- !u!4 &79609402 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 9142152259850596530, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-  m_PrefabInstance: {fileID: 4957074950176935364}
-  m_PrefabAsset: {fileID: 0}
+  showInteractionGizmo: 0
 --- !u!1 &82656152
 GameObject:
   m_ObjectHideFlags: 0
@@ -4434,6 +4429,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8e4fa2e263f72a49828f57f626b7e9f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FractureItemBoxWallTutorialController
+  statusConditionController: {fileID: 0}
+  tutorialItemBox: {fileID: 0}
+  wallClimbController: {fileID: 0}
+  tutorialPromptUI: {fileID: 0}
+  itemBoxCameraDirector: {fileID: 0}
+  playerMove: {fileID: 0}
+  equipmentVisualController: {fileID: 0}
+  additionalScriptsToDisableDuringTimeline: []
+  stopPlayerVelocityDuringTimeline: 1
+  arrowOrigin: {fileID: 0}
+  itemBoxArrowTarget: {fileID: 0}
+  wallArrowTarget: {fileID: 0}
+  moveToItemBoxMessages:
+    messages:
+    - message: "\u9AA8\u6298\u3057\u3066\u3057\u307E\u3063\u305F\u3088\u3046\u3060\u3002"
+    - message: "\u30A2\u30A4\u30C6\u30E0\u30DC\u30C3\u30AF\u30B9\u3092\u78BA\u8A8D\u3057\u3088\u3046\u3002"
+    intervalSeconds: 3
+  useCureItemMessages:
+    messages:
+    - message: "\u30A2\u30A4\u30C6\u30E0\u3092\u56DE\u53CE\u3057\u3088\u3046\u3002"
+    - message: "naegi\u3092\u4F7F\u7528\u3057\u3066\u9AA8\u6298\u3092\u6CBB\u305D\u3046\u3002"
+    intervalSeconds: 3
+  climbWallMessages:
+    messages:
+    - message: "\u58C1\u306B\u5411\u304B\u3063\u3066A\uFF0BW\u3001\u307E\u305F\u306FD\uFF0BW\u3092\u62BC\u3057\u3066\u58C1\u3092\u767B\u308D\u3046\u3002"
+    intervalSeconds: 3
+  completedMessages:
+    messages:
+    - message: "\u30C1\u30E5\u30FC\u30C8\u30EA\u30A2\u30EB\u5B8C\u4E86\uFF01"
+    intervalSeconds: 3
+  completedMessageDuration: 2.5
+  useUnscaledMessageTime: 1
+  playMessageSound: 1
+  messageSound: {fileID: 0}
+  messageAudioSource: {fileID: 0}
+  messageSoundVolume: 1
+  autoCreateMessageAudioSource: 1
+  legacyMoveToItemBoxMessage: 
+  legacyUseCureItemMessage: 
+  legacyClimbWallMessage: 
+  legacyCompletedMessage: 
+  startIfAlreadyFractured: 1
+  skipMoveStepIfBoxAlreadyOpened: 1
+  showDebugLogs: 1
+  currentStep: 0
 --- !u!320 &478095000
 PlayableDirector:
   m_ObjectHideFlags: 0
@@ -15437,7 +15477,6 @@ Transform:
   - {fileID: 1685977897}
   - {fileID: 1745977817}
   - {fileID: 1693494737}
-  - {fileID: 1795144967}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &965598301
@@ -20693,6 +20732,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 192ac2349d17efa44b78eb6e1850caea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialPromptUI
+  tutorialRoot: {fileID: 0}
+  canvasGroup: {fileID: 0}
+  tutorialText: {fileID: 0}
+  arrowImage: {fileID: 0}
+  arrowRectTransform: {fileID: 0}
+  canvasRectTransform: {fileID: 0}
+  worldCamera: {fileID: 0}
+  arrowScreenOffset: {x: 0, y: 90}
+  arrowRotationOffset: 0
+  hideArrowWithinWorldDistance: 0
+  fadeInDuration: 0.2
+  fadeOutDuration: 0.2
+  useUnscaledTime: 1
+  hideOnAwake: 1
+  showDebugLogs: 0
 --- !u!225 &1688225349
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -22103,8 +22157,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1795144966}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -83.5, y: -21.6, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -92.20312, y: -23.946821, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -22115,7 +22169,7 @@ Transform:
   - {fileID: 118947993}
   - {fileID: 872175143}
   - {fileID: 1418142180}
-  m_Father: {fileID: 951164214}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1796210035
 GameObject:
@@ -23605,10 +23659,15 @@ MonoBehaviour:
   acceptedLayers:
     serializedVersion: 2
     m_Bits: 98304
-  requireManualDrop: 1
-  acceptOnlyBackpackDrops: 1
-  autoFindCargoSlotsInChildren: 1
-  cargoSlots: []
+  requireManualDrop: 0
+  acceptOnlyBackpackDrops: 0
+  autoFindCargoSlotsInChildren: 0
+  cargoSlots:
+  - {fileID: 1255762436}
+  - {fileID: 457523756}
+  - {fileID: 476081841}
+  - {fileID: 118947994}
+  - {fileID: 872175144}
   moveDuration: 0.55
   moveCurve:
     serializedVersion: 2
@@ -23638,6 +23697,7 @@ MonoBehaviour:
   disableSimulationWhileStored: 1
   releaseCargoWhenDisabled: 0
   showDebugLogs: 1
+  alwaysLogStorageComplete: 1
 --- !u!61 &1979031556
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -29179,71 +29239,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7391083078216004860}
   m_CullTransparentMesh: 1
---- !u!1001 &4957074950176935364
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 862909085402662033, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-      propertyPath: m_Name
-      value: "\u63A2\u691C\u5BB6"
-      objectReference: {fileID: 0}
-    - target: {fileID: 2163851176869075512, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-      propertyPath: anchorFollower
-      value: 
-      objectReference: {fileID: 8230955202724633371}
-    - target: {fileID: 2163851176869075512, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-      propertyPath: conversationController
-      value: 
-      objectReference: {fileID: 1492766682}
-    - target: {fileID: 6394677455136154941, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -68.58
-      objectReference: {fileID: 0}
-    - target: {fileID: 6394677455136154941, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: -26.71
-      objectReference: {fileID: 0}
-    - target: {fileID: 6394677455136154941, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6394677455136154941, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6394677455136154941, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6394677455136154941, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6394677455136154941, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6394677455136154941, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6394677455136154941, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6394677455136154941, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
 --- !u!224 &4979943628167669018
 RectTransform:
   m_ObjectHideFlags: 0
@@ -32340,7 +32335,7 @@ MonoBehaviour:
   dialoguePanelRect: {fileID: 6166540198173143837}
   targetCanvas: {fileID: 166975642}
   worldCamera: {fileID: 519420031}
-  targetAnchor: {fileID: 79609402}
+  targetAnchor: {fileID: 0}
   screenOffset: {x: 0, y: 0}
   followWhilePanelHidden: 0
   ignoreAnchorBehindCamera: 1
@@ -33324,4 +33319,4 @@ SceneRoots:
   - {fileID: 997673917}
   - {fileID: 2087843848}
   - {fileID: 1315968280}
-  - {fileID: 4957074950176935364}
+  - {fileID: 1795144967}

@@ -705,9 +705,11 @@ public class TownConversationController : MonoBehaviour
             LogWarning("Resident Name Textが未設定のため、NPC名を表示できません。");
         }
 
+        string resolvedMessage = ResolveConversationVariables(page.Message);
+
         if (dialogueText != null)
         {
-            dialogueText.text = page.Message;
+            dialogueText.text = resolvedMessage;
         }
         else
         {
@@ -747,7 +749,7 @@ public class TownConversationController : MonoBehaviour
                 $"Page表示: Block={currentBlock.BlockId} / " +
                 $"Page={pageIndex + 1}/{currentBlock.PageCount} / " +
                 $"Speaker={FormatValue(speakerName)} / " +
-                $"Message={GetTextPreview(page.Message)}"
+                $"Message={GetTextPreview(resolvedMessage)}"
             );
 
             if (logUiStateOnEveryPage)
@@ -819,7 +821,9 @@ public class TownConversationController : MonoBehaviour
 
             if (label != null)
             {
-                label.text = choice.ChoiceText;
+                label.text = ResolveConversationVariables(
+                    choice.ChoiceText
+                );
             }
 
             button.onClick.AddListener(
@@ -2323,6 +2327,38 @@ public class TownConversationController : MonoBehaviour
 
         SetupAudioSource();
         dialogueAudioSource?.PlayOneShot(clip, Mathf.Clamp01(volume));
+    }
+
+    /// <summary>
+    /// 会話文に含まれるゲーム状態のプレースホルダーを現在値へ置換します。
+    /// 墓場管理人では {DeadNpcCount} を使うと、これまで町へ持ち帰った
+    /// 死亡NPCの累計人数を表示できます。
+    /// {TotalDeadNpcCount} も同じ意味で使用できます。
+    /// </summary>
+    public string ResolveConversationVariables(string sourceText)
+    {
+        if (string.IsNullOrEmpty(sourceText))
+        {
+            return sourceText ?? string.Empty;
+        }
+
+        if (!sourceText.Contains("{DeadNpcCount}") &&
+            !sourceText.Contains("{TotalDeadNpcCount}"))
+        {
+            return sourceText;
+        }
+
+        FindSessionManager();
+
+        int deadNpcCount = gameSessionManager != null
+            ? Mathf.Max(0, gameSessionManager.TotalDeadNpcCount)
+            : 0;
+
+        string countText = deadNpcCount.ToString("N0");
+
+        return sourceText
+            .Replace("{DeadNpcCount}", countText)
+            .Replace("{TotalDeadNpcCount}", countText);
     }
 
     private void FindReferences()

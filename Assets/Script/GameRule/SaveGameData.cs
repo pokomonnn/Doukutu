@@ -6,14 +6,18 @@ using System.Collections.Generic;
 /// 第1段階：所持金・インベントリ・装備・武器残弾・ミッション
 /// 第2段階：HP・食料・水分・SAN・状態異常・松明
 /// 第3段階：現在シーン・チェックポイント・地面アイテム・アイテム箱・会話履歴
+/// 第4段階：墓場の死亡NPC累計人数
 /// </summary>
 [Serializable]
 public class SaveGameData
 {
-    public int SaveVersion = 3;
+    public int SaveVersion = 4;
     public string SavedAtUtc = string.Empty;
     public string SavedSceneName = string.Empty;
     public int Money;
+
+    /// <summary>これまで町へ持ち帰った死亡NPCの累計人数です。</summary>
+    public int TotalDeadNpcCount;
 
     public SavedPlayerInventoryData PlayerInventory =
         new SavedPlayerInventoryData();

@@ -746,7 +746,7 @@ public class InventoryItemUI : MonoBehaviour,
             return;
         }
 
-        Debug.Log($"[InventorySound診断][ItemUI] {message}", this);
+        //Debug.Log($"[InventorySound診断][ItemUI] {message}", this);
     }
 
     private void LogSoundWarning(string message)
@@ -756,7 +756,7 @@ public class InventoryItemUI : MonoBehaviour,
             return;
         }
 
-        Debug.LogWarning($"[InventorySound診断][ItemUI] {message}", this);
+        //Debug.LogWarning($"[InventorySound診断][ItemUI] {message}", this);
     }
 
     private static string GetTransformPath(Transform target)

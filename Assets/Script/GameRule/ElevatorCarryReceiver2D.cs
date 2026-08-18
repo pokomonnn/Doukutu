@@ -60,6 +60,11 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
     [Header("デバッグ")]
     [SerializeField] private bool showDebugLogs = true;
 
+    [Tooltip(
+        "ONならShow Debug LogsがOFFでも、Cargoの収納完了だけは必ずConsoleへ表示します。"
+    )]
+    [SerializeField] private bool alwaysLogStorageComplete = true;
+
     public int StoredCargoCount => cargoRecords.Count;
     public int FreeSlotCount => CountFreeSlots();
 
@@ -310,7 +315,7 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
         movingTargets.Remove(target);
         cargoRecords[target] = record;
 
-        Log($"収納完了: {target.name} → {record.Slot.name}");
+        LogStorageComplete(target, record.Slot);
     }
 
     /// <summary>
@@ -579,6 +584,164 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
         {
             LogWarning("Receiver ColliderはIs TriggerをONにしてください。");
         }
+    }
+
+    /// <summary>
+    /// InspectorのContext Menuから、現在収納中のCargo一覧をConsoleへ表示できます。
+    /// Result集計の確認にも使えます。
+    /// </summary>
+    [ContextMenu("Log Stored Cargo Snapshot")]
+    public void LogStoredCargoSnapshot()
+    {
+        List<CarryableObject2D> snapshot =
+            GetCargoSnapshot(true);
+
+        Debug.Log(
+            $"[ElevatorCarryReceiver2D][Cargo確認] " +
+            $"合計={snapshot.Count} / " +
+            $"収納完了={cargoRecords.Count} / " +
+            $"移動中={movingTargets.Count}",
+            this
+        );
+
+        for (int i = 0; i < snapshot.Count; i++)
+        {
+            CarryableObject2D target = snapshot[i];
+
+            if (target == null)
+            {
+                Debug.Log(
+                    $"[ElevatorCarryReceiver2D][Cargo確認] [{i}] null",
+                    this
+                );
+                continue;
+            }
+
+            Debug.Log(
+                $"[ElevatorCarryReceiver2D][Cargo確認] [{i}] " +
+                $"種類={GetCargoTypeLabel(target)} / " +
+                $"Object={target.name} / " +
+                $"Layer={LayerMask.LayerToName(target.gameObject.layer)} / " +
+                $"IsCarried={target.IsCarried}",
+                target
+            );
+        }
+    }
+
+    private void LogStorageComplete(
+        CarryableObject2D target,
+        ElevatorCargoSlot2D slot)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        string cargoType = GetCargoTypeLabel(target);
+        string slotName = slot != null ? slot.name : "なし";
+        string extraInfo = GetCargoExtraInfo(target);
+
+        string message =
+            $"[ElevatorCarryReceiver2D][収納完了] " +
+            $"種類={cargoType} / " +
+            $"Object={target.name} / " +
+            $"Slot={slotName} / " +
+            $"収納数={cargoRecords.Count}" +
+            extraInfo;
+
+        if (alwaysLogStorageComplete)
+        {
+            Debug.Log(message, target);
+            return;
+        }
+
+        Log(message);
+    }
+
+    private static string GetCargoTypeLabel(
+        CarryableObject2D target)
+    {
+        if (target == null)
+        {
+            return "不明";
+        }
+
+        RescuePersonTarget2D rescueTarget =
+            target.GetComponent<RescuePersonTarget2D>();
+
+        if (rescueTarget == null)
+        {
+            rescueTarget =
+                target.GetComponentInChildren<
+                    RescuePersonTarget2D
+                >(true);
+        }
+
+        if (rescueTarget == null)
+        {
+            rescueTarget =
+                target.GetComponentInParent<
+                    RescuePersonTarget2D
+                >();
+        }
+
+        if (rescueTarget != null)
+        {
+            return "救出NPC";
+        }
+
+        ItemBoxInventory itemBox =
+            target.GetComponent<ItemBoxInventory>();
+
+        if (itemBox == null)
+        {
+            itemBox =
+                target.GetComponentInChildren<
+                    ItemBoxInventory
+                >(true);
+        }
+
+        if (itemBox != null)
+        {
+            return "ItemBox";
+        }
+
+        return "CarryableObject";
+    }
+
+    private static string GetCargoExtraInfo(
+        CarryableObject2D target)
+    {
+        if (target == null)
+        {
+            return string.Empty;
+        }
+
+        CharacterHealth health =
+            target.GetComponent<CharacterHealth>();
+
+        if (health == null)
+        {
+            health =
+                target.GetComponentInChildren<
+                    CharacterHealth
+                >(true);
+        }
+
+        if (health == null)
+        {
+            health =
+                target.GetComponentInParent<
+                    CharacterHealth
+                >();
+        }
+
+        if (health == null)
+        {
+            return string.Empty;
+        }
+
+        return $" / IsDead={health.IsDead}";
     }
 
     private void Log(string message)
