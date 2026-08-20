@@ -8,6 +8,9 @@ using UnityEngine.UI;
 /// マウスカーソルを隠し、実際に置かれるマス位置へアイテム表示をスナップします。
 /// 緑 = 置ける、赤 = 置けない、という見た目のフィードバックも表示します。
 ///
+/// 同一プレイヤーInventory内でスタック結合できる場所も「置ける」と判定し、
+/// 緑で表示します。
+///
 /// 既存の InventoryItemUI / EquipmentItemDragHandler は置き換え不要です。
 /// RuntimeInitializeOnLoadMethod により、シーン開始時に自動で1つ生成されます。
 /// </summary>
@@ -22,7 +25,7 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
     [Tooltip("ドラッグ中のアイテムを、実際に置かれるグリッド位置へスナップします")]
     [SerializeField] private bool snapDraggedItemToGrid = true;
 
-    [Tooltip("置ける場所に重ねた時の色")]
+    [Tooltip("置ける場所・スタック結合できる場所に重ねた時の色")]
     [SerializeField]
     private Color validPlacementColor =
         new Color(0.28f, 0.95f, 0.42f, 1f);
@@ -261,11 +264,18 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
             );
         }
 
+        // 実際のドロップ処理でスタック判定に使っているのは
+        // 「アイテム左上」ではなく、マウスが指しているセル。
+        // targetPositionは pointer - dragCellOffset なので戻して取得する。
+        Vector2Int pointerGridPosition =
+            targetPosition + drag.DragCellOffset;
+
         bool canPlace = CanPlaceItemAt(
             targetGridUI,
             drag.Item,
             drag.SourceGridUI,
             targetPosition,
+            pointerGridPosition,
             drag.IsRotated
         );
 
@@ -395,6 +405,7 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
         InventoryItem item,
         InventoryGridUI sourceGridUI,
         Vector2Int targetPosition,
+        Vector2Int pointerGridPosition,
         bool isRotated)
     {
         if (targetGridUI == null ||
@@ -426,6 +437,19 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
             // 対象グリッドの実データが取得できない場合は、
             // 誤って「置ける」と表示しないよう赤扱いにします。
             return false;
+        }
+
+        // 同じプレイヤーInventory内で、マウス先のスタックへ
+        // 実際に結合できる場合は「置ける」と同じ緑表示にする。
+        // MaxStack到達済み・別ItemData・別弾種などはfalseのまま。
+        if (sourceGridUI != null &&
+            sourceGridUI == targetGridUI &&
+            targetGridUI.CanMergeItemAt(
+                item,
+                pointerGridPosition.x,
+                pointerGridPosition.y))
+        {
+            return true;
         }
 
         return targetGrid.CanPlaceItem(
@@ -618,15 +642,6 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
         return value is T typedValue
             ? typedValue
             : fallback;
-    }
-
-    private static T GetPublicOrPrivateProperty<T>(
-        object target,
-        string propertyName)
-        where T : class
-    {
-        object value = GetPrivateObject(target, propertyName);
-        return value as T;
     }
 
     private static T InvokeMethod<T>(

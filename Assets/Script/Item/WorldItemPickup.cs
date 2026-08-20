@@ -120,6 +120,15 @@ public class WorldItemPickup : MonoBehaviour
             storedMagazineAmmo =
                 droppedItem.StoredMagazineAmmo,
 
+            hasStoredWeaponDurability =
+                droppedItem.HasStoredWeaponDurability,
+
+            storedWeaponDurability =
+                droppedItem.StoredWeaponDurability,
+
+            storedWeaponJammed =
+                droppedItem.StoredWeaponJammed,
+
             positionX = position.x,
             positionY = position.y,
             positionZ = position.z,
@@ -163,6 +172,21 @@ public class WorldItemPickup : MonoBehaviour
                 saveData.storedMagazineAmmo
             );
         }
+
+        if (saveData.hasStoredWeaponDurability)
+        {
+            restoredItem.SetStoredWeaponDurability(
+                saveData.storedWeaponDurability
+            );
+        }
+        else
+        {
+            restoredItem.EnsureWeaponDurabilityInitialized();
+        }
+
+        restoredItem.SetStoredWeaponJammed(
+            saveData.storedWeaponJammed
+        );
 
         droppedItem = restoredItem;
 

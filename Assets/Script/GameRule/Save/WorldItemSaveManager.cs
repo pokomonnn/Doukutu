@@ -45,6 +45,23 @@ public class WorldItemSaveManager : MonoBehaviour
             itemData.sceneName =
                 pickup.gameObject.scene.name;
 
+            InventoryItem droppedItem = pickup.DroppedItem;
+
+            if (droppedItem != null &&
+                droppedItem.ItemData is WeaponItemData)
+            {
+                droppedItem.EnsureWeaponDurabilityInitialized();
+
+                itemData.hasStoredWeaponDurability =
+                    droppedItem.HasStoredWeaponDurability;
+
+                itemData.storedWeaponDurability =
+                    droppedItem.StoredWeaponDurability;
+
+                itemData.storedWeaponJammed =
+                    droppedItem.StoredWeaponJammed;
+            }
+
             collection.items.Add(itemData);
         }
 
@@ -119,6 +136,29 @@ public class WorldItemSaveManager : MonoBehaviour
                     itemData))
             {
                 Destroy(pickup.gameObject);
+                continue;
+            }
+
+            InventoryItem restoredItem = pickup.DroppedItem;
+
+            if (restoredItem != null &&
+                restoredItem.ItemData is WeaponItemData)
+            {
+                if (savedItem.hasStoredWeaponDurability)
+                {
+                    restoredItem.SetStoredWeaponDurability(
+                        savedItem.storedWeaponDurability
+                    );
+                }
+                else
+                {
+                    // 旧セーブには耐久度が無いため新品扱い。
+                    restoredItem.EnsureWeaponDurabilityInitialized();
+                }
+
+                restoredItem.SetStoredWeaponJammed(
+                    savedItem.storedWeaponJammed
+                );
             }
         }
     }

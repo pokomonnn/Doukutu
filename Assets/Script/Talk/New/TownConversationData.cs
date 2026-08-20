@@ -356,7 +356,8 @@ public enum TownConversationChoiceAction
     AcceptMission,
     ClaimMissionReward,
     OpenPawnShop,
-    CloseDialogue
+    CloseDialogue,
+    UpgradeFacility
 }
 
 [Serializable]
@@ -370,8 +371,15 @@ public class TownConversationChoice
     private TownConversationChoiceAction action =
         TownConversationChoiceAction.GoToBlock;
 
-    [Tooltip("Go To Blockの移動先です。受注・報酬成功後の移動先としても使用できます。空欄ならData上部の状態別ブロックを使います。")]
+    [Tooltip("Go To Blockの移動先です。受注・報酬成功後の移動先としても使用できます。施設アップグレード成功時の移動先にも使用します。空欄なら会話を終了します。")]
     [SerializeField] private string nextBlockId;
+
+    [Header("施設アップグレード（Action=Upgrade Facility時）")]
+    [Tooltip("この選択肢でアップグレードする施設データです。")]
+    [SerializeField] private TownFacilityUpgradeData facilityUpgradeData;
+
+    [Tooltip("必要素材不足・最大Lvなど、アップグレードに失敗した時に進むBlock IDです。空欄なら現在の選択肢を再度操作できます。")]
+    [SerializeField] private string upgradeFailureBlockId;
 
     [Header("この選択肢だけ音を変える場合")]
     [SerializeField] private AudioClip selectionSoundOverride;
@@ -382,12 +390,17 @@ public class TownConversationChoice
 
     public TownConversationChoiceAction Action => action;
     public string NextBlockId => nextBlockId?.Trim() ?? string.Empty;
+    public TownFacilityUpgradeData FacilityUpgradeData => facilityUpgradeData;
+    public string UpgradeFailureBlockId =>
+        upgradeFailureBlockId?.Trim() ?? string.Empty;
     public AudioClip SelectionSoundOverride => selectionSoundOverride;
 
     public void Validate()
     {
         choiceText = choiceText?.Trim() ?? string.Empty;
         nextBlockId = nextBlockId?.Trim() ?? string.Empty;
+        upgradeFailureBlockId =
+            upgradeFailureBlockId?.Trim() ?? string.Empty;
     }
 }
 

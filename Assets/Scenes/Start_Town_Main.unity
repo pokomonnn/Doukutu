@@ -443,11 +443,16 @@ MonoBehaviour:
   equipButton: {fileID: 1252533594}
   useButton: {fileID: 430387389}
   informationButton: {fileID: 1229530333}
+  repairButton: {fileID: 0}
   trashButton: {fileID: 1646697378}
   informationPanel: {fileID: 1733046579}
   informationTitleText: {fileID: 765318041}
   informationDescriptionText: {fileID: 585713031}
   equipmentController: {fileID: 0}
+  equipmentVisualController: {fileID: 0}
+  repairKitMissingMessage: "\u4FEE\u7406\u30AD\u30C3\u30C8\u3092\u6301\u3063\u3066\u3044\u307E\u305B\u3093"
+  weaponAlreadyFullMessage: "\u3053\u306E\u6B66\u5668\u306F\u4FEE\u7406\u3059\u308B\u5FC5\u8981\u304C\u3042\u308A\u307E\u305B\u3093"
+  weaponRepairSuccessFormat: "{0} \u3092\u4FEE\u7406\u3057\u307E\u3057\u305F\uFF08+{1:0.#}\uFF09"
   playerItemDropper: {fileID: 0}
   cursorOffset: {x: 12, y: -12}
   closeWhenClickOutside: 1
@@ -4187,6 +4192,7 @@ Transform:
   m_Children:
   - {fileID: 1295965684}
   - {fileID: 1023635867}
+  - {fileID: 1262383651}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &611929847
@@ -4203,8 +4209,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameSessionManager
   defaultStartingMoney: 0
   showDebugLogs: 0
-  alwaysLogSessionTransfer: 0
-  logEachInventoryItem: 0
+  alwaysLogSessionTransfer: 1
+  logEachInventoryItem: 1
 --- !u!114 &611929848
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5143,7 +5149,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5aa3b7b58f294d048bdd2caa098a6783, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownConversationButton
-  conversationController: {fileID: 851942194}
+  conversationController: {fileID: 2467243087341496877}
   conversationData: {fileID: 11400000, guid: 3d0857beb805b774bb1477a5e186c184, type: 2}
   merchantStockInventory: {fileID: 0}
   showDebugLogs: 0
@@ -5229,22 +5235,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 824844653}
   m_CullTransparentMesh: 1
---- !u!224 &851942192 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-  m_PrefabInstance: {fileID: 1988400760188688199}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &851942194 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-  m_PrefabInstance: {fileID: 1988400760188688199}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 53b749dc8a91f5b48a73c9a21d95d482, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TownConversationController
 --- !u!1 &890584636
 GameObject:
   m_ObjectHideFlags: 0
@@ -5297,7 +5287,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5aa3b7b58f294d048bdd2caa098a6783, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownConversationButton
-  conversationController: {fileID: 851942194}
+  conversationController: {fileID: 2467243087341496877}
   conversationData: {fileID: 11400000, guid: 0e478a26a4620b045849c3ff7171f32d, type: 2}
   merchantStockInventory: {fileID: 0}
   showDebugLogs: 0
@@ -6058,7 +6048,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5aa3b7b58f294d048bdd2caa098a6783, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownConversationButton
-  conversationController: {fileID: 851942194}
+  conversationController: {fileID: 2467243087341496877}
   conversationData: {fileID: 11400000, guid: 2e574424a6e8d8841ad2013bd20a40ff, type: 2}
   merchantStockInventory: {fileID: 0}
   showDebugLogs: 0
@@ -6735,7 +6725,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5aa3b7b58f294d048bdd2caa098a6783, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownConversationButton
-  conversationController: {fileID: 851942194}
+  conversationController: {fileID: 2467243087341496877}
   conversationData: {fileID: 11400000, guid: 3d0857beb805b774bb1477a5e186c184, type: 2}
   merchantStockInventory: {fileID: 0}
   showDebugLogs: 0
@@ -7843,6 +7833,57 @@ RectTransform:
   m_AnchoredPosition: {x: -0.4, y: 9}
   m_SizeDelta: {x: 85.1827, y: 19.4064}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1262383650
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1262383651}
+  - component: {fileID: 1262383652}
+  m_Layer: 0
+  m_Name: TownFacilityUpgradeManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1262383651
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1262383650}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 611929846}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1262383652
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1262383650}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 716f9d769907a1e49832df02d4ea373e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TownFacilityUpgradeManager
+  townPlayerInventory: {fileID: 2116477402}
+  gameSessionManager: {fileID: 611929847}
+  successFormat: "{0}\u3092 Lv{1} \u306B\u30A2\u30C3\u30D7\u30B0\u30EC\u30FC\u30C9\u3057\u307E\u3057\u305F\u3002"
+  maxLevelFormat: "{0}\u306F\u3059\u3067\u306B\u6700\u5927\u30EC\u30D9\u30EB\u3067\u3059\u3002"
+  missingMaterialHeader: "\u30A2\u30C3\u30D7\u30B0\u30EC\u30FC\u30C9\u7D20\u6750\u304C\u8DB3\u308A\u307E\u305B\u3093\u3002"
+  missingMaterialLineFormat: '{0}  {1}/{2}'
+  showDebugLogs: 1
 --- !u!1 &1270654773
 GameObject:
   m_ObjectHideFlags: 0
@@ -10733,7 +10774,7 @@ RectTransform:
   - {fileID: 1072597638}
   - {fileID: 1554835600}
   - {fileID: 1427016467}
-  - {fileID: 851942192}
+  - {fileID: 8859694949567395243}
   - {fileID: 1352439633}
   m_Father: {fileID: 1130020884}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -11259,7 +11300,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5aa3b7b58f294d048bdd2caa098a6783, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownConversationButton
-  conversationController: {fileID: 851942194}
+  conversationController: {fileID: 2467243087341496877}
   conversationData: {fileID: 11400000, guid: 3d0857beb805b774bb1477a5e186c184, type: 2}
   merchantStockInventory: {fileID: 0}
   showDebugLogs: 0
@@ -11472,7 +11513,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5aa3b7b58f294d048bdd2caa098a6783, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownConversationButton
-  conversationController: {fileID: 851942194}
+  conversationController: {fileID: 2467243087341496877}
   conversationData: {fileID: 11400000, guid: fe2cc68a29e59d64abeaa9ca5f89cf69, type: 2}
   merchantStockInventory: {fileID: 0}
   showDebugLogs: 0
@@ -11927,6 +11968,11 @@ MonoBehaviour:
     amount: 0
     hasStoredMagazineAmmo: 0
     storedMagazineAmmo: 0
+    hasStoredMagazineAmmoType: 0
+    storedMagazineAmmoType: {fileID: 0}
+    hasStoredWeaponDurability: 0
+    storedWeaponDurability: 0
+    storedWeaponJammed: 0
   helmetItem:
     itemData: {fileID: 0}
     gridX: 0
@@ -11935,6 +11981,11 @@ MonoBehaviour:
     amount: 0
     hasStoredMagazineAmmo: 0
     storedMagazineAmmo: 0
+    hasStoredMagazineAmmoType: 0
+    storedMagazineAmmoType: {fileID: 0}
+    hasStoredWeaponDurability: 0
+    storedWeaponDurability: 0
+    storedWeaponJammed: 0
 --- !u!114 &2116477405
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12159,215 +12210,93 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2143681473}
   m_CullTransparentMesh: 1
---- !u!1001 &1988400760188688199
-PrefabInstance:
+--- !u!114 &1535450107439970840
+MonoBehaviour:
   m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 1825940309}
-    m_Modifications:
-    - target: {fileID: 1069380920473202015, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: nextButton
-      value: 
-      objectReference: {fileID: 814472594}
-    - target: {fileID: 1069380920473202015, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: statusText
-      value: 
-      objectReference: {fileID: 1554835601}
-    - target: {fileID: 1069380920473202015, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: closeButton
-      value: 
-      objectReference: {fileID: 323019590}
-    - target: {fileID: 1069380920473202015, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: dialogueText
-      value: 
-      objectReference: {fileID: 2072196933}
-    - target: {fileID: 1069380920473202015, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: dialoguePanel
-      value: 
-      objectReference: {fileID: 1352439632}
-    - target: {fileID: 1069380920473202015, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: portraitImage
-      value: 
-      objectReference: {fileID: 1800401448}
-    - target: {fileID: 1069380920473202015, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: missionManager
-      value: 
-      objectReference: {fileID: 1295965685}
-    - target: {fileID: 1069380920473202015, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: nextButtonText
-      value: 
-      objectReference: {fileID: 1244038061}
-    - target: {fileID: 1069380920473202015, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: residentNameText
-      value: 
-      objectReference: {fileID: 88528965}
-    - target: {fileID: 1069380920473202015, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: choiceButtonsRoot
-      value: 
-      objectReference: {fileID: 1085076614}
-    - target: {fileID: 1069380920473202015, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: pawnShopUIController
-      value: 
-      objectReference: {fileID: 642643245}
-    - target: {fileID: 1069380920473202015, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: missionAcceptController
-      value: 
-      objectReference: {fileID: 1295965686}
-    - target: {fileID: 1069380920473202015, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: missionRewardController
-      value: 
-      objectReference: {fileID: 611929849}
-    - target: {fileID: 2723078334032803192, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_Name
-      value: TownDialogueSystem
-      objectReference: {fileID: 0}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: nextButton
-      value: 
-      objectReference: {fileID: 814472594}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: statusText
-      value: 
-      objectReference: {fileID: 1554835601}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: closeButton
-      value: 
-      objectReference: {fileID: 323019590}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: dialogueText
-      value: 
-      objectReference: {fileID: 2072196933}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: dialoguePanel
-      value: 
-      objectReference: {fileID: 1352439632}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: portraitImage
-      value: 
-      objectReference: {fileID: 1800401448}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: historyManager
-      value: 
-      objectReference: {fileID: 611929850}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: nextButtonText
-      value: 
-      objectReference: {fileID: 1244038061}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: closeButtonText
-      value: 
-      objectReference: {fileID: 947439438}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: residentNameText
-      value: 
-      objectReference: {fileID: 88528965}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: choiceButtonsRoot
-      value: 
-      objectReference: {fileID: 1085076614}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: gameSessionManager
-      value: 
-      objectReference: {fileID: 611929847}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: pawnShopUIController
-      value: 
-      objectReference: {fileID: 642643245}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: missionAcceptController
-      value: 
-      objectReference: {fileID: 1295965686}
-    - target: {fileID: 4153831169276706154, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: rewardInventoryController
-      value: 
-      objectReference: {fileID: 2116477405}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_Pivot.x
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_Pivot.y
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_AnchorMin.x
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 100
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 100
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019918202450780908, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 83290495a9b555240bfa9bda3059e0e4, type: 3}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4490764641286201919}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 528bf68bd79cb2842bccf5d276b0d1d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TownDialogueController
+  dialoguePanel: {fileID: 1352439632}
+  portraitImage: {fileID: 1800401448}
+  residentNameText: {fileID: 88528965}
+  dialogueText: {fileID: 2072196933}
+  nextButton: {fileID: 814472594}
+  nextButtonText: {fileID: 1244038061}
+  closeButton: {fileID: 323019590}
+  choiceButtonsRoot: {fileID: 1085076614}
+  choiceButtonPrefab: {fileID: 2996475493907468456, guid: 29453859bf9f64a4a89947be7457c43f, type: 3}
+  pawnShopUIController: {fileID: 642643245}
+  missionAcceptController: {fileID: 1295965686}
+  missionRewardController: {fileID: 611929849}
+  missionManager: {fileID: 1295965685}
+  statusText: {fileID: 1554835601}
+  nextLabel: "\u6B21\u3078"
+  closeLabel: "\u9589\u3058\u308B"
+  hidePanelOnAwake: 1
+  showDebugLogs: 1
+--- !u!114 &2467243087341496877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4490764641286201919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53b749dc8a91f5b48a73c9a21d95d482, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TownConversationController
+  dialoguePanel: {fileID: 1352439632}
+  portraitImage: {fileID: 1800401448}
+  residentNameText: {fileID: 88528965}
+  dialogueText: {fileID: 2072196933}
+  nextButton: {fileID: 814472594}
+  nextButtonText: {fileID: 1244038061}
+  closeButton: {fileID: 323019590}
+  closeButtonText: {fileID: 947439438}
+  choiceButtonsRoot: {fileID: 1085076614}
+  choiceButtonPrefab: {fileID: 2996475493907468456, guid: 29453859bf9f64a4a89947be7457c43f, type: 3}
+  missionAcceptController: {fileID: 1295965686}
+  missionManager: {fileID: 0}
+  pawnShopUIController: {fileID: 642643245}
+  rewardInventoryController: {fileID: 2116477405}
+  gameSessionManager: {fileID: 611929847}
+  historyManager: {fileID: 611929850}
+  facilityUpgradeManager: {fileID: 1262383652}
+  portraitCanvasGroup: {fileID: 0}
+  portraitFadeInDuration: 0.35
+  fadePortraitOnConversationStart: 1
+  fadePortraitWhenChanged: 1
+  useUnscaledTimeForPortrait: 1
+  statusText: {fileID: 1554835601}
+  statusTextRectTransform: {fileID: 0}
+  statusCanvasGroup: {fileID: 0}
+  statusFadeInDuration: 0.5
+  statusVisibleDuration: 5
+  statusFadeOutDuration: 0.45
+  statusStartYOffset: 45
+  useUnscaledTimeForStatus: 1
+  dialogueAudioSource: {fileID: 0}
+  nextSound: {fileID: 0}
+  choiceSelectSound: {fileID: 0}
+  closeSound: {fileID: 0}
+  nextSoundVolume: 0.8
+  choiceSoundVolume: 0.8
+  closeSoundVolume: 0.8
+  hidePanelOnAwake: 1
+  recordNormalConversationOnClose: 1
+  rewardClaimedFormat: "{0} \u306E\u5831\u916C\u3092\u53D7\u3051\u53D6\u308A\u307E\u3057\u305F\u3002"
+  moneyRewardFormat: "\u6240\u6301\u91D1 +\xA5{0}"
+  itemRewardFormat: "\u30A2\u30A4\u30C6\u30E0 {0} \xD7{1}"
+  showDebugLogs: 0
+  showDetailedDiagnostics: 0
+  logUiStateOnEveryPage: 0
 --- !u!1001 &2536478014568687855
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12541,6 +12470,24 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 758ad7a6eeac70441be6a410061e8a18, type: 3}
+--- !u!1 &4490764641286201919
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8859694949567395243}
+  - component: {fileID: 1535450107439970840}
+  - component: {fileID: 2467243087341496877}
+  m_Layer: 5
+  m_Name: TownDialogueSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
 --- !u!1001 &8281245482227312564
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12654,6 +12601,25 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ad852bc85ff551c469c32be6eb91ca33, type: 3}
+--- !u!224 &8859694949567395243
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4490764641286201919}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1825940309}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -229,6 +229,82 @@ public class InventoryGrid
         return removedAmount;
     }
 
+    /// <summary>
+    /// 同じItemDataの2つのスタックを結合します。
+    /// targetItemのMaxStackまでsourceItemから移し、入り切らない分はsourceItem側へ残します。
+    /// sourceItemが0個になった場合は、このGridから自動で削除します。
+    /// </summary>
+    public bool TryMergeStacks(
+        InventoryItem sourceItem,
+        InventoryItem targetItem,
+        out int transferredAmount)
+    {
+        transferredAmount = 0;
+        EnsureSlotMap();
+
+        if (sourceItem == null ||
+            targetItem == null ||
+            sourceItem == targetItem ||
+            sourceItem.ItemData == null ||
+            targetItem.ItemData == null ||
+            !items.Contains(sourceItem) ||
+            !items.Contains(targetItem))
+        {
+            return false;
+        }
+
+        // 弾種違いなど、ItemDataが別のものは結合しない。
+        if (sourceItem.ItemData != targetItem.ItemData ||
+            !sourceItem.CanStack ||
+            !targetItem.CanStack ||
+            targetItem.IsStackFull)
+        {
+            return false;
+        }
+
+        int freeSpace = Mathf.Max(
+            0,
+            targetItem.ItemData.MaxStack - targetItem.Amount
+        );
+
+        int amountToTransfer = Mathf.Min(
+            sourceItem.Amount,
+            freeSpace
+        );
+
+        if (amountToTransfer <= 0)
+        {
+            return false;
+        }
+
+        int remaining = targetItem.AddAmount(amountToTransfer);
+        int addedAmount = amountToTransfer - remaining;
+
+        if (addedAmount <= 0)
+        {
+            return false;
+        }
+
+        int removedAmount = sourceItem.RemoveAmount(addedAmount);
+
+        if (removedAmount <= 0)
+        {
+            // 通常ここには来ませんが、万一sourceから減らせなかった場合は
+            // targetへ足した分を元へ戻します。
+            targetItem.RemoveAmount(addedAmount);
+            return false;
+        }
+
+        transferredAmount = removedAmount;
+
+        if (sourceItem.IsEmpty())
+        {
+            RemoveItem(sourceItem);
+        }
+
+        return true;
+    }
+
     // アイテムを自動配置する。入らなかった個数を remainingAmount に返す
     public bool TryAddItem(
         ItemData itemData,

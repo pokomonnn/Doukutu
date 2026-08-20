@@ -29,6 +29,10 @@ public class MerchantPurchaseController : MonoBehaviour
     [SerializeField] private TownPlayerInventoryController townPlayerInventory;
     [SerializeField] private GameSessionManager gameSessionManager;
 
+    [Header("武器屋修理連携")]
+    [Tooltip("同じ商人画面に置いたMerchantWeaponRepairController。未設定なら子から自動検索します。")]
+    [SerializeField] private MerchantWeaponRepairController weaponRepairController;
+
     [Header("店舗・所持金表示")]
     [SerializeField] private TMP_Text shopNameText;
     [SerializeField] private TMP_Text moneyText;
@@ -214,6 +218,8 @@ public class MerchantPurchaseController : MonoBehaviour
 
         isOpen = true;
 
+        weaponRepairController?.OpenRepairShop(currentStock);
+
         if (selectFirstItemWhenOpened)
         {
             SelectFirstAvailableItem();
@@ -240,6 +246,7 @@ public class MerchantPurchaseController : MonoBehaviour
 
     public void CloseShop()
     {
+        weaponRepairController?.CloseRepairShop();
         UnsubscribeStock();
         isOpen = false;
         currentStock = null;
@@ -1044,6 +1051,20 @@ public class MerchantPurchaseController : MonoBehaviour
         if (audioSource == null)
         {
             audioSource = GetComponent<AudioSource>();
+        }
+
+        if (weaponRepairController == null)
+        {
+            weaponRepairController =
+                GetComponentInChildren<MerchantWeaponRepairController>(true);
+
+            if (weaponRepairController == null && transform.parent != null)
+            {
+                weaponRepairController =
+                    transform.parent.GetComponentInChildren<
+                        MerchantWeaponRepairController
+                    >(true);
+            }
         }
 
         if (townPlayerInventory == null)

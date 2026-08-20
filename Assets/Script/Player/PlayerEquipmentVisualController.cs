@@ -24,14 +24,11 @@ public class PlayerEquipmentVisualController : MonoBehaviour
     public GunShooter CurrentGunShooter => currentGunShooter;
     public WeaponAim CurrentWeaponAim => currentWeaponAim;
     public WeaponItemData CurrentWeaponData => currentWeaponData;
+    public InventoryItem CurrentWeaponItem => currentWeaponItem;
 
-    // ReloadPromptUI が現在の銃を追従するために使う
     public event Action<GunShooter> OnActiveGunChanged;
 
     private GameObject activeWeaponObject;
-
-    // 装備中の「個別の銃アイテム」
-    // 残弾はこのInventoryItemに保存する
     private InventoryItem currentWeaponItem;
 
     private GunShooter currentGunShooter;
@@ -42,13 +39,9 @@ public class PlayerEquipmentVisualController : MonoBehaviour
     private bool weaponControlsEnabled = true;
     private bool isWeaponHiddenForConsumableUse;
 
-    // アイテムボックス・キャンプなど、複数の画面から
-    // 同時に武器操作を止められるようにするロック一覧
     private readonly HashSet<object> weaponControlLocks =
         new HashSet<object>();
 
-    // ロープモードなど、複数の機能から銃の見た目を
-    // 安全に非表示へできるようにするロック一覧。
     private readonly HashSet<object> weaponVisibilityLocks =
         new HashSet<object>();
 
@@ -70,13 +63,13 @@ public class PlayerEquipmentVisualController : MonoBehaviour
 
     private void OnDisable()
     {
-        SaveCurrentWeaponAmmo();
+        SaveCurrentWeaponState();
         UnsubscribeFromEquipment();
     }
 
     private void OnDestroy()
     {
-        SaveCurrentWeaponAmmo();
+        SaveCurrentWeaponState();
     }
 
     [ContextMenu("Refresh Equipment State")]
@@ -105,17 +98,12 @@ public class PlayerEquipmentVisualController : MonoBehaviour
         );
     }
 
-    // 死亡中などに、見た目は残したまま
-    // 銃の照準・射撃・リロードだけ止める
     public void SetWeaponControlsEnabled(bool enabled)
     {
         weaponControlsEnabled = enabled;
         ApplyWeaponControlState();
     }
 
-    // アイテムボックス・キャンプなど、特定の画面を開いている間だけ
-    // 銃の照準・射撃・リロードを止めるためのロックです。
-    // 同時に別のロックが残っている場合は、解除しても武器は使えません。
     public void SetWeaponControlLock(object owner, bool locked)
     {
         if (owner == null)
@@ -133,10 +121,6 @@ public class PlayerEquipmentVisualController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// ロープモードなどで、装備中の銃を見た目ごと隠すためのロックです。
-    /// 複数ownerへ対応するため、別機能の非表示状態を誤って解除しません。
-    /// </summary>
     public void SetWeaponVisibilityLock(object owner, bool hidden)
     {
         if (owner == null)
@@ -162,7 +146,6 @@ public class PlayerEquipmentVisualController : MonoBehaviour
         }
 
         isWeaponHiddenForConsumableUse = hidden;
-
         ApplyWeaponControlState();
     }
 
@@ -178,8 +161,6 @@ public class PlayerEquipmentVisualController : MonoBehaviour
                 ? weaponItem.ItemData as WeaponItemData
                 : null;
 
-        // ヘルメット装備などでイベントが来ても、
-        // 同じ銃なら作り直さない
         if (weaponItem == currentWeaponItem &&
             activeWeaponObject != null)
         {
@@ -201,7 +182,6 @@ public class PlayerEquipmentVisualController : MonoBehaviour
                 "Weapon Holder が設定されていません。",
                 this
             );
-
             return;
         }
 
@@ -212,7 +192,6 @@ public class PlayerEquipmentVisualController : MonoBehaviour
                 $"{weaponData.DisplayName} の Weapon Prefab が未設定です。",
                 this
             );
-
             return;
         }
 
@@ -229,60 +208,66 @@ public class PlayerEquipmentVisualController : MonoBehaviour
         currentWeaponData = weaponData;
 
         currentGunShooter =
-            activeWeaponObject.GetComponentInChildren<GunShooter>(
-                true
-            );
+            activeWeaponObject.GetComponentInChildren<GunShooter>(true);
 
         currentWeaponAim =
-            activeWeaponObject.GetComponentInChildren<WeaponAim>(
-                true
-            );
+            activeWeaponObject.GetComponentInChildren<WeaponAim>(true);
 
         if (currentGunShooter == null)
         {
             Debug.LogWarning(
-                $"{weaponData.DisplayName} のPrefabに " +
-                "GunShooter がありません。",
+                $"{weaponData.DisplayName} のPrefabに GunShooter がありません。",
                 activeWeaponObject
             );
         }
         else
         {
-            currentGunShooter.SetInventoryPanel(
-                inventoryPanel
-            );
+            currentGunShooter.SetInventoryPanel(inventoryPanel);
 
             currentGunShooter.ConfigureAmmoSystem(
                 currentWeaponData,
                 equipmentController.InventoryController
             );
 
+            currentWeaponItem.EnsureWeaponDurabilityInitialized();
+
+            currentGunShooter.ConfigureDurabilitySystem(
+                currentWeaponData,
+                currentWeaponItem.StoredWeaponDurability,
+                currentWeaponItem.HasStoredWeaponDurability,
+                currentWeaponItem.StoredWeaponJammed
+            );
+
             currentGunShooter.OnMagazineAmmoChanged +=
                 HandleMagazineAmmoChanged;
 
+            currentGunShooter.OnLoadedAmmoChanged +=
+                HandleLoadedAmmoChanged;
+
+            currentGunShooter.OnDurabilityChanged +=
+                HandleDurabilityChanged;
+
+            currentGunShooter.OnJamStateChanged +=
+                HandleJamStateChanged;
+
             RestoreWeaponAmmo();
+            SaveCurrentWeaponDurability();
         }
 
         if (currentWeaponAim == null)
         {
             Debug.LogWarning(
-                $"{weaponData.DisplayName} のPrefabに " +
-                "WeaponAim がありません。",
+                $"{weaponData.DisplayName} のPrefabに WeaponAim がありません。",
                 activeWeaponObject
             );
         }
         else
         {
-            currentWeaponAim.SetInventoryPanel(
-                inventoryPanel
-            );
+            currentWeaponAim.SetInventoryPanel(inventoryPanel);
         }
 
         ApplyWeaponControlState();
-
-        OnActiveGunChanged?.Invoke(
-            currentGunShooter
-        );
+        OnActiveGunChanged?.Invoke(currentGunShooter);
 
         Log($"{weaponData.DisplayName} を装備しました。");
     }
@@ -295,20 +280,36 @@ public class PlayerEquipmentVisualController : MonoBehaviour
             return;
         }
 
-        // 一度でも装備した銃なら、保存していた残弾を復元する
         if (currentWeaponItem.HasStoredMagazineAmmo)
         {
-            currentGunShooter.SetCurrentAmmo(
-                currentWeaponItem.StoredMagazineAmmo
+            AmmoItemData storedType =
+                currentWeaponItem.HasStoredMagazineAmmoType
+                    ? currentWeaponItem.StoredMagazineAmmoType
+                    : currentWeaponData?.PreferredAmmo;
+
+            currentGunShooter.SetMagazineState(
+                currentWeaponItem.StoredMagazineAmmo,
+                storedType
+            );
+
+            // 旧セーブで弾種が無かった場合も、ここで補完して以降保存する。
+            currentWeaponItem.SetStoredMagazineAmmoState(
+                currentGunShooter.CurrentAmmo,
+                currentGunShooter.LoadedAmmo
             );
 
             return;
         }
 
-        // 初めて装備した銃は空マガジンから開始。
-        // これにより、最初の装填もインベントリ内の弾薬を消費する。
-        currentGunShooter.SetCurrentAmmo(0);
-        currentWeaponItem.SetStoredMagazineAmmo(0);
+        currentGunShooter.SetMagazineState(
+            0,
+            currentWeaponData?.PreferredAmmo
+        );
+
+        currentWeaponItem.SetStoredMagazineAmmoState(
+            0,
+            currentWeaponData?.PreferredAmmo
+        );
     }
 
     private void HandleMagazineAmmoChanged(int ammo)
@@ -318,7 +319,170 @@ public class PlayerEquipmentVisualController : MonoBehaviour
             return;
         }
 
-        currentWeaponItem.SetStoredMagazineAmmo(ammo);
+        currentWeaponItem.SetStoredMagazineAmmoState(
+            ammo,
+            currentGunShooter != null
+                ? currentGunShooter.LoadedAmmo
+                : currentWeaponItem.StoredMagazineAmmoType
+        );
+    }
+
+    private void HandleLoadedAmmoChanged(AmmoItemData ammoType)
+    {
+        if (currentWeaponItem == null)
+        {
+            return;
+        }
+
+        currentWeaponItem.SetStoredMagazineAmmoState(
+            currentGunShooter != null
+                ? currentGunShooter.CurrentAmmo
+                : currentWeaponItem.StoredMagazineAmmo,
+            ammoType
+        );
+    }
+
+    private void HandleDurabilityChanged(
+        float currentDurability,
+        float maximumDurability)
+    {
+        if (currentWeaponItem == null)
+        {
+            return;
+        }
+
+        currentWeaponItem.SetStoredWeaponDurability(
+            currentDurability
+        );
+    }
+
+    private void HandleJamStateChanged(bool jammed)
+    {
+        if (currentWeaponItem == null)
+        {
+            return;
+        }
+
+        currentWeaponItem.SetStoredWeaponJammed(jammed);
+    }
+
+    /// <summary>
+    /// 修理キット・武器屋などでInventoryItem側の耐久度を変更した後、
+    /// 現在装備中の実体GunShooterへ即時反映します。
+    /// </summary>
+    public void SynchronizeWeaponConditionFromItem(InventoryItem weaponItem)
+    {
+        if (weaponItem == null ||
+            weaponItem != currentWeaponItem ||
+            currentGunShooter == null)
+        {
+            return;
+        }
+
+        weaponItem.EnsureWeaponDurabilityInitialized();
+
+        currentGunShooter.SetCurrentDurability(
+            weaponItem.StoredWeaponDurability
+        );
+
+        currentGunShooter.SetJammedState(
+            weaponItem.StoredWeaponJammed
+        );
+    }
+
+    /// <summary>
+    /// 指定銃を修理します。装備中ならGunShooterにも即時反映します。
+    /// 修理に成功した場合はジャムも解除します。
+    /// </summary>
+    public bool TryRepairWeapon(
+        InventoryItem weaponItem,
+        float repairAmount,
+        out float repairedAmount)
+    {
+        repairedAmount = 0f;
+
+        if (weaponItem == null ||
+            !(weaponItem.ItemData is WeaponItemData) ||
+            repairAmount <= 0f)
+        {
+            return false;
+        }
+
+        repairedAmount = weaponItem.RepairWeaponDurability(
+            repairAmount
+        );
+
+        if (repairedAmount <= 0f)
+        {
+            return false;
+        }
+
+        weaponItem.SetStoredWeaponJammed(false);
+        SynchronizeWeaponConditionFromItem(weaponItem);
+        return true;
+    }
+
+    public bool TryRepairWeaponToFull(
+        InventoryItem weaponItem,
+        out float repairedAmount)
+    {
+        repairedAmount = 0f;
+
+        if (weaponItem == null ||
+            !(weaponItem.ItemData is WeaponItemData weaponData))
+        {
+            return false;
+        }
+
+        weaponItem.EnsureWeaponDurabilityInitialized();
+        float before = weaponItem.StoredWeaponDurability;
+
+        if (before >= weaponData.MaxDurability)
+        {
+            return false;
+        }
+
+        weaponItem.RepairWeaponToFull();
+        repairedAmount = Mathf.Max(
+            0f,
+            weaponData.MaxDurability - before
+        );
+
+        SynchronizeWeaponConditionFromItem(weaponItem);
+        return repairedAmount > 0f;
+    }
+
+    private void SaveCurrentWeaponDurability()
+    {
+        if (currentWeaponItem == null ||
+            currentGunShooter == null)
+        {
+            return;
+        }
+
+        currentWeaponItem.SetStoredWeaponDurability(
+            currentGunShooter.CurrentDurability
+        );
+    }
+
+    private void SaveCurrentWeaponState()
+    {
+        SaveCurrentWeaponAmmo();
+        SaveCurrentWeaponDurability();
+        SaveCurrentWeaponJamState();
+    }
+
+    private void SaveCurrentWeaponJamState()
+    {
+        if (currentWeaponItem == null ||
+            currentGunShooter == null)
+        {
+            return;
+        }
+
+        currentWeaponItem.SetStoredWeaponJammed(
+            currentGunShooter.IsJammed
+        );
     }
 
     private void SaveCurrentWeaponAmmo()
@@ -329,20 +493,29 @@ public class PlayerEquipmentVisualController : MonoBehaviour
             return;
         }
 
-        currentWeaponItem.SetStoredMagazineAmmo(
-            currentGunShooter.CurrentAmmo
+        currentWeaponItem.SetStoredMagazineAmmoState(
+            currentGunShooter.CurrentAmmo,
+            currentGunShooter.LoadedAmmo
         );
     }
 
     private void ClearActiveWeapon()
     {
-        // 銃を消す直前に残弾を保存する
-        SaveCurrentWeaponAmmo();
+        SaveCurrentWeaponState();
 
         if (currentGunShooter != null)
         {
             currentGunShooter.OnMagazineAmmoChanged -=
                 HandleMagazineAmmoChanged;
+
+            currentGunShooter.OnLoadedAmmoChanged -=
+                HandleLoadedAmmoChanged;
+
+            currentGunShooter.OnDurabilityChanged -=
+                HandleDurabilityChanged;
+
+            currentGunShooter.OnJamStateChanged -=
+                HandleJamStateChanged;
         }
 
         bool hadWeapon =
@@ -390,13 +563,8 @@ public class PlayerEquipmentVisualController : MonoBehaviour
             weaponControlLocks.Count == 0 &&
             weaponIsVisible;
 
-        currentGunShooter?.SetGunEquipped(
-            canUseWeapon
-        );
-
-        currentWeaponAim?.SetGunEquipped(
-            canUseWeapon
-        );
+        currentGunShooter?.SetGunEquipped(canUseWeapon);
+        currentWeaponAim?.SetGunEquipped(canUseWeapon);
 
         ApplyWeaponVisualState();
     }
@@ -412,12 +580,9 @@ public class PlayerEquipmentVisualController : MonoBehaviour
             !isWeaponHiddenForConsumableUse &&
             weaponVisibilityLocks.Count == 0;
 
-        if (activeWeaponObject.activeSelf !=
-            shouldShowWeapon)
+        if (activeWeaponObject.activeSelf != shouldShowWeapon)
         {
-            activeWeaponObject.SetActive(
-                shouldShowWeapon
-            );
+            activeWeaponObject.SetActive(shouldShowWeapon);
         }
     }
 
@@ -446,8 +611,7 @@ public class PlayerEquipmentVisualController : MonoBehaviour
 
     private void UnsubscribeFromEquipment()
     {
-        if (!isSubscribed ||
-            equipmentController == null)
+        if (!isSubscribed || equipmentController == null)
         {
             return;
         }
@@ -465,8 +629,7 @@ public class PlayerEquipmentVisualController : MonoBehaviour
             return true;
         }
 
-        equipmentController =
-            GetComponent<EquipmentController>();
+        equipmentController = GetComponent<EquipmentController>();
 
         if (equipmentController != null)
         {

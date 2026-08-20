@@ -307,6 +307,39 @@ public class InventoryController : MonoBehaviour
         return inventoryGrid.GetItemAt(x, y);
     }
 
+    /// <summary>
+    /// 同じItemDataの2つのスタックを結合します。
+    /// 例：30発の弾へ20発を重ねると50発になり、20発側は削除されます。
+    /// 80発へ20発なら90発＋10発のように、MaxStackを超える分は元スタックへ残ります。
+    /// </summary>
+    public bool TryMergeItemStacks(
+        InventoryItem sourceItem,
+        InventoryItem targetItem,
+        out int transferredAmount)
+    {
+        transferredAmount = 0;
+
+        if (sourceItem == null ||
+            targetItem == null ||
+            inventoryGrid == null)
+        {
+            return false;
+        }
+
+        bool merged = inventoryGrid.TryMergeStacks(
+            sourceItem,
+            targetItem,
+            out transferredAmount
+        );
+
+        if (merged)
+        {
+            NotifyInventoryChanged();
+        }
+
+        return merged;
+    }
+
     // 指定ItemDataの所持数を、全スタック合計で返す
     public int GetTotalAmount(ItemData itemData)
     {

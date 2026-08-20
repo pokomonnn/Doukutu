@@ -45,6 +45,19 @@ MonoBehaviour:
   canDiscard: 1
   weaponPrefab: {fileID: 4584479946820505900, guid: 3d41a99aaca964e4c90238f398af13b3, type: 3}
   compatibleAmmo: {fileID: 11400000, guid: fb52aa05e33bca54e9a1f901280855d0, type: 2}
+  compatibleAmmoCaliberId: 
+  maxDurability: 10
+  durabilityLossPerShot: 0.1
+  jamStartDurabilityPercent: 0.22
+  jamChanceAtStart: 0.01
+  maxJamChanceAtZeroDurability: 0.079
+  jamClearDuration: 1.25
+  accuracyPenaltyStartDurabilityPercent: 0.6
+  maxSpreadAngleAtZeroDurability: 6
+  reloadPenaltyStartDurabilityPercent: 0.6
+  maxReloadDurationMultiplierAtZeroDurability: 1.75
+  fullRepairCost: 1000
+  minimumRepairCost: 100
   references:
     version: 2
     RefIds: []

@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 37e1cd549aca8224bb45e804f25c00d4, type: 3}
-  m_Name: Armo_ak
+  m_Name: "7.62mm\u901A\u5E38\u5F3E"
   m_EditorClassIdentifier: Assembly-CSharp::AmmoItemData
   itemId: Ammo_001
-  displayName: AK AMMO
+  displayName: "7.62mm\u901A\u5E38\u5F3E"
   description: this isAK AMMO
   icon: {fileID: 533058970198856314, guid: cc3089ea71a608c4bb4d285cacf67b92, type: 3}
   localizedDisplayName:
@@ -44,6 +44,10 @@ MonoBehaviour:
   weight: 0.012
   canDiscard: 1
   ammoTypeName: 7.62mm
+  ammoCaliberId: 9mm
+  ammoVariant: 0
+  damageMultiplier: 1
+  armorPenetration: 0
   references:
     version: 2
     RefIds: []

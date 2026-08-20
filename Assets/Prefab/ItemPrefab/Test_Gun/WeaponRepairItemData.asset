@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d588353ff3771f44380d8c1aa5456840, type: 3}
+  m_Name: WeaponRepairItemData
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponRepairItemData
+  itemId: Gun_Lipea001
+  displayName: "\u30AC\u30F3\u30EA\u30DA\u30A2"
+  description: 
+  icon: {fileID: -7087768227360345701, guid: 4c328096672754249961e934e6f37b2c, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  width: 1
+  height: 1
+  canRotate: 1
+  maxStack: 3
+  purchasePrice: 0
+  sellPrice: 0
+  canSellToShop: 1
+  weight: 0.2
+  canDiscard: 1
+  repairAmount: 35
+  consumeOnUse: 1
+  useSound: {fileID: 8300000, guid: 4be1d121a033aee43b410634bbad483a, type: 3}
+  references:
+    version: 2
+    RefIds: []

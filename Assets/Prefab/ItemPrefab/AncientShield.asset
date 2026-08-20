@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb792fa4e65b0dc469e1ca50f2a1a4a5, type: 3}
+  m_Name: AncientShield
+  m_EditorClassIdentifier: Assembly-CSharp::TownUpgradeMaterialItemData
+  itemId: Ancient002
+  displayName: "\u53E4\u3073\u305F\u76FE"
+  description: "\u592A\u53E4\u306E\u907A\u7269"
+  icon: {fileID: -1968296102125559357, guid: 12d17c751edd39947b929c2e6f2efd52, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  width: 2
+  height: 2
+  canRotate: 1
+  maxStack: 1
+  purchasePrice: 0
+  sellPrice: 0
+  canSellToShop: 0
+  weight: 2
+  canDiscard: 1
+  references:
+    version: 2
+    RefIds: []

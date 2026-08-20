@@ -92,7 +92,15 @@ public class ItemBoxSaveIdentity : MonoBehaviour
                     IsRotated = item.IsRotated,
                     Amount = item.Amount,
                     HasStoredMagazineAmmo = item.HasStoredMagazineAmmo,
-                    StoredMagazineAmmo = item.StoredMagazineAmmo
+                    StoredMagazineAmmo = item.StoredMagazineAmmo,
+                    StoredMagazineAmmoItemId =
+                        item.StoredMagazineAmmoType != null
+                            ? item.StoredMagazineAmmoType.ItemId
+                            : string.Empty,
+                    HasStoredWeaponDurability =
+                        item.HasStoredWeaponDurability,
+                    StoredWeaponDurability =
+                        item.StoredWeaponDurability
                 });
             }
         }
@@ -151,9 +159,32 @@ public class ItemBoxSaveIdentity : MonoBehaviour
 
                 if (itemData.HasStoredMagazineAmmo)
                 {
-                    item.SetStoredMagazineAmmo(
-                        itemData.StoredMagazineAmmo
+                    AmmoItemData ammoType = null;
+
+                    if (!string.IsNullOrWhiteSpace(
+                            itemData.StoredMagazineAmmoItemId) &&
+                        database.TryGetItemData(
+                            itemData.StoredMagazineAmmoItemId,
+                            out ItemData ammoDefinition))
+                    {
+                        ammoType = ammoDefinition as AmmoItemData;
+                    }
+
+                    item.SetStoredMagazineAmmoState(
+                        itemData.StoredMagazineAmmo,
+                        ammoType
                     );
+                }
+
+                if (itemData.HasStoredWeaponDurability)
+                {
+                    item.SetStoredWeaponDurability(
+                        itemData.StoredWeaponDurability
+                    );
+                }
+                else
+                {
+                    item.EnsureWeaponDurabilityInitialized();
                 }
 
                 restored.Add(item);

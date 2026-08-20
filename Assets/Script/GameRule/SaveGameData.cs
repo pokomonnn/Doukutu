@@ -7,17 +7,25 @@ using System.Collections.Generic;
 /// 第2段階：HP・食料・水分・SAN・状態異常・松明
 /// 第3段階：現在シーン・チェックポイント・地面アイテム・アイテム箱・会話履歴
 /// 第4段階：墓場の死亡NPC累計人数
+/// 第5段階：町の施設アップグレードレベル
+/// 第6段階：武器マガジン内の装填弾種
+/// 第7段階：武器ごとの耐久度
+/// 第8段階：武器ごとのジャム状態
 /// </summary>
 [Serializable]
 public class SaveGameData
 {
-    public int SaveVersion = 4;
+    public int SaveVersion = 8;
     public string SavedAtUtc = string.Empty;
     public string SavedSceneName = string.Empty;
     public int Money;
 
     /// <summary>これまで町へ持ち帰った死亡NPCの累計人数です。</summary>
     public int TotalDeadNpcCount;
+
+    /// <summary>町の施設IDごとの現在レベルです。</summary>
+    public List<SavedTownFacilityLevelData> FacilityLevels =
+        new List<SavedTownFacilityLevelData>();
 
     public SavedPlayerInventoryData PlayerInventory =
         new SavedPlayerInventoryData();
@@ -38,6 +46,13 @@ public class SaveGameData
 
     public List<SavedConversationHistoryData> ConversationHistory =
         new List<SavedConversationHistoryData>();
+}
+
+[Serializable]
+public class SavedTownFacilityLevelData
+{
+    public string FacilityId = string.Empty;
+    public int Level = 1;
 }
 
 [Serializable]
@@ -67,6 +82,18 @@ public class SavedInventoryItemData
     public int Amount = 1;
     public bool HasStoredMagazineAmmo;
     public int StoredMagazineAmmo;
+
+    /// <summary>マガジンに装填されているAmmoItemDataのItemIdです。</summary>
+    public string StoredMagazineAmmoItemId = string.Empty;
+
+    /// <summary>武器個体の耐久度が保存されているか。</summary>
+    public bool HasStoredWeaponDurability;
+
+    /// <summary>武器個体の現在耐久度。旧セーブではHas=falseのため新品扱いになります。</summary>
+    public float StoredWeaponDurability;
+
+    /// <summary>武器個体がジャム中か。Version 7以前ではfalse扱いです。</summary>
+    public bool StoredWeaponJammed;
 }
 
 [Serializable]

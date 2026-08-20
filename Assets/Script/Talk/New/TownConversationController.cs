@@ -43,6 +43,9 @@ public class TownConversationController : MonoBehaviour
     [SerializeField] private GameSessionManager gameSessionManager;
     [SerializeField] private TownConversationHistoryManager historyManager;
 
+    [Tooltip("町の施設アップグレード処理です。未設定ならシーン内から自動取得します。")]
+    [SerializeField] private TownFacilityUpgradeManager facilityUpgradeManager;
+
     [Header("住人立ち絵のアニメーション")]
     [Tooltip("未設定ならPortrait ImageへCanvasGroupを自動追加します。")]
     [SerializeField] private CanvasGroup portraitCanvasGroup;
@@ -395,11 +398,63 @@ public class TownConversationController : MonoBehaviour
                 CloseConversation(true, false);
                 break;
 
+            case TownConversationChoiceAction.UpgradeFacility:
+                UpgradeFacilityFromChoice(choice);
+                break;
+
             default:
                 SetChoiceButtonsInteractable(true);
                 LogWarning("未対応の選択肢Actionです。");
                 break;
         }
+    }
+
+    private void UpgradeFacilityFromChoice(
+        TownConversationChoice choice)
+    {
+        if (choice == null)
+        {
+            SetChoiceButtonsInteractable(true);
+            return;
+        }
+
+        FindReferences();
+
+        if (facilityUpgradeManager == null)
+        {
+            ShowStatusMessage(
+                "TownFacilityUpgradeManagerが見つかりません。Town_Mainへ追加してください。",
+                true
+            );
+            SetChoiceButtonsInteractable(true);
+            return;
+        }
+
+        TownFacilityUpgradeData facilityData =
+            choice.FacilityUpgradeData;
+
+        bool upgraded = facilityUpgradeManager.TryUpgradeFacility(
+            facilityData,
+            out string resultMessage
+        );
+
+        ShowStatusMessage(resultMessage, !upgraded);
+
+        if (upgraded)
+        {
+            GoToBlockOrClose(choice.NextBlockId);
+            return;
+        }
+
+        string failureBlockId = choice.UpgradeFailureBlockId;
+
+        if (!string.IsNullOrWhiteSpace(failureBlockId) &&
+            OpenBlock(failureBlockId))
+        {
+            return;
+        }
+
+        SetChoiceButtonsInteractable(true);
     }
 
     /// <summary>
@@ -2419,6 +2474,14 @@ public class TownConversationController : MonoBehaviour
                 rewardInventoryController =
                     townInventory.InventoryController;
             }
+        }
+
+        if (facilityUpgradeManager == null)
+        {
+            facilityUpgradeManager =
+                FindAnyObjectByType<TownFacilityUpgradeManager>(
+                    FindObjectsInactive.Include
+                );
         }
     }
 

@@ -20,6 +20,11 @@ public class WorldItemSaveData
     public bool hasStoredMagazineAmmo;
     public int storedMagazineAmmo;
 
+    // 武器ごとの耐久度
+    public bool hasStoredWeaponDurability;
+    public float storedWeaponDurability;
+    public bool storedWeaponJammed;
+
     // ワールド座標
     public float positionX;
     public float positionY;

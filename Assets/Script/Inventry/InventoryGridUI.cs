@@ -200,6 +200,87 @@ public class InventoryGridUI : MonoBehaviour
                grid.ContainsItem(item);
     }
 
+    /// <summary>
+    /// プレイヤーInventory内で、指定セルにある同一ItemDataのスタックへ
+    /// ドラッグ中アイテムを結合します。
+    /// Shopや別Gridへの売買・移動処理には干渉しません。
+    /// </summary>
+    /// <summary>
+    /// 指定セルにあるアイテムへ、sourceItemをスタック結合できるかだけ判定します。
+    /// 実際の個数は変更しません。ドラッグ中の緑/赤プレビュー判定用です。
+    /// </summary>
+    public bool CanMergeItemAt(
+        InventoryItem sourceItem,
+        int targetCellX,
+        int targetCellY)
+    {
+        if (!IsPlayerInventory ||
+            inventoryController == null ||
+            sourceItem == null ||
+            sourceItem.ItemData == null ||
+            !sourceItem.CanStack ||
+            !TryGetInventoryGrid(out InventoryGrid grid) ||
+            !grid.ContainsItem(sourceItem) ||
+            !grid.IsInsideGrid(targetCellX, targetCellY))
+        {
+            return false;
+        }
+
+        InventoryItem targetItem = grid.GetItemAt(
+            targetCellX,
+            targetCellY
+        );
+
+        if (targetItem == null ||
+            targetItem == sourceItem ||
+            targetItem.ItemData == null ||
+            targetItem.ItemData != sourceItem.ItemData ||
+            !targetItem.CanStack ||
+            targetItem.IsStackFull)
+        {
+            return false;
+        }
+
+        return targetItem.Amount < targetItem.ItemData.MaxStack;
+    }
+
+    public bool TryMergeItemAt(
+        InventoryItem sourceItem,
+        int targetCellX,
+        int targetCellY,
+        out int transferredAmount)
+    {
+        transferredAmount = 0;
+
+        // 今回はプレイヤーInventory内の並べ替え時だけ結合する。
+        // ItemBox / Shop / SellCart間のTransferルールは従来のまま維持する。
+        if (!IsPlayerInventory ||
+            inventoryController == null ||
+            sourceItem == null ||
+            !TryGetInventoryGrid(out InventoryGrid grid) ||
+            !grid.ContainsItem(sourceItem) ||
+            !grid.IsInsideGrid(targetCellX, targetCellY))
+        {
+            return false;
+        }
+
+        InventoryItem targetItem = grid.GetItemAt(
+            targetCellX,
+            targetCellY
+        );
+
+        if (targetItem == null || targetItem == sourceItem)
+        {
+            return false;
+        }
+
+        return inventoryController.TryMergeItemStacks(
+            sourceItem,
+            targetItem,
+            out transferredAmount
+        );
+    }
+
     public bool TryMoveItem(
         InventoryItem item,
         int targetX,

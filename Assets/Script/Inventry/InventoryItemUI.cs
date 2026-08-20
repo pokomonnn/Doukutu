@@ -307,6 +307,31 @@ public class InventoryItemUI : MonoBehaviour,
                 out InventoryGridUI targetGridUI,
                 out Vector2Int pointerGridPosition))
         {
+            // 同じプレイヤーInventory内で、同一ItemDataのスタック上へ
+            // ドロップした場合は、通常移動より先にスタック結合を試す。
+            // 例：30 + 20 = 50。80 + 20なら90 + 10。
+            if (targetGridUI == gridUI &&
+                gridUI.TryMergeItemAt(
+                    inventoryItem,
+                    pointerGridPosition.x,
+                    pointerGridPosition.y,
+                    out int transferredAmount))
+            {
+                PlayInventorySound(
+                    "Place",
+                    player => player.PlayPlace()
+                );
+
+                Log(
+                    $"スタック結合成功：" +
+                    $"{inventoryItem.ItemData.DisplayName} / " +
+                    $"移動数={transferredAmount}"
+                );
+
+                FinishDrag();
+                return;
+            }
+
             Vector2Int targetPosition =
                 pointerGridPosition - dragCellOffset;
 

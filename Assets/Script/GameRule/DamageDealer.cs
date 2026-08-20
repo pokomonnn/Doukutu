@@ -19,6 +19,24 @@ public class DamageDealer : MonoBehaviour
 
     private readonly HashSet<CharacterHealth> damagedTargets = new();
 
+    private AmmoItemData runtimeAmmoData;
+    private int runtimeDamage = -1;
+
+    public int BaseDamage => Mathf.Max(1, damage);
+    public int CurrentDamage => runtimeDamage >= 0
+        ? runtimeDamage
+        : BaseDamage;
+
+    public AmmoItemData RuntimeAmmoData => runtimeAmmoData;
+
+    /// <summary>
+    /// 現在の弾が持つ徹甲値です。
+    /// 敵側に装甲システムを追加した時、この値を利用できます。
+    /// </summary>
+    public float ArmorPenetration => runtimeAmmoData != null
+        ? runtimeAmmoData.ArmorPenetration
+        : 0f;
+
     private void Reset()
     {
         Collider2D col = GetComponent<Collider2D>();
@@ -30,6 +48,24 @@ public class DamageDealer : MonoBehaviour
         damagedTargets.Clear();
     }
 
+    /// <summary>
+    /// GunShooterが弾を生成した直後に呼びます。
+    /// Bullet Prefabの基礎DamageへAmmoItemDataの倍率を反映します。
+    /// </summary>
+    public void ConfigureAmmo(AmmoItemData ammoData)
+    {
+        runtimeAmmoData = ammoData;
+
+        float multiplier = ammoData != null
+            ? ammoData.DamageMultiplier
+            : 1f;
+
+        runtimeDamage = Mathf.Max(
+            1,
+            Mathf.RoundToInt(BaseDamage * multiplier)
+        );
+    }
+
     private void OnTriggerEnter2D(Collider2D other)
     {
         TryDealDamage(other);
@@ -37,20 +73,19 @@ public class DamageDealer : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D other)
     {
-        // Trigger内に入った瞬間にHealthが見つからなかった場合などの保険
         TryDealDamage(other);
     }
 
     private void TryDealDamage(Collider2D other)
     {
-        CharacterHealth targetHealth = other.GetComponentInParent<CharacterHealth>();
+        CharacterHealth targetHealth =
+            other.GetComponentInParent<CharacterHealth>();
 
         if (targetHealth == null || targetHealth.IsDead)
         {
             return;
         }
 
-        // CharacterHealthが付いている親オブジェクトのLayerで判定する
         int targetLayer = targetHealth.gameObject.layer;
 
         if ((targetLayers.value & (1 << targetLayer)) == 0)
@@ -63,19 +98,15 @@ public class DamageDealer : MonoBehaviour
             return;
         }
 
-        // EnemyHitReaction2Dが付いている敵だけ、弾の命中位置を渡します。
-        // Playerなど、付いていない対象の既存ダメージ処理には影響しません。
         EnemyHitReaction2D hitReaction =
             targetHealth.GetComponent<EnemyHitReaction2D>();
 
-        // CharacterHealthの無敵中は実際にHPが減らないため、
-        // 被弾方向だけが次のダメージへ残らないようにしない。
         if (!targetHealth.IsInvincible)
         {
             hitReaction?.NotifyHitSource(transform.position);
         }
 
-        targetHealth.TakeDamage(damage);
+        targetHealth.TakeDamage(CurrentDamage);
         damagedTargets.Add(targetHealth);
 
         if (destroyOnHit)

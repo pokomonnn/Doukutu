@@ -14,6 +14,7 @@ public class InventoryContextMenuUI : MonoBehaviour
     [SerializeField] private Button equipButton;
     [SerializeField] private Button useButton;
     [SerializeField] private Button informationButton;
+    [SerializeField] private Button repairButton;
     [SerializeField] private Button trashButton;
 
     [Header("Information表示（後で作成してもOK）")]
@@ -23,6 +24,12 @@ public class InventoryContextMenuUI : MonoBehaviour
 
     [Header("装備")]
     [SerializeField] private EquipmentController equipmentController;
+    [SerializeField] private PlayerEquipmentVisualController equipmentVisualController;
+
+    [Header("武器修理キット")]
+    [SerializeField] private string repairKitMissingMessage = "修理キットを持っていません";
+    [SerializeField] private string weaponAlreadyFullMessage = "この武器は修理する必要がありません";
+    [SerializeField] private string weaponRepairSuccessFormat = "{0} を修理しました（+{1:0.#}）";
 
     [Header("アイテムを捨てる処理")]
     [Tooltip("Playerに付けたPlayerItemDropper。未設定なら自動検索します。")]
@@ -82,6 +89,7 @@ public class InventoryContextMenuUI : MonoBehaviour
     // Information Panelを開いているアイテム。
     // コンテキストメニューを閉じた後も言語切替で更新するため保持する。
     private ItemData informationItemData;
+    private InventoryItem informationInventoryItem;
     private bool isItemTextChangeSubscribed;
 
     private bool buttonsRegistered;
@@ -97,6 +105,7 @@ public class InventoryContextMenuUI : MonoBehaviour
         EnsureReferences();
         FindSoundPlayer();
         FindEquipmentController();
+        FindEquipmentVisualController();
         FindPlayerItemDropper();
         FindHealthFullToastUI();
         RegisterButtons();
@@ -178,6 +187,7 @@ public class InventoryContextMenuUI : MonoBehaviour
         selectedItemIsReadOnly = false;
 
         FindEquipmentController();
+        FindEquipmentVisualController();
         FindPlayerItemDropper();
 
         gameObject.SetActive(true);
@@ -215,6 +225,7 @@ public class InventoryContextMenuUI : MonoBehaviour
         selectedItemIsReadOnly = false;
 
         FindEquipmentController();
+        FindEquipmentVisualController();
         FindPlayerItemDropper();
 
         gameObject.SetActive(true);
@@ -392,6 +403,142 @@ public class InventoryContextMenuUI : MonoBehaviour
         );
     }
 
+    public void RepairSelectedWeapon()
+    {
+        if (selectedItemIsReadOnly ||
+            selectedItem == null ||
+            inventoryController == null ||
+            !(selectedItem.ItemData is WeaponItemData weaponData))
+        {
+            soundPlayer?.PlayFailed();
+            return;
+        }
+
+        selectedItem.EnsureWeaponDurabilityInitialized();
+
+        if (selectedItem.StoredWeaponDurability >=
+            weaponData.MaxDurability - 0.0001f)
+        {
+            soundPlayer?.PlayFailed();
+            healthFullToastUI?.Show(weaponAlreadyFullMessage);
+            return;
+        }
+
+        InventoryItem repairKitItem = FindBestRepairKit(
+            inventoryController,
+            weaponData.MaxDurability - selectedItem.StoredWeaponDurability
+        );
+
+        WeaponRepairItemData repairKitData =
+            repairKitItem?.ItemData as WeaponRepairItemData;
+
+        if (repairKitItem == null || repairKitData == null)
+        {
+            soundPlayer?.PlayFailed();
+            healthFullToastUI?.Show(repairKitMissingMessage);
+            return;
+        }
+
+        FindEquipmentVisualController();
+
+        float repairedAmount;
+        bool repaired;
+
+        if (equipmentVisualController != null)
+        {
+            repaired = equipmentVisualController.TryRepairWeapon(
+                selectedItem,
+                repairKitData.RepairAmount,
+                out repairedAmount
+            );
+        }
+        else
+        {
+            repairedAmount = selectedItem.RepairWeaponDurability(
+                repairKitData.RepairAmount
+            );
+
+            if (repairedAmount > 0f)
+            {
+                selectedItem.SetStoredWeaponJammed(false);
+            }
+
+            repaired = repairedAmount > 0f;
+        }
+
+        if (!repaired)
+        {
+            soundPlayer?.PlayFailed();
+            return;
+        }
+
+        if (repairKitData.ConsumeOnUse)
+        {
+            inventoryController.RemoveItemAmount(
+                repairKitItem,
+                1
+            );
+        }
+
+        soundPlayer?.PlayUseSound(repairKitData.UseSound);
+
+        healthFullToastUI?.Show(
+            string.Format(
+                weaponRepairSuccessFormat,
+                weaponData.DisplayName,
+                repairedAmount
+            )
+        );
+
+        Hide();
+    }
+
+    private InventoryItem FindBestRepairKit(
+        InventoryController controller,
+        float missingDurability)
+    {
+        if (controller == null || controller.Grid == null)
+        {
+            return null;
+        }
+
+        InventoryItem bestCoveringKit = null;
+        float bestCoveringAmount = float.MaxValue;
+
+        InventoryItem strongestFallback = null;
+        float strongestAmount = 0f;
+
+        foreach (InventoryItem item in controller.Grid.Items)
+        {
+            WeaponRepairItemData repairData =
+                item?.ItemData as WeaponRepairItemData;
+
+            if (repairData == null || item.Amount <= 0)
+            {
+                continue;
+            }
+
+            float amount = repairData.RepairAmount;
+
+            if (amount >= missingDurability &&
+                amount < bestCoveringAmount)
+            {
+                bestCoveringKit = item;
+                bestCoveringAmount = amount;
+            }
+
+            if (amount > strongestAmount)
+            {
+                strongestFallback = item;
+                strongestAmount = amount;
+            }
+        }
+
+        return bestCoveringKit != null
+            ? bestCoveringKit
+            : strongestFallback;
+    }
+
     public void ShowInformation()
     {
         if (selectedItem == null || selectedItem.ItemData == null)
@@ -405,6 +552,7 @@ public class InventoryContextMenuUI : MonoBehaviour
         if (informationPanel != null)
         {
             informationItemData = itemData;
+            informationInventoryItem = selectedItem;
             RefreshInformationPanel();
 
             informationPanel.SetActive(true);
@@ -429,6 +577,7 @@ public class InventoryContextMenuUI : MonoBehaviour
         }
 
         informationItemData = null;
+        informationInventoryItem = null;
         soundPlayer?.PlayClose();
     }
 
@@ -576,8 +725,50 @@ public class InventoryContextMenuUI : MonoBehaviour
 
         if (informationDescriptionText != null)
         {
-            informationDescriptionText.text =
-                informationItemData.Description;
+            string description = informationItemData.Description;
+
+            if (informationInventoryItem != null &&
+                informationInventoryItem.ItemData == informationItemData &&
+                informationItemData is WeaponItemData weaponData)
+            {
+                informationInventoryItem.EnsureWeaponDurabilityInitialized();
+
+                float durabilityPercent = Mathf.Clamp01(
+                    informationInventoryItem.StoredWeaponDurability /
+                    weaponData.MaxDurability
+                );
+
+                float damagePercent =
+                    (1f - durabilityPercent) * 100f;
+
+                float jamChance = weaponData.GetJamChance(
+                    durabilityPercent
+                ) * 100f;
+
+                float spread = weaponData.GetDurabilitySpreadAngle(
+                    durabilityPercent
+                );
+
+                float reloadMultiplier =
+                    weaponData.GetReloadDurationMultiplier(
+                        durabilityPercent
+                    );
+
+                int repairCost = weaponData.CalculateFullRepairCost(
+                    informationInventoryItem.StoredWeaponDurability
+                );
+
+                description +=
+                    $"\n\n損傷度：{damagePercent:0.#}%" +
+                    $"\n耐久度：{durabilityPercent * 100f:0.#}%" +
+                    $"\n状態：{(informationInventoryItem.StoredWeaponJammed ? "ジャム中" : (informationInventoryItem.IsWeaponBroken ? "故障" : "使用可能"))}" +
+                    $"\n現在ジャム率：{jamChance:0.#}%" +
+                    $"\n耐久による最大ブレ：±{spread:0.#}°" +
+                    $"\nリロード時間倍率：×{reloadMultiplier:0.##}" +
+                    $"\n武器屋修理費：¥{repairCost:N0}";
+            }
+
+            informationDescriptionText.text = description;
         }
     }
 
@@ -624,6 +815,17 @@ public class InventoryContextMenuUI : MonoBehaviour
         if (informationButton != null)
         {
             informationButton.gameObject.SetActive(true);
+        }
+
+        if (repairButton != null)
+        {
+            bool canRepair =
+                !selectedItemIsReadOnly &&
+                itemData is WeaponItemData repairWeaponData &&
+                selectedItem.StoredWeaponDurability <
+                    repairWeaponData.MaxDurability - 0.0001f;
+
+            repairButton.gameObject.SetActive(canRepair);
         }
 
         if (trashButton != null)
@@ -792,6 +994,11 @@ public class InventoryContextMenuUI : MonoBehaviour
             informationButton.onClick.AddListener(ShowInformation);
         }
 
+        if (repairButton != null)
+        {
+            repairButton.onClick.AddListener(RepairSelectedWeapon);
+        }
+
         if (trashButton != null)
         {
             trashButton.onClick.AddListener(TrashSelectedItem);
@@ -820,6 +1027,11 @@ public class InventoryContextMenuUI : MonoBehaviour
         if (informationButton != null)
         {
             informationButton.onClick.RemoveListener(ShowInformation);
+        }
+
+        if (repairButton != null)
+        {
+            repairButton.onClick.RemoveListener(RepairSelectedWeapon);
         }
 
         if (trashButton != null)
@@ -912,6 +1124,32 @@ public class InventoryContextMenuUI : MonoBehaviour
         }
 
         return playerWeightController != null;
+    }
+
+    private bool FindEquipmentVisualController()
+    {
+        if (equipmentVisualController != null)
+        {
+            return true;
+        }
+
+        if (inventoryController != null)
+        {
+            equipmentVisualController =
+                inventoryController.GetComponent<
+                    PlayerEquipmentVisualController
+                >();
+        }
+
+        if (equipmentVisualController == null)
+        {
+            equipmentVisualController =
+                FindAnyObjectByType<PlayerEquipmentVisualController>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        return equipmentVisualController != null;
     }
 
     private bool FindPlayerItemDropper()

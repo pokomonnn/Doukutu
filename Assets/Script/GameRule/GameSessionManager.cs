@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement;
 [DisallowMultipleComponent]
 public class GameSessionManager : MonoBehaviour
 {
-    public const int CurrentSaveVersion = 4;
+    public const int CurrentSaveVersion = 8;
 
     [Header("初回起動時の所持金")]
     [Tooltip("PlayerMoneyController が開始金額を引き継がない場合に使う初期所持金です。通常は0のままでOKです。")]
@@ -47,6 +47,9 @@ public class GameSessionManager : MonoBehaviour
     /// <summary>墓場へ登録された死亡NPC累計人数が変化した時に通知します。</summary>
     public event Action<int> DeadNpcCountChanged;
 
+    /// <summary>町の施設レベルが変化した時に、FacilityIdと新しいLevelを通知します。</summary>
+    public event Action<string, int> FacilityLevelChanged;
+
     /// <summary>インベントリ・装備の引き継ぎデータを保存または復元した時に通知します。</summary>
     public event Action InventorySessionChanged;
 
@@ -70,6 +73,9 @@ public class GameSessionManager : MonoBehaviour
 
     private readonly List<MissionSessionData> missionSessionData =
         new List<MissionSessionData>();
+
+    private readonly List<TownFacilitySessionData> facilitySessionData =
+        new List<TownFacilitySessionData>();
 
     private string trackedMissionId = string.Empty;
 
@@ -250,6 +256,123 @@ public class GameSessionManager : MonoBehaviour
 
         totalDeadNpcCount = safeValue;
         NotifyDeadNpcCountChanged();
+    }
+
+    // ---------------------------------------------------------------------
+    // 町の施設アップグレード
+    // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// 指定FacilityIdの現在レベルを返します。
+    /// まだ保存データが無い施設はdefaultLevelを返します。
+    /// </summary>
+    public int GetFacilityLevel(string facilityId, int defaultLevel = 1)
+    {
+        int safeDefault = Mathf.Max(1, defaultLevel);
+
+        TownFacilitySessionData data =
+            FindFacilitySessionData(facilityId);
+
+        return data != null
+            ? Mathf.Max(1, data.Level)
+            : safeDefault;
+    }
+
+    public int GetFacilityLevel(TownFacilityUpgradeData facilityData)
+    {
+        if (facilityData == null)
+        {
+            return 1;
+        }
+
+        return GetFacilityLevel(
+            facilityData.FacilityId,
+            facilityData.StartingLevel
+        );
+    }
+
+    /// <summary>
+    /// 施設レベルを直接設定します。アップグレード・ロード用です。
+    /// 同じ値の場合はtrueを返しますが、イベントは発行しません。
+    /// </summary>
+    public bool SetFacilityLevel(
+        string facilityId,
+        int level,
+        int defaultLevel = 1)
+    {
+        string normalizedId = facilityId?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(normalizedId))
+        {
+            LogWarning("FacilityIdが空のため施設レベルを設定できません。");
+            return false;
+        }
+
+        int safeDefault = Mathf.Max(1, defaultLevel);
+        int safeLevel = Mathf.Max(safeDefault, level);
+
+        TownFacilitySessionData data =
+            FindFacilitySessionData(normalizedId);
+
+        if (data == null)
+        {
+            data = new TownFacilitySessionData
+            {
+                FacilityId = normalizedId,
+                Level = safeLevel
+            };
+
+            facilitySessionData.Add(data);
+            FacilityLevelChanged?.Invoke(normalizedId, safeLevel);
+            Log($"施設レベル登録: {normalizedId}=Lv{safeLevel}");
+            return true;
+        }
+
+        if (data.Level == safeLevel)
+        {
+            return true;
+        }
+
+        data.Level = safeLevel;
+        FacilityLevelChanged?.Invoke(normalizedId, safeLevel);
+        Log($"施設レベル更新: {normalizedId}=Lv{safeLevel}");
+        return true;
+    }
+
+    public bool SetFacilityLevel(
+        TownFacilityUpgradeData facilityData,
+        int level)
+    {
+        return facilityData != null && SetFacilityLevel(
+            facilityData.FacilityId,
+            level,
+            facilityData.StartingLevel
+        );
+    }
+
+    private TownFacilitySessionData FindFacilitySessionData(
+        string facilityId)
+    {
+        if (string.IsNullOrWhiteSpace(facilityId))
+        {
+            return null;
+        }
+
+        string normalizedId = facilityId.Trim();
+
+        foreach (TownFacilitySessionData data in facilitySessionData)
+        {
+            if (data != null &&
+                string.Equals(
+                    data.FacilityId,
+                    normalizedId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return data;
+            }
+        }
+
+        return null;
     }
 
     // ---------------------------------------------------------------------
@@ -510,6 +633,7 @@ public class GameSessionManager : MonoBehaviour
         hasInventorySessionData = false;
 
         missionSessionData.Clear();
+        facilitySessionData.Clear();
         trackedMissionId = string.Empty;
 
         NotifyMoneyChanged();
@@ -1037,13 +1161,31 @@ public class GameSessionManager : MonoBehaviour
             });
         }
 
+        foreach (TownFacilitySessionData facility in facilitySessionData)
+        {
+            if (facility == null ||
+                string.IsNullOrWhiteSpace(facility.FacilityId))
+            {
+                continue;
+            }
+
+            saveData.FacilityLevels.Add(
+                new SavedTownFacilityLevelData
+                {
+                    FacilityId = facility.FacilityId.Trim(),
+                    Level = Mathf.Max(1, facility.Level)
+                }
+            );
+        }
+
         LogTransfer(
             $"本セーブ用データ作成: Money={saveData.Money:N0} / " +
             $"DeadNpcTotal={saveData.TotalDeadNpcCount:N0}人 / " +
             $"Inventory={saveData.PlayerInventory.InventoryItems.Count}件 / " +
             $"PrimaryWeapon={(saveData.PlayerInventory.PrimaryWeapon != null ? "あり" : "なし")} / " +
             $"Helmet={(saveData.PlayerInventory.Helmet != null ? "あり" : "なし")} / " +
-            $"Missions={saveData.Missions.Count}件"
+            $"Missions={saveData.Missions.Count}件 / " +
+            $"Facilities={saveData.FacilityLevels.Count}件"
         );
 
         return saveData;
@@ -1158,6 +1300,39 @@ public class GameSessionManager : MonoBehaviour
         inventorySessionData = nextInventory;
         hasInventorySessionData = true;
 
+        facilitySessionData.Clear();
+        int restoredFacilityCount = 0;
+
+        if (saveData.FacilityLevels != null)
+        {
+            foreach (SavedTownFacilityLevelData savedFacility in
+                     saveData.FacilityLevels)
+            {
+                if (savedFacility == null ||
+                    string.IsNullOrWhiteSpace(savedFacility.FacilityId))
+                {
+                    continue;
+                }
+
+                string facilityId = savedFacility.FacilityId.Trim();
+
+                if (FindFacilitySessionData(facilityId) != null)
+                {
+                    continue;
+                }
+
+                facilitySessionData.Add(
+                    new TownFacilitySessionData
+                    {
+                        FacilityId = facilityId,
+                        Level = Mathf.Max(1, savedFacility.Level)
+                    }
+                );
+
+                restoredFacilityCount++;
+            }
+        }
+
         missionSessionData.Clear();
         int restoredMissionCount = 0;
         int skippedMissionCount = 0;
@@ -1227,7 +1402,8 @@ public class GameSessionManager : MonoBehaviour
             $"所持金={currentMoney:N0} / " +
             $"墓場の死亡NPC={totalDeadNpcCount:N0}人 / " +
             $"通常アイテム={restoredInventoryCount}件 / " +
-            $"ミッション={restoredMissionCount}件";
+            $"ミッション={restoredMissionCount}件 / " +
+            $"施設={restoredFacilityCount}件";
 
         if (missingItemCount > 0)
         {
@@ -1264,7 +1440,17 @@ public class GameSessionManager : MonoBehaviour
             IsRotated = source.IsRotated,
             Amount = Mathf.Max(1, source.Amount),
             HasStoredMagazineAmmo = source.HasStoredMagazineAmmo,
-            StoredMagazineAmmo = Mathf.Max(0, source.StoredMagazineAmmo)
+            StoredMagazineAmmo = Mathf.Max(0, source.StoredMagazineAmmo),
+            StoredMagazineAmmoItemId =
+                source.StoredMagazineAmmoType != null &&
+                !string.IsNullOrWhiteSpace(source.StoredMagazineAmmoType.ItemId)
+                    ? source.StoredMagazineAmmoType.ItemId.Trim()
+                    : string.Empty,
+            HasStoredWeaponDurability =
+                source.HasStoredWeaponDurability,
+            StoredWeaponDurability =
+                Mathf.Max(0f, source.StoredWeaponDurability),
+            StoredWeaponJammed = source.StoredWeaponJammed
         };
     }
 
@@ -1297,6 +1483,17 @@ public class GameSessionManager : MonoBehaviour
             return null;
         }
 
+        AmmoItemData storedMagazineAmmoType = null;
+
+        if (!string.IsNullOrWhiteSpace(source.StoredMagazineAmmoItemId) &&
+            itemDataDatabase.TryGetItemData(
+                source.StoredMagazineAmmoItemId.Trim(),
+                out ItemData storedAmmoItemData))
+        {
+            storedMagazineAmmoType =
+                storedAmmoItemData as AmmoItemData;
+        }
+
         return new SessionInventoryItemData
         {
             ItemData = itemData,
@@ -1309,7 +1506,13 @@ public class GameSessionManager : MonoBehaviour
                 Mathf.Max(1, itemData.MaxStack)
             ),
             HasStoredMagazineAmmo = source.HasStoredMagazineAmmo,
-            StoredMagazineAmmo = Mathf.Max(0, source.StoredMagazineAmmo)
+            StoredMagazineAmmo = Mathf.Max(0, source.StoredMagazineAmmo),
+            StoredMagazineAmmoType = storedMagazineAmmoType,
+            HasStoredWeaponDurability =
+                source.HasStoredWeaponDurability,
+            StoredWeaponDurability =
+                Mathf.Max(0f, source.StoredWeaponDurability),
+            StoredWeaponJammed = source.StoredWeaponJammed
         };
     }
 
@@ -1494,7 +1697,13 @@ public class GameSessionManager : MonoBehaviour
             IsRotated = item.IsRotated,
             Amount = Mathf.Clamp(item.Amount, 1, item.ItemData.MaxStack),
             HasStoredMagazineAmmo = item.HasStoredMagazineAmmo,
-            StoredMagazineAmmo = Mathf.Max(0, item.StoredMagazineAmmo)
+            StoredMagazineAmmo = Mathf.Max(0, item.StoredMagazineAmmo),
+            StoredMagazineAmmoType = item.StoredMagazineAmmoType,
+            HasStoredWeaponDurability =
+                item.HasStoredWeaponDurability,
+            StoredWeaponDurability =
+                Mathf.Max(0f, item.StoredWeaponDurability),
+            StoredWeaponJammed = item.StoredWeaponJammed
         };
     }
 
@@ -1653,10 +1862,24 @@ public class GameSessionManager : MonoBehaviour
 
         if (savedItem.HasStoredMagazineAmmo)
         {
-            item.SetStoredMagazineAmmo(
-                savedItem.StoredMagazineAmmo
+            item.SetStoredMagazineAmmoState(
+                savedItem.StoredMagazineAmmo,
+                savedItem.StoredMagazineAmmoType
             );
         }
+
+        if (savedItem.HasStoredWeaponDurability)
+        {
+            item.SetStoredWeaponDurability(
+                savedItem.StoredWeaponDurability
+            );
+        }
+        else
+        {
+            item.EnsureWeaponDurabilityInitialized();
+        }
+
+        item.SetStoredWeaponJammed(savedItem.StoredWeaponJammed);
 
         return item;
     }
@@ -1750,10 +1973,22 @@ public class GameSessionManager : MonoBehaviour
             : "null";
 
         string magazine = item.HasStoredMagazineAmmo
-            ? $" / 残弾={item.StoredMagazineAmmo}"
+            ? $" / 残弾={item.StoredMagazineAmmo}" +
+              (item.StoredMagazineAmmoType != null
+                  ? $" / 装填弾={item.StoredMagazineAmmoType.DisplayName}"
+                  : string.Empty)
             : string.Empty;
 
-        return $"{itemName}(ID={itemId}, 数={item.Amount}, 座標={item.GridX},{item.GridY}, 回転={item.IsRotated}{magazine})";
+        string durability = item.HasStoredWeaponDurability &&
+                            item.ItemData is WeaponItemData weaponData
+            ? $" / 耐久={Mathf.Clamp01(item.StoredWeaponDurability / weaponData.MaxDurability) * 100f:0.#}%"
+            : string.Empty;
+
+        string jam = item.StoredWeaponJammed
+            ? " / ジャム中"
+            : string.Empty;
+
+        return $"{itemName}(ID={itemId}, 数={item.Amount}, 座標={item.GridX},{item.GridY}, 回転={item.IsRotated}{magazine}{durability}{jam})";
     }
 
     private void SetMoneyInternal(int value)
@@ -1846,6 +2081,10 @@ public class SessionInventoryItemData
     public int Amount;
     public bool HasStoredMagazineAmmo;
     public int StoredMagazineAmmo;
+    public AmmoItemData StoredMagazineAmmoType;
+    public bool HasStoredWeaponDurability;
+    public float StoredWeaponDurability;
+    public bool StoredWeaponJammed;
 }
 
 /// <summary>
@@ -1883,4 +2122,14 @@ public class MissionSessionData
     public int Progress;
     public int RequiredAmount = 1;
     public bool RewardClaimed;
+}
+
+/// <summary>
+/// シーン間で保持する町施設1件分のレベルです。
+/// </summary>
+[Serializable]
+public class TownFacilitySessionData
+{
+    public string FacilityId;
+    public int Level = 1;
 }
