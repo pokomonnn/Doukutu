@@ -35,6 +35,13 @@ public class InventoryItemUI : MonoBehaviour,
     private InventoryGridUI gridUI;
     private InventorySoundPlayer soundPlayer;
 
+    [Header("インベントリ外ドロップ")]
+    [Tooltip("プレイヤーInventoryのアイテムを、すべてのInventory Gridの外で離した時に地面へ捨てます。")]
+    [SerializeField] private bool dropItemWhenReleasedOutsideInventory = true;
+
+    [Tooltip("Playerに付いているPlayerItemDropper。未設定なら自動検索します。")]
+    [SerializeField] private PlayerItemDropper playerItemDropper;
+
     private RectTransform itemRect;
     private Image backgroundImage;
     private Image iconImage;
@@ -375,8 +382,25 @@ public class InventoryItemUI : MonoBehaviour,
         }
         else
         {
-            PlayInventorySound("Failed", player => player.PlayFailed());
-            Log("ドロップ失敗：グリッド外です。");
+            // Gridのセル間の隙間など、見た目上まだInventory Grid内にいる場合は
+            // 誤って地面へ捨てず、従来どおり元の位置へ戻す。
+            if (IsPointerInsideAnyInventoryGrid(eventData))
+            {
+                PlayInventorySound("Failed", player => player.PlayFailed());
+                Log("ドロップ失敗：Inventory Grid内ですが配置できない場所です。");
+            }
+            else if (TryDropItemOutsideInventory())
+            {
+                PlayInventorySound("Trash", player => player.PlayTrash());
+                Log("Inventoryの外へドロップしたため、アイテムを地面へ捨てました。");
+                FinishDrag();
+                return;
+            }
+            else
+            {
+                PlayInventorySound("Failed", player => player.PlayFailed());
+                Log("Inventory外へのドロップに失敗したため、元の位置へ戻します。");
+            }
         }
 
         FinishDrag();
@@ -440,6 +464,108 @@ public class InventoryItemUI : MonoBehaviour,
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// プレイヤーInventoryからドラッグしたアイテムを、
+    /// すべてのInventory Gridの外で離した時に地面へ捨てます。
+    /// ItemData.CanDiscard=false のアイテムや、箱・ショップ側のアイテムは捨てません。
+    /// </summary>
+    private bool TryDropItemOutsideInventory()
+    {
+        if (!dropItemWhenReleasedOutsideInventory ||
+            gridUI == null ||
+            !gridUI.IsPlayerInventory ||
+            inventoryItem == null ||
+            inventoryItem.ItemData == null)
+        {
+            return false;
+        }
+
+        if (!FindPlayerItemDropper())
+        {
+            Log("PlayerItemDropperが見つからないため、Inventory外へ捨てられません。");
+            return false;
+        }
+
+        return playerItemDropper.TryDropItem(inventoryItem);
+    }
+
+    /// <summary>
+    /// ポインタがどれかのInventory GridのRect内にあるかを確認します。
+    /// セル間のSpacing上で離した時に、誤って地面へ捨てるのを防ぐために使います。
+    /// </summary>
+    private bool IsPointerInsideAnyInventoryGrid(
+        PointerEventData eventData)
+    {
+        InventoryGridUI[] allGridUIs =
+            Object.FindObjectsByType<InventoryGridUI>(
+                FindObjectsInactive.Exclude
+            );
+
+        foreach (InventoryGridUI candidate in allGridUIs)
+        {
+            if (candidate == null ||
+                !candidate.isActiveAndEnabled ||
+                !candidate.gameObject.activeInHierarchy ||
+                candidate.GridRect == null)
+            {
+                continue;
+            }
+
+            Canvas canvas =
+                candidate.GetComponentInParent<Canvas>()?.rootCanvas;
+
+            Camera uiCamera =
+                canvas == null ||
+                canvas.renderMode == RenderMode.ScreenSpaceOverlay
+                    ? null
+                    : canvas.worldCamera;
+
+            if (RectTransformUtility.RectangleContainsScreenPoint(
+                    candidate.GridRect,
+                    eventData.position,
+                    uiCamera))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool FindPlayerItemDropper()
+    {
+        if (playerItemDropper != null)
+        {
+            return true;
+        }
+
+        // プレイヤーInventoryControllerと同じObjectにある構成を優先。
+        InventoryController controller =
+            gridUI != null ? gridUI.Controller : null;
+
+        if (controller != null)
+        {
+            playerItemDropper =
+                controller.GetComponent<PlayerItemDropper>();
+
+            if (playerItemDropper == null)
+            {
+                playerItemDropper =
+                    controller.GetComponentInParent<PlayerItemDropper>();
+            }
+        }
+
+        if (playerItemDropper == null)
+        {
+            playerItemDropper =
+                Object.FindAnyObjectByType<PlayerItemDropper>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        return playerItemDropper != null;
     }
 
     private bool TryFindTargetGrid(

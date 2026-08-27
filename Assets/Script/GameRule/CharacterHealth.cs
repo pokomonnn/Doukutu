@@ -61,7 +61,23 @@ public class CharacterHealth : MonoBehaviour
             return;
         }
 
-        CurrentHealth = Mathf.Max(CurrentHealth - damage, 0);
+        float damageMultiplier = ShouldUsePlayerSkillModifiers()
+            ? SkillCardEffectUtility.GetMultiplier(
+                SkillEffectType.DamageTaken
+            )
+            : 1f;
+
+        int finalDamage = Mathf.Max(
+            0,
+            Mathf.RoundToInt(damage * damageMultiplier)
+        );
+
+        if (finalDamage <= 0)
+        {
+            return;
+        }
+
+        CurrentHealth = Mathf.Max(CurrentHealth - finalDamage, 0);
 
         // 実際にダメージが通った時だけ被ダメージ音を鳴らす
         PlayDamageSound();
@@ -84,7 +100,24 @@ public class CharacterHealth : MonoBehaviour
             return;
         }
 
-        CurrentHealth = Mathf.Min(CurrentHealth + amount, MaxHealth);
+        int finalAmount = Mathf.Max(
+            0,
+            Mathf.RoundToInt(
+                amount *
+                (ShouldUsePlayerSkillModifiers()
+                    ? SkillCardEffectUtility.GetMultiplier(
+                        SkillEffectType.HealingReceived
+                    )
+                    : 1f)
+            )
+        );
+
+        if (finalAmount <= 0)
+        {
+            return;
+        }
+
+        CurrentHealth = Mathf.Min(CurrentHealth + finalAmount, MaxHealth);
         NotifyHealthChanged();
     }
 
@@ -128,6 +161,13 @@ public class CharacterHealth : MonoBehaviour
         {
             Died?.Invoke();
         }
+    }
+
+    private bool ShouldUsePlayerSkillModifiers()
+    {
+        return CompareTag("Player") ||
+               (transform.root != null &&
+                transform.root.CompareTag("Player"));
     }
 
     private void PlayDamageSound()

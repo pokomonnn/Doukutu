@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -50,7 +50,6 @@ public class GunShooter : MonoBehaviour
 
     [Header("射撃設定")]
     [SerializeField] private float bulletSpeed = 20f;
-    [SerializeField] private float fireInterval = 0.15f;
     [SerializeField] private float bulletLifeTime = 3f;
 
     [Header("装弾数")]
@@ -147,6 +146,24 @@ public class GunShooter : MonoBehaviour
     public bool IsJammed => isJammed;
     public bool IsClearingJam => isClearingJam;
 
+    /// <summary>
+    /// 現在装備している武器の射撃方式です。
+    /// WeaponItemData未設定時は安全側でSemiAutoとして扱います。
+    /// </summary>
+    public WeaponFireMode FireMode =>
+        weaponItemData != null
+            ? weaponItemData.FireMode
+            : WeaponFireMode.SemiAuto;
+
+    /// <summary>
+    /// 現在装備中のWeaponItemDataから射撃間隔を取得します。
+    /// WeaponItemData未設定時のみ互換用として0.15秒を使用します。
+    /// </summary>
+    public float CurrentFireInterval =>
+        weaponItemData != null
+            ? weaponItemData.FireInterval
+            : 0.15f;
+
     public float CurrentReloadDuration
     {
         get
@@ -155,7 +172,15 @@ public class GunShooter : MonoBehaviour
                 ? weaponItemData.GetReloadDurationMultiplier(DurabilityPercent)
                 : 1f;
 
-            return Mathf.Max(0f, reloadDuration * multiplier);
+            float skillMultiplier =
+                SkillCardEffectUtility.GetMultiplier(
+                    SkillEffectType.ReloadDuration
+                );
+
+            return Mathf.Max(
+                0f,
+                reloadDuration * multiplier * skillMultiplier
+            );
         }
     }
 
@@ -276,10 +301,32 @@ public class GunShooter : MonoBehaviour
             return;
         }
 
-        if (Mouse.current.leftButton.isPressed &&
+        if (ShouldFireFromInput() &&
             Time.time >= nextFireTime)
         {
             Shoot();
+        }
+    }
+
+    /// <summary>
+    /// WeaponItemDataのFire Modeに応じて射撃入力を切り替えます。
+    /// SemiAutoは押した瞬間だけ、FullAutoは押している間ずっと有効です。
+    /// </summary>
+    private bool ShouldFireFromInput()
+    {
+        if (Mouse.current == null)
+        {
+            return false;
+        }
+
+        switch (FireMode)
+        {
+            case WeaponFireMode.FullAuto:
+                return Mouse.current.leftButton.isPressed;
+
+            case WeaponFireMode.SemiAuto:
+            default:
+                return Mouse.current.leftButton.wasPressedThisFrame;
         }
     }
 
@@ -326,7 +373,7 @@ public class GunShooter : MonoBehaviour
             OnLoadedAmmoChanged?.Invoke(loadedAmmoData);
         }
 
-        nextFireTime = Time.time + fireInterval;
+        nextFireTime = Time.time + CurrentFireInterval;
 
         if (TryTriggerJam())
         {
@@ -345,7 +392,93 @@ public class GunShooter : MonoBehaviour
             casingParticleSystem.Emit(1);
         }
 
-        Vector2 shotDirection = GetShotDirection();
+        // SAN値・低耐久による照準ブレは1回の射撃につき1回決める。
+        // ショットガンの各Pelletは、この中心方向からさらに散弾角度を加える。
+        Vector2 shotCenterDirection = GetShotDirection();
+
+        int pelletCount = weaponItemData != null
+            ? weaponItemData.PelletCount
+            : 1;
+
+        float pelletSpreadAngle = weaponItemData != null
+            ? weaponItemData.PelletSpreadAngle
+            : 0f;
+
+        float skillDamageMultiplier =
+            SkillCardEffectUtility.GetMultiplier(
+                SkillEffectType.WeaponDamage
+            );
+
+        for (int pelletIndex = 0;
+             pelletIndex < pelletCount;
+             pelletIndex++)
+        {
+            Vector2 pelletDirection = GetPelletDirection(
+                shotCenterDirection,
+                pelletSpreadAngle
+            );
+
+            SpawnBullet(
+                pelletDirection,
+                skillDamageMultiplier
+            );
+        }
+
+        // 散弾数に関係なく、1回の射撃につき耐久は1回だけ減らす。
+        ApplyDurabilityLossForShot();
+    }
+
+    /// <summary>
+    /// ショットガン用の散弾方向を作ります。
+    /// Spread Angleは散弾全体の角度なので、左右へ半分ずつ広がります。
+    /// WeaponSpreadスキルの倍率も散弾の広がりへ反映します。
+    /// </summary>
+    private Vector2 GetPelletDirection(
+        Vector2 centerDirection,
+        float spreadAngle)
+    {
+        float safeSpread = Mathf.Max(0f, spreadAngle);
+
+        if (safeSpread <= 0.0001f)
+        {
+            return centerDirection.normalized;
+        }
+
+        float spreadSkillMultiplier =
+            SkillCardEffectUtility.GetMultiplier(
+                SkillEffectType.WeaponSpread
+            );
+
+        safeSpread *= Mathf.Max(0f, spreadSkillMultiplier);
+
+        float halfSpread = safeSpread * 0.5f;
+        float randomAngle = UnityEngine.Random.Range(
+            -halfSpread,
+            halfSpread
+        );
+
+        Vector3 rotatedDirection =
+            Quaternion.Euler(0f, 0f, randomAngle) *
+            new Vector3(
+                centerDirection.x,
+                centerDirection.y,
+                0f
+            );
+
+        return new Vector2(
+            rotatedDirection.x,
+            rotatedDirection.y
+        ).normalized;
+    }
+
+    /// <summary>
+    /// 1個のBulletを生成し、Ammo・Skill Damage・速度を設定します。
+    /// ショットガンではこの処理をPellet Count回呼びます。
+    /// </summary>
+    private void SpawnBullet(
+        Vector2 shotDirection,
+        float skillDamageMultiplier)
+    {
         float shotAngle = Mathf.Atan2(
             shotDirection.y,
             shotDirection.x
@@ -362,22 +495,33 @@ public class GunShooter : MonoBehaviour
 
         foreach (DamageDealer damageDealer in damageDealers)
         {
-            damageDealer?.ConfigureAmmo(loadedAmmoData);
+            if (damageDealer == null)
+            {
+                continue;
+            }
+
+            damageDealer.ConfigureAmmo(loadedAmmoData);
+            damageDealer.ConfigureSkillDamageMultiplier(
+                skillDamageMultiplier
+            );
         }
 
-        Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
+        Rigidbody2D bulletRb =
+            bullet.GetComponent<Rigidbody2D>();
 
         if (bulletRb != null)
         {
-            bulletRb.linearVelocity = shotDirection * bulletSpeed;
+            bulletRb.linearVelocity =
+                shotDirection * bulletSpeed;
         }
         else
         {
-            Debug.LogWarning("Bullet Prefab に Rigidbody2D が付いていません。");
+            Debug.LogWarning(
+                "Bullet Prefab に Rigidbody2D が付いていません。"
+            );
         }
 
         Destroy(bullet, bulletLifeTime);
-        ApplyDurabilityLossForShot();
     }
 
     private Vector2 GetShotDirection()
@@ -423,6 +567,11 @@ public class GunShooter : MonoBehaviour
                 );
             }
         }
+
+        totalAngleOffset *=
+            SkillCardEffectUtility.GetMultiplier(
+                SkillEffectType.WeaponSpread
+            );
 
         if (Mathf.Abs(totalAngleOffset) <= 0.0001f)
         {
@@ -623,7 +772,15 @@ public class GunShooter : MonoBehaviour
             return;
         }
 
-        SetCurrentDurability(currentDurability - durabilityLossPerShot);
+        float skillMultiplier =
+            SkillCardEffectUtility.GetMultiplier(
+                SkillEffectType.WeaponDurabilityLoss
+            );
+
+        SetCurrentDurability(
+            currentDurability -
+            (durabilityLossPerShot * skillMultiplier)
+        );
     }
 
     private bool TryTriggerJam()
@@ -635,7 +792,11 @@ public class GunShooter : MonoBehaviour
 
         float jamChance = weaponItemData.GetJamChance(
             DurabilityPercent
+        ) * SkillCardEffectUtility.GetMultiplier(
+            SkillEffectType.JamChance
         );
+
+        jamChance = Mathf.Clamp01(jamChance);
 
         if (jamChance <= 0f || UnityEngine.Random.value >= jamChance)
         {

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum MissionObjectiveType2D
@@ -44,6 +45,16 @@ public class MissionDefinition2D : ScriptableObject
     [Tooltip("Collect Item専用です。オンならミッション開始時にすでに持っている必要アイテムも進捗に数えます。Deliver Itemでは使用しません")]
     [SerializeField] private bool countItemsAlreadyHeldWhenMissionStarts;
 
+    [Header("スキル報酬")]
+    [Tooltip("このミッションの報酬受取時に永久取得するスキルカードです。複数設定できます。")]
+    [SerializeField]
+    private List<SkillCardData> skillCardRewards =
+        new List<SkillCardData>();
+
+    [Tooltip("このミッションの報酬受取時に解放するスキル装備枠数です。0なら解放なし。最大7枠までです。")]
+    [SerializeField, Range(0, 4)]
+    private int skillSlotUnlockAmount;
+
     public string MissionId => missionId;
     public string DisplayName => string.IsNullOrWhiteSpace(displayName)
         ? name
@@ -58,10 +69,22 @@ public class MissionDefinition2D : ScriptableObject
     public bool CountItemsAlreadyHeldWhenMissionStarts =>
         countItemsAlreadyHeldWhenMissionStarts;
 
+    public IReadOnlyList<SkillCardData> SkillCardRewards =>
+        skillCardRewards;
+
+    public int SkillSlotUnlockAmount =>
+        Mathf.Clamp(skillSlotUnlockAmount, 0, 4);
+
     private void OnValidate()
     {
         requiredAmount = Mathf.Max(1, requiredAmount);
         missionId = missionId?.Trim() ?? string.Empty;
         displayName = displayName?.Trim() ?? string.Empty;
+        skillSlotUnlockAmount = Mathf.Clamp(skillSlotUnlockAmount, 0, 4);
+
+        if (skillCardRewards == null)
+        {
+            skillCardRewards = new List<SkillCardData>();
+        }
     }
 }

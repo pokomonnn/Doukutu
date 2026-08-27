@@ -14,6 +14,10 @@ public class InventoryPanelToggle : MonoBehaviour
     [Tooltip("設定すると、ItemBox UIを開いている間のTabは箱を閉じる操作になります")]
     [SerializeField] private ItemBoxUIController itemBoxUIController;
 
+    [Header("スキルカードUI")]
+    [Tooltip("Inventory内のスキル画面。未設定なら自動検索します。Inventoryを閉じる時にスキル画面も閉じます。")]
+    [SerializeField] private SkillCardPanelController skillCardPanelController;
+
     [Header("音")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip openClip;
@@ -40,6 +44,16 @@ public class InventoryPanelToggle : MonoBehaviour
                     FindObjectsInactive.Include
                 );
         }
+
+        if (skillCardPanelController == null)
+        {
+            skillCardPanelController =
+                FindAnyObjectByType<SkillCardPanelController>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        skillCardPanelController?.ClosePanel();
 
         if (inventoryPanel != null)
         {
@@ -76,6 +90,10 @@ public class InventoryPanelToggle : MonoBehaviour
 
         bool willOpen = !inventoryPanel.activeSelf;
 
+        // Inventoryを開き直した時は、まず通常Inventory画面から開始する。
+        // 閉じる時もSkillPanelを残さない。
+        skillCardPanelController?.ClosePanel();
+
         inventoryPanel.SetActive(willOpen);
 
         if (willOpen)
@@ -95,6 +113,7 @@ public class InventoryPanelToggle : MonoBehaviour
             return;
         }
 
+        skillCardPanelController?.ClosePanel();
         inventoryPanel.SetActive(true);
         PlaySound(openClip, openVolume);
     }
@@ -106,6 +125,7 @@ public class InventoryPanelToggle : MonoBehaviour
             return;
         }
 
+        skillCardPanelController?.ClosePanel();
         inventoryPanel.SetActive(false);
         PlaySound(closeClip, closeVolume);
     }

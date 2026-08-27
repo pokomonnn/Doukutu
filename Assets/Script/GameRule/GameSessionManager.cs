@@ -11,7 +11,9 @@ using UnityEngine.SceneManagement;
 [DisallowMultipleComponent]
 public class GameSessionManager : MonoBehaviour
 {
-    public const int CurrentSaveVersion = 8;
+    public const int CurrentSaveVersion = 9;
+    public const int MinSkillSlots = 3;
+    public const int MaxSkillSlots = 7;
 
     [Header("初回起動時の所持金")]
     [Tooltip("PlayerMoneyController が開始金額を引き継がない場合に使う初期所持金です。通常は0のままでOKです。")]
@@ -56,11 +58,38 @@ public class GameSessionManager : MonoBehaviour
     /// <summary>ミッション受注・進行データが変化した時に通知します。</summary>
     public event Action MissionSessionChanged;
 
+    /// <summary>スキルカードの取得・装備・スロット解放が変化した時に通知します。</summary>
+    public event Action SkillSessionChanged;
+
     /// <summary>シーン間で保持しているミッション数です。</summary>
     public int MissionSessionCount => missionSessionData.Count;
 
     /// <summary>追跡中にしたいミッションIDです。空なら追跡なしです。</summary>
     public string TrackedMissionId => trackedMissionId;
+
+    /// <summary>現在解放されているスキルカード装備枠数です。</summary>
+    public int UnlockedSkillSlotCount
+    {
+        get
+        {
+            EnsureSkillSessionData();
+            return Mathf.Clamp(
+                skillCardSessionData.UnlockedSlotCount,
+                MinSkillSlots,
+                MaxSkillSlots
+            );
+        }
+    }
+
+    /// <summary>永久取得済みのスキルカード一覧です。</summary>
+    public IReadOnlyList<SkillCardData> OwnedSkillCards
+    {
+        get
+        {
+            EnsureSkillSessionData();
+            return skillCardSessionData.OwnedCards;
+        }
+    }
 
     private int currentMoney;
     private bool hasInitializedMoney;
@@ -78,6 +107,9 @@ public class GameSessionManager : MonoBehaviour
         new List<TownFacilitySessionData>();
 
     private string trackedMissionId = string.Empty;
+
+    private SkillCardSessionData skillCardSessionData =
+        new SkillCardSessionData();
 
     private void Awake()
     {
@@ -635,13 +667,290 @@ public class GameSessionManager : MonoBehaviour
         missionSessionData.Clear();
         facilitySessionData.Clear();
         trackedMissionId = string.Empty;
+        skillCardSessionData = new SkillCardSessionData();
+        EnsureSkillSessionData();
 
         NotifyMoneyChanged();
         NotifyDeadNpcCountChanged();
         InventorySessionChanged?.Invoke();
         MissionSessionChanged?.Invoke();
+        SkillSessionChanged?.Invoke();
 
         LogTransfer("ニューゲーム用にGameSessionManagerを初期化しました。");
+    }
+
+    // ---------------------------------------------------------------------
+    // スキルカード
+    // ---------------------------------------------------------------------
+
+    public SkillCardData GetEquippedSkillCard(int slotIndex)
+    {
+        EnsureSkillSessionData();
+
+        if (slotIndex < 0 ||
+            slotIndex >= UnlockedSkillSlotCount ||
+            slotIndex >= skillCardSessionData.EquippedCards.Count)
+        {
+            return null;
+        }
+
+        return skillCardSessionData.EquippedCards[slotIndex];
+    }
+
+    public bool HasSkillCard(SkillCardData card)
+    {
+        if (card == null)
+        {
+            return false;
+        }
+
+        EnsureSkillSessionData();
+        return skillCardSessionData.OwnedCards.Contains(card);
+    }
+
+    public bool IsSkillCardEquipped(SkillCardData card)
+    {
+        return FindEquippedSkillCardSlot(card) >= 0;
+    }
+
+    public int FindEquippedSkillCardSlot(SkillCardData card)
+    {
+        if (card == null)
+        {
+            return -1;
+        }
+
+        EnsureSkillSessionData();
+
+        int unlocked = UnlockedSkillSlotCount;
+        for (int i = 0; i < unlocked; i++)
+        {
+            if (skillCardSessionData.EquippedCards[i] == card)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    /// <summary>
+    /// スキルカードを永久取得します。すでに所持している場合も成功扱いですが、
+    /// wasNewlyUnlockedはfalseになります。
+    /// </summary>
+    public bool UnlockSkillCard(
+        SkillCardData card,
+        out bool wasNewlyUnlocked)
+    {
+        wasNewlyUnlocked = false;
+
+        if (card == null || string.IsNullOrWhiteSpace(card.ItemId))
+        {
+            return false;
+        }
+
+        EnsureSkillSessionData();
+
+        if (skillCardSessionData.OwnedCards.Contains(card))
+        {
+            return true;
+        }
+
+        foreach (SkillCardData owned in skillCardSessionData.OwnedCards)
+        {
+            if (owned != null &&
+                string.Equals(
+                    owned.ItemId,
+                    card.ItemId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        skillCardSessionData.OwnedCards.Add(card);
+        wasNewlyUnlocked = true;
+        SkillSessionChanged?.Invoke();
+
+        Log($"スキルカード取得: {card.DisplayName} ({card.ItemId})");
+        return true;
+    }
+
+    public bool SetUnlockedSkillSlotCount(int slotCount)
+    {
+        EnsureSkillSessionData();
+
+        int next = Mathf.Clamp(
+            slotCount,
+            MinSkillSlots,
+            MaxSkillSlots
+        );
+
+        if (skillCardSessionData.UnlockedSlotCount == next)
+        {
+            return false;
+        }
+
+        skillCardSessionData.UnlockedSlotCount = next;
+        SkillSessionChanged?.Invoke();
+        Log($"スキル装備枠を {next}/{MaxSkillSlots} に変更しました。");
+        return true;
+    }
+
+    public bool UnlockNextSkillSlot(int amount = 1)
+    {
+        if (amount <= 0 || UnlockedSkillSlotCount >= MaxSkillSlots)
+        {
+            return false;
+        }
+
+        return SetUnlockedSkillSlotCount(
+            UnlockedSkillSlotCount + amount
+        );
+    }
+
+    public bool TryEquipSkillCard(
+        SkillCardData card,
+        int slotIndex,
+        out string resultMessage)
+    {
+        resultMessage = string.Empty;
+        EnsureSkillSessionData();
+
+        if (card == null)
+        {
+            resultMessage = "装備するスキルカードが未設定です。";
+            return false;
+        }
+
+        if (!HasSkillCard(card))
+        {
+            resultMessage = $"{card.DisplayName} はまだ取得していません。";
+            return false;
+        }
+
+        if (slotIndex < 0 || slotIndex >= MaxSkillSlots)
+        {
+            resultMessage = "スキル装備枠が範囲外です。";
+            return false;
+        }
+
+        if (slotIndex >= UnlockedSkillSlotCount)
+        {
+            resultMessage = $"スキル枠{slotIndex + 1}はまだ解放されていません。";
+            return false;
+        }
+
+        int existingSlot = FindEquippedSkillCardSlot(card);
+        if (existingSlot >= 0 && existingSlot != slotIndex)
+        {
+            skillCardSessionData.EquippedCards[existingSlot] = null;
+        }
+
+        skillCardSessionData.EquippedCards[slotIndex] = card;
+        SkillSessionChanged?.Invoke();
+
+        resultMessage =
+            $"{card.DisplayName} をスキル枠{slotIndex + 1}に装備しました。";
+        Log(resultMessage);
+        return true;
+    }
+
+    public bool UnequipSkillCard(int slotIndex)
+    {
+        EnsureSkillSessionData();
+
+        if (slotIndex < 0 ||
+            slotIndex >= UnlockedSkillSlotCount ||
+            slotIndex >= skillCardSessionData.EquippedCards.Count ||
+            skillCardSessionData.EquippedCards[slotIndex] == null)
+        {
+            return false;
+        }
+
+        skillCardSessionData.EquippedCards[slotIndex] = null;
+        SkillSessionChanged?.Invoke();
+        return true;
+    }
+
+    public float GetSkillEffectAdditiveValue(SkillEffectType effectType)
+    {
+        EnsureSkillSessionData();
+
+        float total = 0f;
+        for (int i = 0; i < UnlockedSkillSlotCount; i++)
+        {
+            SkillCardData card = skillCardSessionData.EquippedCards[i];
+            if (card != null)
+            {
+                total += card.GetTotalValue(effectType);
+            }
+        }
+
+        return total;
+    }
+
+    private void EnsureSkillSessionData()
+    {
+        if (skillCardSessionData == null)
+        {
+            skillCardSessionData = new SkillCardSessionData();
+        }
+
+        skillCardSessionData.UnlockedSlotCount = Mathf.Clamp(
+            skillCardSessionData.UnlockedSlotCount <= 0
+                ? MinSkillSlots
+                : skillCardSessionData.UnlockedSlotCount,
+            MinSkillSlots,
+            MaxSkillSlots
+        );
+
+        if (skillCardSessionData.OwnedCards == null)
+        {
+            skillCardSessionData.OwnedCards = new List<SkillCardData>();
+        }
+
+        if (skillCardSessionData.EquippedCards == null)
+        {
+            skillCardSessionData.EquippedCards = new List<SkillCardData>();
+        }
+
+        while (skillCardSessionData.EquippedCards.Count < MaxSkillSlots)
+        {
+            skillCardSessionData.EquippedCards.Add(null);
+        }
+
+        if (skillCardSessionData.EquippedCards.Count > MaxSkillSlots)
+        {
+            skillCardSessionData.EquippedCards.RemoveRange(
+                MaxSkillSlots,
+                skillCardSessionData.EquippedCards.Count - MaxSkillSlots
+            );
+        }
+    }
+
+    private void GrantMissionSkillRewards(MissionDefinition2D mission)
+    {
+        if (mission == null)
+        {
+            return;
+        }
+
+        if (mission.SkillCardRewards != null)
+        {
+            foreach (SkillCardData card in mission.SkillCardRewards)
+            {
+                if (card != null)
+                {
+                    UnlockSkillCard(card, out _);
+                }
+            }
+        }
+
+        if (mission.SkillSlotUnlockAmount > 0)
+        {
+            UnlockNextSkillSlot(mission.SkillSlotUnlockAmount);
+        }
     }
 
     // ---------------------------------------------------------------------
@@ -1010,6 +1319,7 @@ public class GameSessionManager : MonoBehaviour
             trackedMissionId = string.Empty;
         }
 
+        GrantMissionSkillRewards(mission);
         MissionSessionChanged?.Invoke();
 
         resultMessage = $"{mission.DisplayName} を報告済み・報酬受け取り済みにしました。";
@@ -1112,6 +1422,9 @@ public class GameSessionManager : MonoBehaviour
             TrackedMissionId = trackedMissionId ?? string.Empty
         };
 
+        EnsureSkillSessionData();
+        saveData.SkillCards = CreateSavedSkillCardData();
+
         PlayerInventorySessionData sourceInventory =
             inventorySessionData ?? new PlayerInventorySessionData();
 
@@ -1185,7 +1498,9 @@ public class GameSessionManager : MonoBehaviour
             $"PrimaryWeapon={(saveData.PlayerInventory.PrimaryWeapon != null ? "あり" : "なし")} / " +
             $"Helmet={(saveData.PlayerInventory.Helmet != null ? "あり" : "なし")} / " +
             $"Missions={saveData.Missions.Count}件 / " +
-            $"Facilities={saveData.FacilityLevels.Count}件"
+            $"Facilities={saveData.FacilityLevels.Count}件 / " +
+            $"SkillCards={saveData.SkillCards.OwnedCardIds.Count}枚 / " +
+            $"SkillSlots={saveData.SkillCards.UnlockedSlotCount}"
         );
 
         return saveData;
@@ -1393,17 +1708,25 @@ public class GameSessionManager : MonoBehaviour
             }
         }
 
+        int restoredSkillCardCount = RestoreSkillCardSession(
+            saveData.SkillCards,
+            itemDataDatabase
+        );
+
         NotifyMoneyChanged();
         NotifyDeadNpcCountChanged();
         InventorySessionChanged?.Invoke();
         MissionSessionChanged?.Invoke();
+        SkillSessionChanged?.Invoke();
 
         resultMessage =
             $"所持金={currentMoney:N0} / " +
             $"墓場の死亡NPC={totalDeadNpcCount:N0}人 / " +
             $"通常アイテム={restoredInventoryCount}件 / " +
             $"ミッション={restoredMissionCount}件 / " +
-            $"施設={restoredFacilityCount}件";
+            $"施設={restoredFacilityCount}件 / " +
+            $"スキルカード={restoredSkillCardCount}枚 / " +
+            $"スキル枠={UnlockedSkillSlotCount}";
 
         if (missingItemCount > 0)
         {
@@ -1419,6 +1742,134 @@ public class GameSessionManager : MonoBehaviour
 
         LogTransfer($"本セーブデータ読込完了: {resultMessage}");
         return true;
+    }
+
+    private SavedSkillCardData CreateSavedSkillCardData()
+    {
+        EnsureSkillSessionData();
+
+        SavedSkillCardData result = new SavedSkillCardData
+        {
+            UnlockedSlotCount = UnlockedSkillSlotCount
+        };
+
+        foreach (SkillCardData card in skillCardSessionData.OwnedCards)
+        {
+            if (card == null || string.IsNullOrWhiteSpace(card.ItemId))
+            {
+                continue;
+            }
+
+            result.OwnedCardIds.Add(card.ItemId.Trim());
+        }
+
+        for (int i = 0; i < MaxSkillSlots; i++)
+        {
+            SkillCardData card = skillCardSessionData.EquippedCards[i];
+            result.EquippedCardIds.Add(
+                card != null && !string.IsNullOrWhiteSpace(card.ItemId)
+                    ? card.ItemId.Trim()
+                    : string.Empty
+            );
+        }
+
+        return result;
+    }
+
+    private int RestoreSkillCardSession(
+        SavedSkillCardData saved,
+        ItemDataDatabase itemDataDatabase)
+    {
+        skillCardSessionData = new SkillCardSessionData();
+        EnsureSkillSessionData();
+
+        if (saved == null)
+        {
+            return 0;
+        }
+
+        skillCardSessionData.UnlockedSlotCount = Mathf.Clamp(
+            saved.UnlockedSlotCount <= 0
+                ? MinSkillSlots
+                : saved.UnlockedSlotCount,
+            MinSkillSlots,
+            MaxSkillSlots
+        );
+
+        Dictionary<string, SkillCardData> restoredById =
+            new Dictionary<string, SkillCardData>(
+                StringComparer.OrdinalIgnoreCase
+            );
+
+        if (saved.OwnedCardIds != null)
+        {
+            foreach (string rawId in saved.OwnedCardIds)
+            {
+                string id = rawId?.Trim() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(id) ||
+                    restoredById.ContainsKey(id))
+                {
+                    continue;
+                }
+
+                if (itemDataDatabase.TryGetItemData(
+                        id,
+                        out ItemData itemData) &&
+                    itemData is SkillCardData card)
+                {
+                    skillCardSessionData.OwnedCards.Add(card);
+                    restoredById.Add(id, card);
+                }
+                else
+                {
+                    LogTransferWarning(
+                        $"SkillCard ItemId={id} がItemDataDatabaseに見つからないか、SkillCardDataではありません。"
+                    );
+                }
+            }
+        }
+
+        if (saved.EquippedCardIds != null)
+        {
+            int count = Mathf.Min(
+                MaxSkillSlots,
+                saved.EquippedCardIds.Count
+            );
+
+            for (int i = 0; i < count; i++)
+            {
+                if (i >= skillCardSessionData.UnlockedSlotCount)
+                {
+                    break;
+                }
+
+                string id = saved.EquippedCardIds[i]?.Trim() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    continue;
+                }
+
+                if (!restoredById.TryGetValue(id, out SkillCardData card))
+                {
+                    if (itemDataDatabase.TryGetItemData(
+                            id,
+                            out ItemData itemData) &&
+                        itemData is SkillCardData resolvedCard)
+                    {
+                        card = resolvedCard;
+                        restoredById[id] = card;
+                        skillCardSessionData.OwnedCards.Add(card);
+                    }
+                }
+
+                if (card != null && FindEquippedSkillCardSlot(card) < 0)
+                {
+                    skillCardSessionData.EquippedCards[i] = card;
+                }
+            }
+        }
+
+        return skillCardSessionData.OwnedCards.Count;
     }
 
     private static SavedInventoryItemData CreateSavedInventoryItem(
@@ -2099,6 +2550,14 @@ public class PlayerInventorySessionData
         new List<SessionInventoryItemData>();
     public SessionInventoryItemData PrimaryWeaponItem;
     public SessionInventoryItemData HelmetItem;
+}
+
+[Serializable]
+public class SkillCardSessionData
+{
+    public int UnlockedSlotCount = GameSessionManager.MinSkillSlots;
+    public List<SkillCardData> OwnedCards = new List<SkillCardData>();
+    public List<SkillCardData> EquippedCards = new List<SkillCardData>();
 }
 
 public enum MissionSessionState

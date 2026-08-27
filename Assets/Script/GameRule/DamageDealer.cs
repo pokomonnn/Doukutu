@@ -21,6 +21,7 @@ public class DamageDealer : MonoBehaviour
 
     private AmmoItemData runtimeAmmoData;
     private int runtimeDamage = -1;
+    private float runtimeSkillDamageMultiplier = 1f;
 
     public int BaseDamage => Mathf.Max(1, damage);
     public int CurrentDamage => runtimeDamage >= 0
@@ -55,14 +56,31 @@ public class DamageDealer : MonoBehaviour
     public void ConfigureAmmo(AmmoItemData ammoData)
     {
         runtimeAmmoData = ammoData;
+        RecalculateRuntimeDamage();
+    }
 
-        float multiplier = ammoData != null
-            ? ammoData.DamageMultiplier
+    /// <summary>
+    /// GunShooterから、装備中スキルカードの武器ダメージ倍率を渡します。
+    /// </summary>
+    public void ConfigureSkillDamageMultiplier(float multiplier)
+    {
+        runtimeSkillDamageMultiplier = Mathf.Max(0f, multiplier);
+        RecalculateRuntimeDamage();
+    }
+
+    private void RecalculateRuntimeDamage()
+    {
+        float ammoMultiplier = runtimeAmmoData != null
+            ? runtimeAmmoData.DamageMultiplier
             : 1f;
 
         runtimeDamage = Mathf.Max(
             1,
-            Mathf.RoundToInt(BaseDamage * multiplier)
+            Mathf.RoundToInt(
+                BaseDamage *
+                ammoMultiplier *
+                Mathf.Max(0f, runtimeSkillDamageMultiplier)
+            )
         );
     }
 

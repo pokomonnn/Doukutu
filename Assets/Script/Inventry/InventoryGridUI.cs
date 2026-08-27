@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -124,6 +124,47 @@ public class InventoryGridUI : MonoBehaviour
         UnsubscribeFromInventory();
 
         itemBoxInventory = newItemBoxInventory;
+        builtWidth = -1;
+        builtHeight = -1;
+
+        SubscribeToInventory();
+        RefreshInventoryUI();
+    }
+
+    /// <summary>
+    /// このGrid UIを、指定したPlayer InventoryControllerへ明示的に接続します。
+    /// ItemBox画面内のPlayer側Gridと、通常Tab Inventoryが
+    /// 必ず同じInventoryデータを見るために使用します。
+    /// </summary>
+    public void BindPlayerInventory(
+        InventoryController newInventoryController)
+    {
+        if (newInventoryController == null)
+        {
+            Debug.LogWarning(
+                "InventoryGridUI: BindPlayerInventory に " +
+                "null の InventoryController が渡されました。",
+                this
+            );
+            return;
+        }
+
+        if (itemBoxInventory == null &&
+            inventoryController == newInventoryController)
+        {
+            RefreshInventoryUI();
+            return;
+        }
+
+        // 古いInventory / ItemBoxへのイベント購読を確実に解除してから
+        // Player Inventoryへ接続し直す。
+        UnsubscribeFromInventory();
+
+        itemBoxInventory = null;
+        inventoryController = newInventoryController;
+
+        // 別Inventoryを表示していた可能性があるため、
+        // マス目とItem表示を最新データから作り直す。
         builtWidth = -1;
         builtHeight = -1;
 

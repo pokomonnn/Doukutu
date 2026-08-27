@@ -11,11 +11,12 @@ using System.Collections.Generic;
 /// 第6段階：武器マガジン内の装填弾種
 /// 第7段階：武器ごとの耐久度
 /// 第8段階：武器ごとのジャム状態
+/// 第9段階：スキルカード所持・装備・解放スロット数
 /// </summary>
 [Serializable]
 public class SaveGameData
 {
-    public int SaveVersion = 8;
+    public int SaveVersion = 9;
     public string SavedAtUtc = string.Empty;
     public string SavedSceneName = string.Empty;
     public int Money;
@@ -34,6 +35,9 @@ public class SaveGameData
         new List<SavedMissionData>();
 
     public string TrackedMissionId = string.Empty;
+
+    public SavedSkillCardData SkillCards =
+        new SavedSkillCardData();
 
     public SavedPlayerStatusData PlayerStatus =
         new SavedPlayerStatusData();
@@ -94,6 +98,18 @@ public class SavedInventoryItemData
 
     /// <summary>武器個体がジャム中か。Version 7以前ではfalse扱いです。</summary>
     public bool StoredWeaponJammed;
+}
+
+[Serializable]
+public class SavedSkillCardData
+{
+    public int UnlockedSlotCount = 3;
+
+    /// <summary>取得済みSkillCardDataのItemId一覧です。</summary>
+    public List<string> OwnedCardIds = new List<string>();
+
+    /// <summary>装備枠0～6のSkillCardData ItemIdです。空文字は未装備です。</summary>
+    public List<string> EquippedCardIds = new List<string>();
 }
 
 [Serializable]

@@ -93,8 +93,13 @@ public class PlayerWeightController : MonoBehaviour
 
     public float CurrentWeight => currentWeight;
 
+    public float CurrentSkillWeightLimitBonusKg =>
+        SkillCardEffectUtility.GetAdditiveValue(
+            SkillEffectType.CarryWeightLimitAddKg
+        );
+
     public float ImmobilizedWeightLimit =>
-        verySlowWeightLimit;
+        verySlowWeightLimit + CurrentSkillWeightLimitBonusKg;
 
     public PlayerWeightState CurrentState => currentState;
 
@@ -209,7 +214,10 @@ public class PlayerWeightController : MonoBehaviour
         CurrentSurvivalMoveSpeedMultiplier *
         CurrentConsumableUseMoveSpeedMultiplier *
         CurrentProneMoveSpeedMultiplier *
-        CurrentCarryLoadMoveSpeedMultiplier;
+        CurrentCarryLoadMoveSpeedMultiplier *
+        SkillCardEffectUtility.GetMultiplier(
+            SkillEffectType.MoveSpeed
+        );
 
     public event Action<float> OnWeightChanged;
     public event Action<PlayerWeightState> OnWeightStateChanged;
@@ -225,6 +233,7 @@ public class PlayerWeightController : MonoBehaviour
         FindReferences();
         CacheBaseMovementValues();
         SubscribeEvents();
+        SubscribeSkillEvents();
 
         refreshRequested = true;
     }
@@ -248,6 +257,7 @@ public class PlayerWeightController : MonoBehaviour
     private void OnDisable()
     {
         UnsubscribeEvents();
+        UnsubscribeSkillEvents();
         StopConsumableUseSlowdown();
         RestoreBaseMovementValues();
     }
@@ -467,22 +477,24 @@ public class PlayerWeightController : MonoBehaviour
     private PlayerWeightState GetWeightState(
         float weight)
     {
-        if (weight > verySlowWeightLimit)
+        float bonus = CurrentSkillWeightLimitBonusKg;
+
+        if (weight > verySlowWeightLimit + bonus)
         {
             return PlayerWeightState.Immobilized;
         }
 
-        if (weight > slowWeightLimit)
+        if (weight > slowWeightLimit + bonus)
         {
             return PlayerWeightState.VerySlow;
         }
 
-        if (weight > slightlySlowWeightLimit)
+        if (weight > slightlySlowWeightLimit + bonus)
         {
             return PlayerWeightState.Slow;
         }
 
-        if (weight > normalWeightLimit)
+        if (weight > normalWeightLimit + bonus)
         {
             return PlayerWeightState.SlightlySlow;
         }
@@ -545,6 +557,31 @@ public class PlayerWeightController : MonoBehaviour
 
     private void HandleFoodStateChanged(
         SurvivalNeedState foodState)
+    {
+        refreshRequested = true;
+    }
+
+    private void SubscribeSkillEvents()
+    {
+        if (GameSessionManager.Instance != null)
+        {
+            GameSessionManager.Instance.SkillSessionChanged -=
+                HandleSkillSessionChanged;
+            GameSessionManager.Instance.SkillSessionChanged +=
+                HandleSkillSessionChanged;
+        }
+    }
+
+    private void UnsubscribeSkillEvents()
+    {
+        if (GameSessionManager.Instance != null)
+        {
+            GameSessionManager.Instance.SkillSessionChanged -=
+                HandleSkillSessionChanged;
+        }
+    }
+
+    private void HandleSkillSessionChanged()
     {
         refreshRequested = true;
     }

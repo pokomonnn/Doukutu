@@ -1,5 +1,14 @@
-using System;
+﻿using System;
 using UnityEngine;
+
+public enum WeaponFireMode
+{
+    [Tooltip("1クリックにつき1回だけ射撃します。ハンドガン・ショットガン向けです。")]
+    SemiAuto,
+
+    [Tooltip("左クリックを押している間、Fire Intervalごとに連射します。自動小銃向けです。")]
+    FullAuto
+}
 
 [CreateAssetMenu(
     fileName = "NewWeaponItemData",
@@ -10,6 +19,34 @@ public class WeaponItemData : ItemData
     [Header("装備設定")]
     [Tooltip("この武器を装備した時に使う武器Prefab")]
     [SerializeField] private GameObject weaponPrefab;
+
+    [Header("射撃方式")]
+    [Tooltip(
+        "Semi Auto：1クリックで1発だけ射撃します。ハンドガン・ショットガン向け。" +
+        "Full Auto：左クリック長押しでFire Intervalごとに連射します。"
+    )]
+    [SerializeField] private WeaponFireMode fireMode =
+        WeaponFireMode.SemiAuto;
+
+    [Tooltip(
+        "1発撃ってから次の1発を撃てるまでの最短時間（秒）です。" +
+        "例：0.2なら最大5発/秒、0.1なら最大10発/秒です。"
+    )]
+    [SerializeField, Min(0f)] private float fireInterval = 0.15f;
+
+    [Header("散弾設定")]
+    [Tooltip(
+        "1回の射撃で生成する弾丸数です。" +
+        "通常の銃は1、ショットガンは6～10程度を目安にしてください。"
+    )]
+    [SerializeField, Min(1)] private int pelletCount = 1;
+
+    [Tooltip(
+        "散弾全体の広がり角度です。" +
+        "例：16なら、照準中心から左右に最大約8度ずつ広がります。" +
+        "Pellet Countが1の場合は基本的に0のままでOKです。"
+    )]
+    [SerializeField, Min(0f)] private float pelletSpreadAngle = 0f;
 
     [Header("弾薬設定")]
     [Tooltip(
@@ -79,6 +116,10 @@ public class WeaponItemData : ItemData
         EquipmentSlotType.PrimaryWeapon;
 
     public GameObject WeaponPrefab => weaponPrefab;
+    public WeaponFireMode FireMode => fireMode;
+    public float FireInterval => Mathf.Max(0f, fireInterval);
+    public int PelletCount => Mathf.Max(1, pelletCount);
+    public float PelletSpreadAngle => Mathf.Max(0f, pelletSpreadAngle);
 
     // 既存スクリプト互換用。今後はPreferredAmmoとして扱います。
     public AmmoItemData CompatibleAmmo => compatibleAmmo;
@@ -238,6 +279,10 @@ public class WeaponItemData : ItemData
 
         compatibleAmmoCaliberId =
             compatibleAmmoCaliberId?.Trim() ?? string.Empty;
+
+        fireInterval = Mathf.Max(0f, fireInterval);
+        pelletCount = Mathf.Max(1, pelletCount);
+        pelletSpreadAngle = Mathf.Max(0f, pelletSpreadAngle);
 
         maxDurability = Mathf.Max(1f, maxDurability);
         durabilityLossPerShot = Mathf.Max(0f, durabilityLossPerShot);

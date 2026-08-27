@@ -69,10 +69,18 @@ public class WorldItemPickup : MonoBehaviour
     [SerializeField] private PlayerCarryController2D carryController;
 
     [Header("プレイヤー判定")]
+    [Tooltip("プレイヤーがアイテムを拾える範囲として使用するCollider2Dです。DroppedItemの子に作成したPickupRangeを設定してください。PlayerとDroppedItemのLayer CollisionをOFFにしていても、この範囲をOverlap判定して拾得できます。")]
+    [SerializeField] private Collider2D pickupRange;
+
     [SerializeField] private string playerTag = "Player";
 
     private readonly HashSet<Collider2D> playerColliders =
         new HashSet<Collider2D>();
+
+    private readonly List<Collider2D> pickupRangeOverlapResults =
+        new List<Collider2D>(16);
+
+    private bool isPlayerInRange;
 
     private InventoryItem droppedItem;
     private float canPickupAfterTime;
@@ -87,7 +95,7 @@ public class WorldItemPickup : MonoBehaviour
 
     public InventoryItem DroppedItem => droppedItem;
 
-    public bool IsPlayerInRange => playerColliders.Count > 0;
+    public bool IsPlayerInRange => isPlayerInRange;
 
     public bool HasValidDroppedItem =>
     droppedItem != null &&
@@ -119,15 +127,6 @@ public class WorldItemPickup : MonoBehaviour
 
             storedMagazineAmmo =
                 droppedItem.StoredMagazineAmmo,
-
-            hasStoredWeaponDurability =
-                droppedItem.HasStoredWeaponDurability,
-
-            storedWeaponDurability =
-                droppedItem.StoredWeaponDurability,
-
-            storedWeaponJammed =
-                droppedItem.StoredWeaponJammed,
 
             positionX = position.x,
             positionY = position.y,
@@ -173,21 +172,6 @@ public class WorldItemPickup : MonoBehaviour
             );
         }
 
-        if (saveData.hasStoredWeaponDurability)
-        {
-            restoredItem.SetStoredWeaponDurability(
-                saveData.storedWeaponDurability
-            );
-        }
-        else
-        {
-            restoredItem.EnsureWeaponDurabilityInitialized();
-        }
-
-        restoredItem.SetStoredWeaponJammed(
-            saveData.storedWeaponJammed
-        );
-
         droppedItem = restoredItem;
 
         transform.position = new Vector3(
@@ -211,6 +195,7 @@ public class WorldItemPickup : MonoBehaviour
         // ロード後はすぐ拾える状態にする
         canPickupAfterTime = Time.time;
         isPickingUp = false;
+        RefreshPlayerInRangeState();
 
         RefreshVisual();
         RefreshPickupPrompt();
@@ -228,11 +213,13 @@ public class WorldItemPickup : MonoBehaviour
 
         FindPickupPromptText();
         FindStackAmountText();
+        FindPickupRange();
 
         ApplyPickupPromptPosition();
         ApplyStackAmountPosition();
 
         FindInventoryController();
+        RefreshPlayerInRangeState();
 
         RefreshVisual();
         RefreshPickupPrompt();
@@ -290,6 +277,7 @@ public class WorldItemPickup : MonoBehaviour
 
     private void Update()
     {
+        RefreshPlayerInRangeState();
         RefreshPickupPrompt();
 
         // ロープモード中、または持ち運び操作がEキーを使用している間は、
@@ -317,14 +305,27 @@ public class WorldItemPickup : MonoBehaviour
 
     public void Setup(InventoryItem item)
     {
+        Setup(item, true);
+    }
+
+    /// <summary>
+    /// シーンに最初から置くアイテムなど、生成音を鳴らしたくない場合は
+    /// playDropSound=falseで初期化できます。
+    /// </summary>
+    public void Setup(InventoryItem item, bool playDropSound)
+    {
         droppedItem = item;
         canPickupAfterTime = Time.time + pickupDelay;
+        RefreshPlayerInRangeState();
 
         RefreshVisual();
         RefreshPickupPrompt();
         RefreshStackAmountText();
 
-        PlayWorldSound(dropSound, dropSoundVolume);
+        if (playDropSound)
+        {
+            PlayWorldSound(dropSound, dropSoundVolume);
+        }
     }
 
     public void SetVelocity(Vector2 velocity)
@@ -344,6 +345,13 @@ public class WorldItemPickup : MonoBehaviour
             isPickingUp)
         {
             return false;
+        }
+
+        // スキルカードは通常インベントリへ入れず、
+        // GameSessionManagerのスキルコレクションへ永久登録する。
+        if (droppedItem.ItemData is SkillCardData skillCardData)
+        {
+            return TryPickupSkillCard(skillCardData);
         }
 
         if (!FindInventoryController())
@@ -411,6 +419,64 @@ public class WorldItemPickup : MonoBehaviour
         {
             stackAmountText.enabled = false;
         }
+
+        Destroy(gameObject);
+        return true;
+    }
+
+    private bool TryPickupSkillCard(SkillCardData skillCardData)
+    {
+        if (skillCardData == null)
+        {
+            return false;
+        }
+
+        GameSessionManager session = GameSessionManager.Instance;
+
+        if (session == null)
+        {
+            session = FindAnyObjectByType<GameSessionManager>(
+                FindObjectsInactive.Include
+            );
+        }
+
+        if (session == null)
+        {
+            Debug.LogWarning(
+                "WorldItemPickup: SkillCardを取得できません。GameSessionManagerが見つかりません。",
+                this
+            );
+            return false;
+        }
+
+        isPickingUp = true;
+
+        if (!session.UnlockSkillCard(
+                skillCardData,
+                out bool wasNewlyUnlocked))
+        {
+            isPickingUp = false;
+            return false;
+        }
+
+        PlayWorldSound(pickupSound, pickupSoundVolume);
+
+        if (pickupPromptText != null)
+        {
+            pickupPromptText.enabled = false;
+        }
+
+        if (stackAmountText != null)
+        {
+            stackAmountText.enabled = false;
+        }
+
+        Debug.Log(
+            wasNewlyUnlocked
+                ? $"スキルカードを取得しました：{skillCardData.DisplayName}"
+                : $"取得済みのスキルカードです：{skillCardData.DisplayName}",
+            this
+        );
 
         Destroy(gameObject);
         return true;
@@ -524,19 +590,96 @@ public class WorldItemPickup : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!IsPlayerCollider(other))
+        // PickupRangeが未設定の場合だけ、従来のTrigger方式を予備として使用します。
+        if (pickupRange != null || !IsPlayerCollider(other))
         {
             return;
         }
 
         playerColliders.Add(other);
+        isPlayerInRange = playerColliders.Count > 0;
         RefreshPickupPrompt();
     }
 
     private void OnTriggerExit2D(Collider2D other)
     {
+        if (pickupRange != null)
+        {
+            return;
+        }
+
         playerColliders.Remove(other);
+        isPlayerInRange = playerColliders.Count > 0;
         RefreshPickupPrompt();
+    }
+
+    /// <summary>
+    /// PickupRangeに重なっているColliderを直接検索します。
+    /// Layer Collision MatrixでPlayerとDroppedItemの衝突をOFFにしていても、
+    /// 物理的に押し合わずに拾得範囲だけ判定できます。
+    /// </summary>
+    private void RefreshPlayerInRangeState()
+    {
+        if (pickupRange == null)
+        {
+            isPlayerInRange = playerColliders.Count > 0;
+            return;
+        }
+
+        if (!pickupRange.enabled ||
+            !pickupRange.gameObject.activeInHierarchy)
+        {
+            isPlayerInRange = false;
+            return;
+        }
+
+        pickupRangeOverlapResults.Clear();
+
+        ContactFilter2D filter =
+            new ContactFilter2D().NoFilter();
+
+        Physics2D.OverlapCollider(
+            pickupRange,
+            filter,
+            pickupRangeOverlapResults
+        );
+
+        isPlayerInRange = false;
+
+        foreach (Collider2D other in pickupRangeOverlapResults)
+        {
+            if (other == null || other == pickupRange)
+            {
+                continue;
+            }
+
+            if (IsPlayerCollider(other))
+            {
+                isPlayerInRange = true;
+                break;
+            }
+        }
+    }
+
+    private void FindPickupRange()
+    {
+        if (pickupRange != null)
+        {
+            return;
+        }
+
+        Collider2D[] colliders =
+            GetComponentsInChildren<Collider2D>(true);
+
+        foreach (Collider2D collider in colliders)
+        {
+            if (collider != null &&
+                collider.gameObject.name == "PickupRange")
+            {
+                pickupRange = collider;
+                return;
+            }
+        }
     }
 
     private bool IsPlayerCollider(Collider2D other)
@@ -769,7 +912,7 @@ public class WorldItemPickup : MonoBehaviour
         pickupSoundVolume = Mathf.Clamp01(pickupSoundVolume);
         soundSpatialBlend = Mathf.Clamp01(soundSpatialBlend);
 
-       
+
 
         if (string.IsNullOrWhiteSpace(stackAmountPrefix))
         {
@@ -778,6 +921,7 @@ public class WorldItemPickup : MonoBehaviour
 
         FindPickupPromptText();
         FindStackAmountText();
+        FindPickupRange();
 
         ApplyPickupPromptPosition();
         ApplyStackAmountPosition();

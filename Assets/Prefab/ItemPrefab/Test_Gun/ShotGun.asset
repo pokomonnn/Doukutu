@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1086a85c47509214a9c55f32cfb8431e, type: 3}
+  m_Name: ShotGun
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponItemData
+  itemId: ShotGun_001
+  displayName: "\u65B0\u3057\u3044\u30A2\u30A4\u30C6\u30E0"
+  description: This is ShotGun
+  icon: {fileID: -8618904994476612244, guid: ffbd9dcddee87944ba13160a85b95768, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  width: 4
+  height: 2
+  canRotate: 1
+  maxStack: 1
+  purchasePrice: 2000
+  sellPrice: 750
+  canSellToShop: 1
+  weight: 5
+  canDiscard: 1
+  weaponPrefab: {fileID: 4584479946820505900, guid: c94b343acab59494a906305c62f081d8, type: 3}
+  fireMode: 0
+  fireInterval: 0.7
+  pelletCount: 8
+  pelletSpreadAngle: 16
+  compatibleAmmo: {fileID: 11400000, guid: 3884bf05f57149748a1cc1ca2a6a945d, type: 2}
+  compatibleAmmoCaliberId: 
+  maxDurability: 100
+  durabilityLossPerShot: 0.1
+  jamStartDurabilityPercent: 0.5
+  jamChanceAtStart: 0.01
+  maxJamChanceAtZeroDurability: 0.25
+  jamClearDuration: 1.25
+  accuracyPenaltyStartDurabilityPercent: 0.6
+  maxSpreadAngleAtZeroDurability: 6
+  reloadPenaltyStartDurabilityPercent: 0.6
+  maxReloadDurationMultiplierAtZeroDurability: 1.75
+  fullRepairCost: 5000
+  minimumRepairCost: 100
+  references:
+    version: 2
+    RefIds: []

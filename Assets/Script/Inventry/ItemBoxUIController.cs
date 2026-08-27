@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -15,6 +15,14 @@ public class ItemBoxUIController : MonoBehaviour
     [Tooltip("このPanel内の箱用InventoryGridUI。InspectorのInventory Controllerは空でOKです")]
     [SerializeField] private InventoryGridUI itemBoxGridUI;
 
+    [Tooltip(
+        "Player本体が使用しているInventoryController。" +
+        "ItemBox画面のPlayer側Gridも必ずこれを参照します。" +
+        "未設定ならPlayerから自動検索します。"
+    )]
+    [SerializeField]
+    private InventoryController playerInventoryController;
+
     [Header("見出し")]
     [SerializeField] private TMP_Text titleText;
 
@@ -24,6 +32,26 @@ public class ItemBoxUIController : MonoBehaviour
     [Header("既存インベントリとの連携")]
     [Tooltip("通常Tabインベントリを閉じてから箱を開きたい時に設定")]
     [SerializeField] private InventoryPanelToggle inventoryPanelToggle;
+
+    [Header("重量表示")]
+    [Tooltip(
+        "ItemBoxPanel内に置いたWeightUIを設定します。" +
+        "未設定ならItemBoxPanelの子から自動検索します。"
+    )]
+    [SerializeField] private WeightUI itemBoxWeightUI;
+
+    [Tooltip(
+        "Playerに付いているPlayerWeightController。" +
+        "未設定なら自動検索します。"
+    )]
+    [SerializeField]
+    private PlayerWeightController playerWeightController;
+
+    [Tooltip(
+        "オンならItemBoxを開いている間も重量表示を継続更新します。" +
+        "箱とInventory間でItemを移動した直後の表示漏れ対策です。"
+    )]
+    [SerializeField] private bool refreshWeightUIWhileOpen = true;
 
     [Header("プレイヤー操作")]
     [Tooltip("オンの場合、アイテムボックスを開いている間は移動・ジャンプを止めます")]
@@ -57,12 +85,25 @@ public class ItemBoxUIController : MonoBehaviour
     private void Awake()
     {
         FindPlayerMove();
+        FindPlayerInventoryController();
         FindEquipmentVisualController();
+        FindPlayerWeightController();
+        FindItemBoxWeightUI();
 
         if (itemBoxPanel != null)
         {
             itemBoxPanel.SetActive(false);
         }
+    }
+
+    private void LateUpdate()
+    {
+        if (!refreshWeightUIWhileOpen || !IsOpen)
+        {
+            return;
+        }
+
+        RefreshWeightUI(false);
     }
 
     private void OnDisable()
@@ -99,6 +140,24 @@ public class ItemBoxUIController : MonoBehaviour
         // 通常のTabインベントリと二重表示にならないようにする
         inventoryPanelToggle?.CloseInventory();
 
+        // ItemBox画面のPlayer側Gridを、必ずPlayer本体の
+        // InventoryControllerへ接続する。
+        // これにより通常InventoryとItemBox画面で、
+        // 配置・削除・追加状態が食い違う問題を防ぐ。
+        if (!FindPlayerInventoryController())
+        {
+            Debug.LogWarning(
+                "ItemBoxUIController: Player の InventoryController が " +
+                "見つからないためItemBoxを開けません。",
+                this
+            );
+            return;
+        }
+
+        playerGridUI.BindPlayerInventory(
+            playerInventoryController
+        );
+
         currentItemBox = itemBox;
 
         // 箱用Gridだけを、今回開いた箱へ動的に接続する
@@ -111,12 +170,19 @@ public class ItemBoxUIController : MonoBehaviour
             itemBoxPanel.SetActive(true);
         }
 
+        // ItemBoxPanelが有効になった直後に、
+        // Playerの現在重量を再計算してWeightUIへ反映する。
+        RefreshWeightUI(true);
+
         // パネル表示と同時に、移動・ジャンプと武器操作を止める
         LockPlayerMovement();
         LockWeaponControls();
 
         playerGridUI.RefreshInventoryUI();
         itemBoxGridUI.RefreshInventoryUI();
+
+        // Grid更新後にももう一度反映する。
+        RefreshWeightUI(false);
     }
 
     public void Close()
@@ -136,6 +202,109 @@ public class ItemBoxUIController : MonoBehaviour
         // Tabや閉じるボタンで箱を閉じたら、元の操作状態へ戻す
         UnlockPlayerMovement();
         UnlockWeaponControls();
+    }
+
+    /// <summary>
+    /// ItemBox画面に表示する重量UIを最新状態へ更新します。
+    /// forceRecalculate=trueの場合はPlayerWeightController側も再計算します。
+    /// </summary>
+    public void RefreshWeightUI(bool forceRecalculate = false)
+    {
+        if (forceRecalculate && FindPlayerWeightController())
+        {
+            playerWeightController.RecalculateWeight();
+        }
+
+        if (FindItemBoxWeightUI())
+        {
+            itemBoxWeightUI.RefreshUI();
+        }
+    }
+
+    private bool FindItemBoxWeightUI()
+    {
+        if (itemBoxWeightUI != null)
+        {
+            return true;
+        }
+
+        if (itemBoxPanel == null)
+        {
+            return false;
+        }
+
+        WeightUI[] weightUIs =
+            itemBoxPanel.GetComponentsInChildren<WeightUI>(true);
+
+        if (weightUIs != null && weightUIs.Length > 0)
+        {
+            itemBoxWeightUI = weightUIs[0];
+        }
+
+        return itemBoxWeightUI != null;
+    }
+
+    /// <summary>
+    /// Playerが実際に使用しているInventoryControllerを取得します。
+    /// ItemBoxPanel自身に付いた別InventoryControllerを誤って使わないよう、
+    /// Player参照を最優先します。
+    /// </summary>
+    private bool FindPlayerInventoryController()
+    {
+        if (playerInventoryController != null)
+        {
+            return true;
+        }
+
+        // PlayerMoveと同じGameObjectにあるInventoryControllerを最優先。
+        if (playerMove != null)
+        {
+            playerInventoryController =
+                playerMove.GetComponent<InventoryController>();
+        }
+
+        // PlayerWeightControllerと同じPlayer上にある場合も確認。
+        if (playerInventoryController == null &&
+            playerWeightController != null)
+        {
+            playerInventoryController =
+                playerWeightController.GetComponent<InventoryController>();
+        }
+
+        // 最後の補完。通常は上記Player参照で見つかる想定です。
+        if (playerInventoryController == null)
+        {
+            playerInventoryController =
+                FindAnyObjectByType<InventoryController>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        return playerInventoryController != null;
+    }
+
+    private bool FindPlayerWeightController()
+    {
+        if (playerWeightController != null)
+        {
+            return true;
+        }
+
+        if (playerMove != null)
+        {
+            playerWeightController =
+                playerMove.GetComponent<PlayerWeightController>();
+        }
+
+        if (playerWeightController == null)
+        {
+            playerWeightController =
+                FindAnyObjectByType<PlayerWeightController>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        return playerWeightController != null;
     }
 
     private void LockPlayerMovement()
@@ -252,6 +421,12 @@ public class ItemBoxUIController : MonoBehaviour
             playerRigidbody = playerMove.GetComponent<Rigidbody2D>();
         }
 
+        if (playerInventoryController == null && playerMove != null)
+        {
+            playerInventoryController =
+                playerMove.GetComponent<InventoryController>();
+        }
+
         return playerMove != null;
     }
 
@@ -270,5 +445,10 @@ public class ItemBoxUIController : MonoBehaviour
             format,
             currentItemBox.BoxDisplayName
         );
+    }
+
+    private void OnValidate()
+    {
+        FindItemBoxWeightUI();
     }
 }

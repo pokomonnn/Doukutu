@@ -12,7 +12,8 @@ public enum InventoryItemType
     Equipment,  // ライト・かぎ爪など
     Treasure,   // 売却用お宝
     Quest,      // クエスト用
-    TownUpgradeMaterial // 町の施設アップグレード素材
+    TownUpgradeMaterial, // 町の施設アップグレード素材
+    SkillCard   // スキルカード
 }
 
 [CreateAssetMenu(

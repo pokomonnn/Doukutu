@@ -109,7 +109,13 @@ public class TorchController : MonoBehaviour
 
             if (decreasePerSecond > 0f)
             {
-                DrainTorch(decreasePerSecond * Time.deltaTime);
+                DrainTorch(
+                    decreasePerSecond *
+                    Time.deltaTime *
+                    SkillCardEffectUtility.GetMultiplier(
+                        SkillEffectType.TorchDrain
+                    )
+                );
             }
 
             return;

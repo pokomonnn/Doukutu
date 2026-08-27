@@ -169,10 +169,16 @@ public class PlayerSurvivalController : MonoBehaviour
         }
 
         float foodDecrease =
-            foodDecreasePerMinute / 60f * deltaTime;
+            foodDecreasePerMinute / 60f * deltaTime *
+            SkillCardEffectUtility.GetMultiplier(
+                SkillEffectType.FoodDrain
+            );
 
         float waterDecrease =
-            waterDecreasePerMinute / 60f * deltaTime;
+            waterDecreasePerMinute / 60f * deltaTime *
+            SkillCardEffectUtility.GetMultiplier(
+                SkillEffectType.WaterDrain
+            );
 
         SetFoodInternal(currentFood - foodDecrease, true);
         SetWaterInternal(currentWater - waterDecrease, true);

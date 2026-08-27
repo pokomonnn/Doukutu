@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37e1cd549aca8224bb45e804f25c00d4, type: 3}
   m_Name: "9mm\u901A\u5E38\u5F3E"
   m_EditorClassIdentifier: Assembly-CSharp::AmmoItemData
-  itemId: item_id
+  itemId: 9mmArmo
   displayName: "\u65B0\u3057\u3044\u30A2\u30A4\u30C6\u30E0"
   description: 
   icon: {fileID: -4875340869984468519, guid: f8e3f4c63e7aba5448a7fdef856c4140, type: 3}
@@ -44,6 +44,10 @@ MonoBehaviour:
   weight: 0.012
   canDiscard: 1
   ammoTypeName: 9mm
+  ammoCaliberId: 9mm
+  ammoVariant: 0
+  damageMultiplier: 1
+  armorPenetration: 0
   references:
     version: 2
     RefIds: []
