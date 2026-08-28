@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1086a85c47509214a9c55f32cfb8431e, type: 3}
-  m_Name: ShotGun
+  m_Name: LMG
   m_EditorClassIdentifier: Assembly-CSharp::WeaponItemData
-  itemId: ShotGun_001
+  itemId: LMG_001
   displayName: "\u65B0\u3057\u3044\u30A2\u30A4\u30C6\u30E0"
-  description: This is ShotGun
-  icon: {fileID: -8618904994476612244, guid: ffbd9dcddee87944ba13160a85b95768, type: 3}
+  description: This is LMG
+  icon: {fileID: 8542165265961682675, guid: fd379fd226285554e902e4576547a707, type: 3}
   localizedDisplayName:
     m_TableReference:
       m_TableCollectionName: 
@@ -34,26 +34,21 @@ MonoBehaviour:
     m_FallbackState: 0
     m_WaitForCompletion: 0
     m_LocalVariables: []
-  width: 4
+  width: 5
   height: 2
   canRotate: 1
   maxStack: 1
   purchasePrice: 2000
   sellPrice: 750
   canSellToShop: 1
-  weight: 5
+  weight: 8
   canDiscard: 1
-  weaponPrefab: {fileID: 4584479946820505900, guid: c94b343acab59494a906305c62f081d8, type: 3}
-  fireMode: 0
-  fireInterval: 0.7
-  cockingType: 1
-  cockingStartDelay: 0.15
-  cockingDuration: 0.65
-  cockingSound: {fileID: 8300000, guid: 1db8d9b1a96945d4faf91cf6bf1e30f0, type: 3}
-  cockingAnimationTrigger: Cocking
-  pelletCount: 8
-  pelletSpreadAngle: 16
-  compatibleAmmo: {fileID: 11400000, guid: 3884bf05f57149748a1cc1ca2a6a945d, type: 2}
+  weaponPrefab: {fileID: 4584479946820505900, guid: efe755327747dab4fa4b2d89142d6af4, type: 3}
+  fireMode: 1
+  fireInterval: 0.1
+  pelletCount: 1
+  pelletSpreadAngle: 0
+  compatibleAmmo: {fileID: 11400000, guid: 93515cc4ad9d7b94fb7ab404c2bbe1eb, type: 2}
   compatibleAmmoCaliberId: 
   maxDurability: 100
   durabilityLossPerShot: 0.1

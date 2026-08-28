@@ -4897,13 +4897,13 @@ MonoBehaviour:
   enableAmmoSwitchWithBKey: 1
   bulletSpeed: 50
   bulletLifeTime: 3
-  magazineSize: 2
+  magazineSize: 4
   currentAmmo: 0
   fillMagazineOnStart: 1
-  reloadDuration: 1.5
+  reloadDuration: 2.9
   gunAudioSource: {fileID: 0}
-  shotSound: {fileID: 8300000, guid: e2cf685d55897b44eacf868b1d5a21e5, type: 3}
-  reloadSound: {fileID: 8300000, guid: 2094f11a83477244985ba358fdfad827, type: 3}
+  shotSound: {fileID: 8300000, guid: d2b1ae3e09b7ce240823aa66f7535be2, type: 3}
+  reloadSound: {fileID: 8300000, guid: 4fa4112b566a1a04cac1ed1e2c4bf395, type: 3}
   emptySound: {fileID: 8300000, guid: 2dd4c42996dc3ca4d8b2d9cac307c497, type: 3}
   shotVolume: 0.853
   reloadVolume: 1
@@ -5124,11 +5124,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponAim
   targetCamera: {fileID: 0}
   gunSpriteRenderer: {fileID: 7593345582623411913}
+  playerSpriteRenderer: {fileID: 0}
   proneController: {fileID: 0}
   playerMove: {fileID: 0}
   inventoryPanel: {fileID: 0}
   isGunEquipped: 1
   rotationOffset: 0
+  aimSideSwitchDeadZone: 0.4
+  changeSortingOrderByAimDirection: 1
+  rightAimSortingOrderOffset: 1
+  leftAimSortingOrderOffset: -1
+  syncSortingLayerWithPlayer: 1
 --- !u!82 &3783060676390865692
 AudioSource:
   m_ObjectHideFlags: 0

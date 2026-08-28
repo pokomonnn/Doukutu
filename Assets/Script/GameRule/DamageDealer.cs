@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider2D))]
@@ -22,6 +22,10 @@ public class DamageDealer : MonoBehaviour
     private AmmoItemData runtimeAmmoData;
     private int runtimeDamage = -1;
     private float runtimeSkillDamageMultiplier = 1f;
+
+    // 0 = 通常攻撃。
+    // 0以外 = 同じ1回のショットに属する弾/Pelletを識別するID。
+    private int runtimeDamageGroupId;
 
     public int BaseDamage => Mathf.Max(1, damage);
     public int CurrentDamage => runtimeDamage >= 0
@@ -47,6 +51,7 @@ public class DamageDealer : MonoBehaviour
     private void OnEnable()
     {
         damagedTargets.Clear();
+        runtimeDamageGroupId = 0;
     }
 
     /// <summary>
@@ -66,6 +71,15 @@ public class DamageDealer : MonoBehaviour
     {
         runtimeSkillDamageMultiplier = Mathf.Max(0f, multiplier);
         RecalculateRuntimeDamage();
+    }
+
+    /// <summary>
+    /// 同じ1回のショットから生成されたBullet/Pelletへ共通IDを設定します。
+    /// 0の場合は従来どおりの通常ダメージです。
+    /// </summary>
+    public void ConfigureDamageGroup(int damageGroupId)
+    {
+        runtimeDamageGroupId = Mathf.Max(0, damageGroupId);
     }
 
     private void RecalculateRuntimeDamage()
@@ -124,7 +138,11 @@ public class DamageDealer : MonoBehaviour
             hitReaction?.NotifyHitSource(transform.position);
         }
 
-        targetHealth.TakeDamage(CurrentDamage);
+        targetHealth.TakeDamage(
+            CurrentDamage,
+            runtimeDamageGroupId
+        );
+
         damagedTargets.Add(targetHealth);
 
         if (destroyOnHit)

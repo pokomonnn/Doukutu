@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,8 +9,16 @@ public class PlayerEquipmentVisualController : MonoBehaviour
     [SerializeField] private EquipmentController equipmentController;
 
     [Header("銃の生成位置")]
-    [Tooltip("Playerの子に作った WeaponHolder を設定")]
+    [Tooltip(
+        "右向き用WeaponHolder。既存のWeapon Holderはここをそのまま使用できます。"
+    )]
     [SerializeField] private Transform weaponHolder;
+
+    [Tooltip(
+        "左向き用WeaponHolder。Playerの左向きで自然に銃を持てる位置へ配置してください。" +
+        "未設定の場合は右用WeaponHolderをそのまま使用します。"
+    )]
+    [SerializeField] private Transform leftWeaponHolder;
 
     [Tooltip("Tabで表示・非表示にしているInventory Panel")]
     [SerializeField] private GameObject inventoryPanel;
@@ -34,6 +42,8 @@ public class PlayerEquipmentVisualController : MonoBehaviour
     private GunShooter currentGunShooter;
     private WeaponAim currentWeaponAim;
     private WeaponItemData currentWeaponData;
+
+    private bool currentWeaponIsAimingLeft;
 
     private bool isSubscribed;
     private bool weaponControlsEnabled = true;
@@ -179,7 +189,7 @@ public class PlayerEquipmentVisualController : MonoBehaviour
         {
             Debug.LogWarning(
                 "PlayerEquipmentVisualController: " +
-                "Weapon Holder が設定されていません。",
+                "右向き用 Weapon Holder が設定されていません。",
                 this
             );
             return;
@@ -264,12 +274,104 @@ public class PlayerEquipmentVisualController : MonoBehaviour
         else
         {
             currentWeaponAim.SetInventoryPanel(inventoryPanel);
+
+            currentWeaponAim.AimDirectionChanged +=
+                HandleWeaponAimDirectionChanged;
+
+            // 生成直後は右Holderを基準に開始。
+            // 最初のUpdateでマウスが左ならイベントが発火して左Holderへ移動する。
+            currentWeaponIsAimingLeft = false;
+            ApplyWeaponHolder(false);
         }
 
         ApplyWeaponControlState();
         OnActiveGunChanged?.Invoke(currentGunShooter);
 
         Log($"{weaponData.DisplayName} を装備しました。");
+    }
+
+    /// <summary>
+    /// WeaponAimから左右変更の通知を受けます。
+    /// 毎フレームではなく、右→左 / 左→右へ変わった瞬間だけ呼ばれます。
+    /// </summary>
+    private void HandleWeaponAimDirectionChanged(
+        bool isAimingLeft)
+    {
+        if (currentWeaponIsAimingLeft == isAimingLeft &&
+            activeWeaponObject != null)
+        {
+            Transform expectedHolder =
+                GetWeaponHolder(isAimingLeft);
+
+            if (expectedHolder != null &&
+                activeWeaponObject.transform.parent ==
+                    expectedHolder)
+            {
+                return;
+            }
+        }
+
+        currentWeaponIsAimingLeft = isAimingLeft;
+        ApplyWeaponHolder(isAimingLeft);
+    }
+
+    /// <summary>
+    /// 現在のWeapon実体を、指定向き用のHolderへ移動します。
+    /// Weaponを作り直さないため、残弾・耐久度・ジャム等の状態は維持されます。
+    /// </summary>
+    private void ApplyWeaponHolder(bool isAimingLeft)
+    {
+        if (activeWeaponObject == null)
+        {
+            return;
+        }
+
+        Transform targetHolder =
+            GetWeaponHolder(isAimingLeft);
+
+        if (targetHolder == null)
+        {
+            return;
+        }
+
+        Transform weaponTransform =
+            activeWeaponObject.transform;
+
+        if (weaponTransform.parent == targetHolder)
+        {
+            return;
+        }
+
+        // worldPositionStays=false にして、
+        // Holder側で作った持ち位置をそのまま使用する。
+        weaponTransform.SetParent(
+            targetHolder,
+            false
+        );
+
+        weaponTransform.localPosition = Vector3.zero;
+        weaponTransform.localRotation = Quaternion.identity;
+
+        Log(
+            isAimingLeft
+                ? "銃を左WeaponHolderへ切り替えました。"
+                : "銃を右WeaponHolderへ切り替えました。"
+        );
+    }
+
+    private Transform GetWeaponHolder(bool isAimingLeft)
+    {
+        if (isAimingLeft)
+        {
+            // 左Holder未設定なら既存の右Holderへフォールバック。
+            return leftWeaponHolder != null
+                ? leftWeaponHolder
+                : weaponHolder;
+        }
+
+        return weaponHolder != null
+            ? weaponHolder
+            : leftWeaponHolder;
     }
 
     private void RestoreWeaponAmmo()
@@ -522,6 +624,12 @@ public class PlayerEquipmentVisualController : MonoBehaviour
             activeWeaponObject != null ||
             currentWeaponItem != null;
 
+        if (currentWeaponAim != null)
+        {
+            currentWeaponAim.AimDirectionChanged -=
+                HandleWeaponAimDirectionChanged;
+        }
+
         currentGunShooter?.SetGunEquipped(false);
         currentWeaponAim?.SetGunEquipped(false);
 
@@ -544,6 +652,7 @@ public class PlayerEquipmentVisualController : MonoBehaviour
         currentGunShooter = null;
         currentWeaponAim = null;
         currentWeaponData = null;
+        currentWeaponIsAimingLeft = false;
 
         if (hadWeapon)
         {

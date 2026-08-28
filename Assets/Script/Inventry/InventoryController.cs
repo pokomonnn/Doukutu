@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -305,6 +305,100 @@ public class InventoryController : MonoBehaviour
     public InventoryItem GetItemAt(int x, int y)
     {
         return inventoryGrid.GetItemAt(x, y);
+    }
+
+    /// <summary>
+    /// 既存のInventoryItemを入れられる空き位置を自動検索します。
+    /// ItemBoxなど別Inventoryから「同じInventoryItem本体」を移す時に使用します。
+    /// 現在の向きを優先し、入らない場合は回転可能なら反対向きも試します。
+    /// 実際の配置は行いません。
+    /// </summary>
+    public bool TryFindAutoPlacement(
+        InventoryItem item,
+        out int targetX,
+        out int targetY,
+        out bool targetRotated)
+    {
+        targetX = -1;
+        targetY = -1;
+        targetRotated = false;
+
+        if (!isInitialized)
+        {
+            InitializeInventory();
+        }
+
+        if (item == null ||
+            item.ItemData == null ||
+            inventoryGrid == null)
+        {
+            return false;
+        }
+
+        bool firstRotation = item.IsRotated;
+
+        if (TryFindAutoPlacementForRotation(
+                item,
+                firstRotation,
+                out targetX,
+                out targetY))
+        {
+            targetRotated = firstRotation;
+            return true;
+        }
+
+        if (item.CanRotate)
+        {
+            bool secondRotation = !firstRotation;
+
+            if (TryFindAutoPlacementForRotation(
+                    item,
+                    secondRotation,
+                    out targetX,
+                    out targetY))
+            {
+                targetRotated = secondRotation;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryFindAutoPlacementForRotation(
+        InventoryItem item,
+        bool isRotated,
+        out int targetX,
+        out int targetY)
+    {
+        targetX = -1;
+        targetY = -1;
+
+        if (item == null || inventoryGrid == null)
+        {
+            return false;
+        }
+
+        for (int y = 0; y < inventoryGrid.Height; y++)
+        {
+            for (int x = 0; x < inventoryGrid.Width; x++)
+            {
+                if (!inventoryGrid.CanPlaceItem(
+                        item,
+                        x,
+                        y,
+                        isRotated))
+                {
+                    continue;
+                }
+
+                targetX = x;
+                targetY = y;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

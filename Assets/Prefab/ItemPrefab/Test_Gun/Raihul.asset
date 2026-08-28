@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1086a85c47509214a9c55f32cfb8431e, type: 3}
-  m_Name: ShotGun
+  m_Name: Raihul
   m_EditorClassIdentifier: Assembly-CSharp::WeaponItemData
-  itemId: ShotGun_001
+  itemId: Raihul_001
   displayName: "\u65B0\u3057\u3044\u30A2\u30A4\u30C6\u30E0"
   description: This is ShotGun
-  icon: {fileID: -8618904994476612244, guid: ffbd9dcddee87944ba13160a85b95768, type: 3}
+  icon: {fileID: -7273990888376118452, guid: 3f4c355a9f855b2458ad871e33738a4d, type: 3}
   localizedDisplayName:
     m_TableReference:
       m_TableCollectionName: 
@@ -34,7 +34,7 @@ MonoBehaviour:
     m_FallbackState: 0
     m_WaitForCompletion: 0
     m_LocalVariables: []
-  width: 4
+  width: 5
   height: 2
   canRotate: 1
   maxStack: 1
@@ -43,17 +43,17 @@ MonoBehaviour:
   canSellToShop: 1
   weight: 5
   canDiscard: 1
-  weaponPrefab: {fileID: 4584479946820505900, guid: c94b343acab59494a906305c62f081d8, type: 3}
+  weaponPrefab: {fileID: 4584479946820505900, guid: 63f877d3f275d904fa1de0140df6bd31, type: 3}
   fireMode: 0
-  fireInterval: 0.7
-  cockingType: 1
+  fireInterval: 1.5
+  cockingType: 2
   cockingStartDelay: 0.15
   cockingDuration: 0.65
-  cockingSound: {fileID: 8300000, guid: 1db8d9b1a96945d4faf91cf6bf1e30f0, type: 3}
+  cockingSound: {fileID: 8300000, guid: 503c441c82a8cc843b9e36d6bd96bd8a, type: 3}
   cockingAnimationTrigger: Cocking
-  pelletCount: 8
-  pelletSpreadAngle: 16
-  compatibleAmmo: {fileID: 11400000, guid: 3884bf05f57149748a1cc1ca2a6a945d, type: 2}
+  pelletCount: 1
+  pelletSpreadAngle: 0
+  compatibleAmmo: {fileID: 11400000, guid: 97f438417413bb74e962bb12158e0d0f, type: 2}
   compatibleAmmoCaliberId: 
   maxDurability: 100
   durabilityLossPerShot: 0.1

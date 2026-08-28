@@ -10,6 +10,18 @@ public enum WeaponFireMode
     FullAuto
 }
 
+public enum WeaponCockingType
+{
+    [Tooltip("射撃後のコッキングを行いません。ハンドガン・自動小銃向けです。")]
+    None,
+
+    [Tooltip("ポンプアクション。ショットガン向けです。")]
+    PumpAction,
+
+    [Tooltip("ボルトアクション。ライフル向けです。")]
+    BoltAction
+}
+
 [CreateAssetMenu(
     fileName = "NewWeaponItemData",
     menuName = "Inventory/Items/Weapon Item Data"
@@ -33,6 +45,39 @@ public class WeaponItemData : ItemData
         "例：0.2なら最大5発/秒、0.1なら最大10発/秒です。"
     )]
     [SerializeField, Min(0f)] private float fireInterval = 0.15f;
+
+    [Header("コッキング設定")]
+    [Tooltip(
+        "射撃後に行うコッキング方式です。" +
+        "None：なし / Pump Action：ショットガン / Bolt Action：ボルトアクションライフル。"
+    )]
+    [SerializeField] private WeaponCockingType cockingType =
+        WeaponCockingType.None;
+
+    [Tooltip(
+        "発砲してからコッキング動作を開始するまでの待ち時間（秒）。" +
+        "例：0.15なら、発砲後0.15秒してからガシャッと動作します。"
+    )]
+    [SerializeField, Min(0f)] private float cockingStartDelay = 0.15f;
+
+    [Tooltip(
+        "コッキング動作にかかる時間（秒）。" +
+        "この時間中は次の射撃ができません。"
+    )]
+    [SerializeField, Min(0f)] private float cockingDuration = 0.65f;
+
+    [Tooltip(
+        "コッキング開始時に鳴らす音。" +
+        "Pump/BoltごとにWeaponItemDataへ別のAudioClipを設定できます。"
+    )]
+    [SerializeField] private AudioClip cockingSound;
+
+    [Tooltip(
+        "コッキング開始時にAnimatorへ送るTrigger名。" +
+        "空欄ならAnimation Triggerは送信しません。" +
+        "例：Pump / Bolt"
+    )]
+    [SerializeField] private string cockingAnimationTrigger = "Cocking";
 
     [Header("散弾設定")]
     [Tooltip(
@@ -118,6 +163,22 @@ public class WeaponItemData : ItemData
     public GameObject WeaponPrefab => weaponPrefab;
     public WeaponFireMode FireMode => fireMode;
     public float FireInterval => Mathf.Max(0f, fireInterval);
+
+    public WeaponCockingType CockingType => cockingType;
+    public bool RequiresCocking =>
+        cockingType != WeaponCockingType.None;
+
+    public float CockingStartDelay =>
+        Mathf.Max(0f, cockingStartDelay);
+
+    public float CockingDuration =>
+        Mathf.Max(0f, cockingDuration);
+
+    public AudioClip CockingSound => cockingSound;
+
+    public string CockingAnimationTrigger =>
+        cockingAnimationTrigger?.Trim() ?? string.Empty;
+
     public int PelletCount => Mathf.Max(1, pelletCount);
     public float PelletSpreadAngle => Mathf.Max(0f, pelletSpreadAngle);
 
@@ -281,6 +342,16 @@ public class WeaponItemData : ItemData
             compatibleAmmoCaliberId?.Trim() ?? string.Empty;
 
         fireInterval = Mathf.Max(0f, fireInterval);
+
+        cockingStartDelay =
+            Mathf.Max(0f, cockingStartDelay);
+
+        cockingDuration =
+            Mathf.Max(0f, cockingDuration);
+
+        cockingAnimationTrigger =
+            cockingAnimationTrigger?.Trim() ?? string.Empty;
+
         pelletCount = Mathf.Max(1, pelletCount);
         pelletSpreadAngle = Mathf.Max(0f, pelletSpreadAngle);
 

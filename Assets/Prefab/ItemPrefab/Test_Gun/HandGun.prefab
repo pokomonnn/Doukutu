@@ -4887,10 +4887,15 @@ MonoBehaviour:
   muzzlePoint: {fileID: 8653183065145409809}
   bulletPrefab: {fileID: 508504824892919759, guid: f2e8d3a50dd391f4282b4ec4e89a3260, type: 3}
   inventoryPanel: {fileID: 0}
+  playerWeightController: {fileID: 0}
+  playerSanityController: {fileID: 0}
+  accuracyLossStartSanityPercent: 0.7
+  maxSpreadAngleAtZeroSanity: 12
+  useSanityAccuracyPenalty: 1
   weaponItemData: {fileID: 0}
   inventoryController: {fileID: 0}
+  enableAmmoSwitchWithBKey: 1
   bulletSpeed: 20
-  fireInterval: 1
   bulletLifeTime: 3
   magazineSize: 10
   currentAmmo: 10
@@ -4904,6 +4909,15 @@ MonoBehaviour:
   reloadVolume: 1
   emptyVolume: 1
   emptySoundInterval: 0.4
+  currentDurability: 100
+  maxDurability: 100
+  durabilityLossPerShot: 0.1
+  brokenSound: {fileID: 0}
+  jamSound: {fileID: 0}
+  jamClearSound: {fileID: 0}
+  jamVolume: 1
+  jamClearVolume: 1
+  brokenVolume: 1
   isGunEquipped: 1
   casingParticleSystem: {fileID: 0}
 --- !u!212 &7593345582623411913
@@ -5110,9 +5124,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponAim
   targetCamera: {fileID: 0}
   gunSpriteRenderer: {fileID: 7593345582623411913}
+  playerSpriteRenderer: {fileID: 0}
+  proneController: {fileID: 0}
+  playerMove: {fileID: 0}
   inventoryPanel: {fileID: 0}
   isGunEquipped: 1
   rotationOffset: 0
+  aimSideSwitchDeadZone: 0.4
+  changeSortingOrderByAimDirection: 1
+  rightAimSortingOrderOffset: 1
+  leftAimSortingOrderOffset: -1
+  syncSortingLayerWithPlayer: 1
 --- !u!82 &3783060676390865692
 AudioSource:
   m_ObjectHideFlags: 0

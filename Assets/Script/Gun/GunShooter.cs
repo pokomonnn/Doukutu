@@ -7,6 +7,10 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(AudioSource))]
 public class GunShooter : MonoBehaviour
 {
+    // 同じショットガン1発から出たPelletを識別するための共通ID。
+    // 0は通常弾として予約します。
+    private static int nextShotDamageGroupId = 1;
+
     [Header("参照")]
     [SerializeField] private Transform muzzlePoint;
     [SerializeField] private GameObject bulletPrefab;
@@ -115,7 +119,20 @@ public class GunShooter : MonoBehaviour
     [SerializeField] private bool isGunEquipped = true;
 
     [Header("薬きょう")]
+    [Tooltip(
+        "通常銃は発砲時、コッキング武器はコッキング開始時に1個排出します。"
+    )]
     [SerializeField] private ParticleSystem casingParticleSystem;
+
+    [Header("コッキング")]
+    [Tooltip(
+        "Pump/Bolt Animationを再生するAnimator。" +
+        "未設定ならこの武器Prefabの子から自動取得します。"
+    )]
+    [SerializeField] private Animator weaponAnimator;
+
+    [SerializeField, Range(0f, 1f)]
+    private float cockingVolume = 1f;
 
     private float nextFireTime;
     private float nextEmptySoundTime;
@@ -124,6 +141,9 @@ public class GunShooter : MonoBehaviour
     private bool isJammed;
     private bool isClearingJam;
     private int jamClearToken;
+
+    private bool isCocking;
+    private int cockingToken;
 
     private AmmoItemData loadedAmmoData;
     private AmmoItemData selectedAmmoData;
@@ -145,6 +165,11 @@ public class GunShooter : MonoBehaviour
     public bool IsBroken => CurrentDurability <= 0f;
     public bool IsJammed => isJammed;
     public bool IsClearingJam => isClearingJam;
+    public bool IsCocking => isCocking;
+
+    public bool RequiresCocking =>
+        weaponItemData != null &&
+        weaponItemData.RequiresCocking;
 
     /// <summary>
     /// 現在装備している武器の射撃方式です。
@@ -242,6 +267,12 @@ public class GunShooter : MonoBehaviour
             gunAudioSource = GetComponent<AudioSource>();
         }
 
+        if (weaponAnimator == null)
+        {
+            weaponAnimator =
+                GetComponentInChildren<Animator>(true);
+        }
+
         currentAmmo = fillMagazineOnStart
             ? magazineSize
             : Mathf.Clamp(currentAmmo, 0, magazineSize);
@@ -261,6 +292,7 @@ public class GunShooter : MonoBehaviour
     {
         CancelReload();
         CancelJamClear();
+        CancelCocking();
     }
 
     private void Update()
@@ -296,7 +328,10 @@ public class GunShooter : MonoBehaviour
             }
         }
 
-        if (isReloading || isClearingJam || Mouse.current == null)
+        if (isReloading ||
+            isClearingJam ||
+            isCocking ||
+            Mouse.current == null)
         {
             return;
         }
@@ -335,6 +370,7 @@ public class GunShooter : MonoBehaviour
         if (!isGunEquipped ||
             isReloading ||
             isClearingJam ||
+            isCocking ||
             IsInventoryOpen ||
             IsUsingConsumable)
         {
@@ -387,9 +423,11 @@ public class GunShooter : MonoBehaviour
             gunAudioSource.PlayOneShot(shotSound, shotVolume);
         }
 
-        if (casingParticleSystem != null)
+        // コッキング不要の通常銃は従来どおり発砲時に薬きょうを排出。
+        // Pump/Bolt武器はコッキング開始時に排出する。
+        if (!RequiresCocking)
         {
-            casingParticleSystem.Emit(1);
+            EmitCasing();
         }
 
         // SAN値・低耐久による照準ブレは1回の射撃につき1回決める。
@@ -403,6 +441,12 @@ public class GunShooter : MonoBehaviour
         float pelletSpreadAngle = weaponItemData != null
             ? weaponItemData.PelletSpreadAngle
             : 0f;
+
+        // Pellet Count > 1 の武器だけ、同じ1回の射撃に共通IDを付ける。
+        // 通常銃は0のままなので既存の無敵時間仕様に影響しない。
+        int shotDamageGroupId = pelletCount > 1
+            ? CreateShotDamageGroupId()
+            : 0;
 
         float skillDamageMultiplier =
             SkillCardEffectUtility.GetMultiplier(
@@ -420,12 +464,18 @@ public class GunShooter : MonoBehaviour
 
             SpawnBullet(
                 pelletDirection,
-                skillDamageMultiplier
+                skillDamageMultiplier,
+                shotDamageGroupId
             );
         }
 
         // 散弾数に関係なく、1回の射撃につき耐久は1回だけ減らす。
         ApplyDurabilityLossForShot();
+
+        if (RequiresCocking)
+        {
+            StartCocking();
+        }
     }
 
     /// <summary>
@@ -472,12 +522,33 @@ public class GunShooter : MonoBehaviour
     }
 
     /// <summary>
+    /// 1回のショットガン射撃ごとに一意のDamage Group IDを発行します。
+    /// 同じ射撃から出る全Pelletへ同じIDを渡します。
+    /// </summary>
+    private static int CreateShotDamageGroupId()
+    {
+        int id = nextShotDamageGroupId;
+
+        if (nextShotDamageGroupId >= int.MaxValue)
+        {
+            nextShotDamageGroupId = 1;
+        }
+        else
+        {
+            nextShotDamageGroupId++;
+        }
+
+        return Mathf.Max(1, id);
+    }
+
+    /// <summary>
     /// 1個のBulletを生成し、Ammo・Skill Damage・速度を設定します。
     /// ショットガンではこの処理をPellet Count回呼びます。
     /// </summary>
     private void SpawnBullet(
         Vector2 shotDirection,
-        float skillDamageMultiplier)
+        float skillDamageMultiplier,
+        int damageGroupId)
     {
         float shotAngle = Mathf.Atan2(
             shotDirection.y,
@@ -503,6 +574,10 @@ public class GunShooter : MonoBehaviour
             damageDealer.ConfigureAmmo(loadedAmmoData);
             damageDealer.ConfigureSkillDamageMultiplier(
                 skillDamageMultiplier
+            );
+
+            damageDealer.ConfigureDamageGroup(
+                damageGroupId
             );
         }
 
@@ -588,6 +663,118 @@ public class GunShooter : MonoBehaviour
         ).normalized;
     }
 
+    /// <summary>
+    /// 射撃後の自動コッキングを開始します。
+    /// Pump/Bolt武器だけ使用されます。
+    /// </summary>
+    private void StartCocking()
+    {
+        if (!RequiresCocking ||
+            isCocking ||
+            !isGunEquipped)
+        {
+            return;
+        }
+
+        int token = ++cockingToken;
+        StartCoroutine(CockingRoutine(token));
+    }
+
+    private IEnumerator CockingRoutine(int token)
+    {
+        isCocking = true;
+
+        float startDelay =
+            weaponItemData != null
+                ? weaponItemData.CockingStartDelay
+                : 0f;
+
+        if (startDelay > 0f)
+        {
+            yield return new WaitForSeconds(startDelay);
+        }
+
+        if (token != cockingToken ||
+            !isGunEquipped)
+        {
+            isCocking = false;
+            yield break;
+        }
+
+        // Pump/Bolt開始の瞬間に薬きょうを排出。
+        EmitCasing();
+
+        PlayCockingSound();
+        TriggerCockingAnimation();
+
+        float duration =
+            weaponItemData != null
+                ? weaponItemData.CockingDuration
+                : 0f;
+
+        if (duration > 0f)
+        {
+            yield return new WaitForSeconds(duration);
+        }
+
+        if (token != cockingToken ||
+            !isGunEquipped)
+        {
+            isCocking = false;
+            yield break;
+        }
+
+        isCocking = false;
+    }
+
+    private void TriggerCockingAnimation()
+    {
+        if (weaponAnimator == null)
+        {
+            weaponAnimator =
+                GetComponentInChildren<Animator>(true);
+        }
+
+        if (weaponAnimator == null ||
+            weaponItemData == null)
+        {
+            return;
+        }
+
+        string triggerName =
+            weaponItemData.CockingAnimationTrigger;
+
+        if (string.IsNullOrWhiteSpace(triggerName))
+        {
+            return;
+        }
+
+        weaponAnimator.SetTrigger(triggerName);
+    }
+
+    private void PlayCockingSound()
+    {
+        if (gunAudioSource == null ||
+            weaponItemData == null ||
+            weaponItemData.CockingSound == null)
+        {
+            return;
+        }
+
+        gunAudioSource.PlayOneShot(
+            weaponItemData.CockingSound,
+            Mathf.Clamp01(cockingVolume)
+        );
+    }
+
+    private void EmitCasing()
+    {
+        if (casingParticleSystem != null)
+        {
+            casingParticleSystem.Emit(1);
+        }
+    }
+
     public void StartReload()
     {
         if (!isGunEquipped ||
@@ -595,6 +782,7 @@ public class GunShooter : MonoBehaviour
             IsUsingConsumable ||
             isReloading ||
             isClearingJam ||
+            isCocking ||
             isJammed ||
             IsBroken ||
             currentAmmo >= magazineSize)
@@ -814,6 +1002,7 @@ public class GunShooter : MonoBehaviour
             !isJammed ||
             isClearingJam ||
             isReloading ||
+            isCocking ||
             IsInventoryOpen ||
             IsUsingConsumable)
         {
@@ -904,6 +1093,7 @@ public class GunShooter : MonoBehaviour
         {
             CancelReload();
             CancelJamClear();
+            CancelCocking();
         }
     }
 
@@ -1194,6 +1384,12 @@ public class GunShooter : MonoBehaviour
         return playerSanityController != null;
     }
 
+    private void CancelCocking()
+    {
+        cockingToken++;
+        isCocking = false;
+    }
+
     private void CancelReload()
     {
         reloadToken++;
@@ -1285,6 +1481,7 @@ public class GunShooter : MonoBehaviour
             maxDurability
         );
         durabilityLossPerShot = Mathf.Max(0f, durabilityLossPerShot);
+        cockingVolume = Mathf.Clamp01(cockingVolume);
         jamVolume = Mathf.Clamp01(jamVolume);
         jamClearVolume = Mathf.Clamp01(jamClearVolume);
         brokenVolume = Mathf.Clamp01(brokenVolume);

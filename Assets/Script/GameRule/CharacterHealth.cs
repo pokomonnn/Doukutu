@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using UnityEngine;
 
@@ -9,6 +9,25 @@ public class CharacterHealth : MonoBehaviour
 
     [Header("Invincibility Settings")]
     [SerializeField, Min(0f)] private float invincibilityDuration = 0.5f;
+
+    [Header("Damage Debug Log")]
+    [Tooltip(
+        "オンにすると、実際に減ったHP量をConsoleへ表示します。" +
+        "Enemyの被ダメージ確認用です。"
+    )]
+    [SerializeField] private bool enableDamageDebugLog = true;
+
+    [Tooltip(
+        "オンの場合、Playerの被ダメージもログ表示します。" +
+        "Enemyだけ確認したい場合はOFFのままでOKです。"
+    )]
+    [SerializeField] private bool includePlayerDamageInDebugLog = false;
+
+    [Tooltip(
+        "オンの場合、無敵時間・死亡済み・0以下Damageなどで" +
+        "ダメージが通らなかった時もログ表示します。"
+    )]
+    [SerializeField] private bool logBlockedDamage = true;
 
     [Header("Damage Sound")]
     [Tooltip("未設定なら、このオブジェクトのAudioSourceを自動取得します")]
@@ -28,6 +47,10 @@ public class CharacterHealth : MonoBehaviour
     public event Action Died;
 
     private Coroutine invincibilityCoroutine;
+
+    // 現在の無敵時間を発生させた「1回の射撃」のDamage Group ID。
+    // 0は通常ダメージ（グループ指定なし）。
+    private int activeInvincibilityDamageGroupId;
 
     private void Awake()
     {
@@ -53,15 +76,99 @@ public class CharacterHealth : MonoBehaviour
         NotifyHealthChanged();
     }
 
+    /// <summary>
+    /// 通常ダメージ用。既存コード互換のため残します。
+    /// Damage Groupを持たない攻撃は0として扱います。
+    /// </summary>
     public void TakeDamage(int damage)
     {
-        // 無敵中はダメージを受けず、音も鳴らない
-        if (IsDead || IsInvincible || damage <= 0)
+        TakeDamage(damage, 0);
+    }
+
+    /// <summary>
+    /// Damage Group ID付きダメージ。
+    ///
+    /// ショットガンでは「同じ1回の射撃」から出た全Pelletへ
+    /// 同じ0以外のIDを渡します。
+    ///
+    /// Enemyが1発目のPelletで無敵時間に入った後でも、
+    /// 同じDamage Group IDのPelletだけはダメージを受けられます。
+    ///
+    /// PlayerはDamage Group IDがあっても無敵時間を無視しません。
+    /// </summary>
+    public void TakeDamage(
+        int damage,
+        int damageGroupId)
+    {
+        bool isPlayer = ShouldUsePlayerSkillModifiers();
+        bool shouldLog =
+            enableDamageDebugLog &&
+            (includePlayerDamageInDebugLog || !isPlayer);
+
+        bool canPassCurrentInvincibility =
+            !isPlayer &&
+            IsInvincible &&
+            damageGroupId != 0 &&
+            damageGroupId == activeInvincibilityDamageGroupId;
+
+        if (IsDead)
         {
+            if (shouldLog && logBlockedDamage)
+            {
+                Debug.Log(
+                    $"[DamageLog][無効:死亡済み] " +
+                    $"Target={name} / " +
+                    $"RequestedDamage={damage} / " +
+                    $"ActualDamage=0 / " +
+                    $"DamageGroup={damageGroupId} / " +
+                    $"HP={CurrentHealth}/{MaxHealth}",
+                    this
+                );
+            }
+
             return;
         }
 
-        float damageMultiplier = ShouldUsePlayerSkillModifiers()
+        // Enemyのみ、現在の無敵時間を作ったものと同じDamage Groupなら通す。
+        // つまり同じショットのPelletだけが通り、別攻撃は今まで通り無効。
+        if (IsInvincible && !canPassCurrentInvincibility)
+        {
+            if (shouldLog && logBlockedDamage)
+            {
+                Debug.Log(
+                    $"[DamageLog][無効:無敵時間] " +
+                    $"Target={name} / " +
+                    $"RequestedDamage={damage} / " +
+                    $"ActualDamage=0 / " +
+                    $"DamageGroup={damageGroupId} / " +
+                    $"ActiveGroup={activeInvincibilityDamageGroupId} / " +
+                    $"HP={CurrentHealth}/{MaxHealth}",
+                    this
+                );
+            }
+
+            return;
+        }
+
+        if (damage <= 0)
+        {
+            if (shouldLog && logBlockedDamage)
+            {
+                Debug.Log(
+                    $"[DamageLog][無効:Damage<=0] " +
+                    $"Target={name} / " +
+                    $"RequestedDamage={damage} / " +
+                    $"ActualDamage=0 / " +
+                    $"DamageGroup={damageGroupId} / " +
+                    $"HP={CurrentHealth}/{MaxHealth}",
+                    this
+                );
+            }
+
+            return;
+        }
+
+        float damageMultiplier = isPlayer
             ? SkillCardEffectUtility.GetMultiplier(
                 SkillEffectType.DamageTaken
             )
@@ -74,10 +181,57 @@ public class CharacterHealth : MonoBehaviour
 
         if (finalDamage <= 0)
         {
+            if (shouldLog && logBlockedDamage)
+            {
+                Debug.Log(
+                    $"[DamageLog][無効:最終Damage=0] " +
+                    $"Target={name} / " +
+                    $"RequestedDamage={damage} / " +
+                    $"Multiplier={damageMultiplier:F3} / " +
+                    $"ActualDamage=0 / " +
+                    $"DamageGroup={damageGroupId} / " +
+                    $"HP={CurrentHealth}/{MaxHealth}",
+                    this
+                );
+            }
+
             return;
         }
 
-        CurrentHealth = Mathf.Max(CurrentHealth - finalDamage, 0);
+        // このHitが入る前から無敵だったかを保持。
+        // 同じPellet Groupの2発目以降ではtrueになります。
+        bool wasInvincibleBeforeHit = IsInvincible;
+
+        int healthBeforeDamage = CurrentHealth;
+
+        CurrentHealth = Mathf.Max(
+            CurrentHealth - finalDamage,
+            0
+        );
+
+        // HPが100の敵へ500Damageを与えた場合、
+        // 実際に減ったHPは100なので ActualDamage=100 とする。
+        int actualDamage =
+            Mathf.Max(0, healthBeforeDamage - CurrentHealth);
+
+        bool diedFromThisDamage = CurrentHealth <= 0;
+
+        if (shouldLog)
+        {
+            Debug.Log(
+                $"[DamageLog][被ダメージ] " +
+                $"Target={name} / " +
+                $"HP={healthBeforeDamage}->{CurrentHealth} / " +
+                $"RequestedDamage={damage} / " +
+                $"FinalDamage={finalDamage} / " +
+                $"ActualDamage={actualDamage} / " +
+                $"Multiplier={damageMultiplier:F3} / " +
+                $"DamageGroup={damageGroupId} / " +
+                $"PelletInvincibilityPass={canPassCurrentInvincibility} / " +
+                $"Dead={diedFromThisDamage}",
+                this
+            );
+        }
 
         // 実際にダメージが通った時だけ被ダメージ音を鳴らす
         PlayDamageSound();
@@ -90,7 +244,12 @@ public class CharacterHealth : MonoBehaviour
             return;
         }
 
-        StartInvincibility();
+        // 同じショットの2発目以降では無敵時間を延長しない。
+        // 最初にダメージが通ったPelletの時刻を基準にする。
+        if (!wasInvincibleBeforeHit)
+        {
+            StartInvincibility(damageGroupId);
+        }
     }
 
     public void Heal(int amount)
@@ -125,6 +284,7 @@ public class CharacterHealth : MonoBehaviour
     {
         IsDead = false;
         IsInvincible = false;
+        activeInvincibilityDamageGroupId = 0;
         CurrentHealth = MaxHealth;
         NotifyHealthChanged();
     }
@@ -145,6 +305,8 @@ public class CharacterHealth : MonoBehaviour
         }
 
         IsInvincible = false;
+        activeInvincibilityDamageGroupId = 0;
+
         CurrentHealth = Mathf.Clamp(
             healthValue,
             0,
@@ -180,10 +342,12 @@ public class CharacterHealth : MonoBehaviour
         audioSource.PlayOneShot(damageSound, damageSoundVolume);
     }
 
-    private void StartInvincibility()
+    private void StartInvincibility(int damageGroupId)
     {
         if (invincibilityDuration <= 0f)
         {
+            IsInvincible = false;
+            activeInvincibilityDamageGroupId = 0;
             return;
         }
 
@@ -192,7 +356,11 @@ public class CharacterHealth : MonoBehaviour
             StopCoroutine(invincibilityCoroutine);
         }
 
-        invincibilityCoroutine = StartCoroutine(InvincibilityRoutine());
+        activeInvincibilityDamageGroupId =
+            Mathf.Max(0, damageGroupId);
+
+        invincibilityCoroutine =
+            StartCoroutine(InvincibilityRoutine());
     }
 
     private IEnumerator InvincibilityRoutine()
@@ -202,6 +370,7 @@ public class CharacterHealth : MonoBehaviour
         yield return new WaitForSeconds(invincibilityDuration);
 
         IsInvincible = false;
+        activeInvincibilityDamageGroupId = 0;
         invincibilityCoroutine = null;
     }
 

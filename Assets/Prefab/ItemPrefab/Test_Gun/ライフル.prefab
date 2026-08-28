@@ -27,7 +27,7 @@ Transform:
   m_GameObject: {fileID: 590387895468571227}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.103, y: 0.144, z: 0}
+  m_LocalPosition: {x: 0.187, y: 0.063, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4895,15 +4895,15 @@ MonoBehaviour:
   weaponItemData: {fileID: 0}
   inventoryController: {fileID: 0}
   enableAmmoSwitchWithBKey: 1
-  bulletSpeed: 20
-  bulletLifeTime: 3
-  magazineSize: 20
+  bulletSpeed: 70
+  bulletLifeTime: 4
+  magazineSize: 5
   currentAmmo: 0
-  fillMagazineOnStart: 0
-  reloadDuration: 1.5
+  fillMagazineOnStart: 1
+  reloadDuration: 2
   gunAudioSource: {fileID: 0}
-  shotSound: {fileID: 8300000, guid: e2cf685d55897b44eacf868b1d5a21e5, type: 3}
-  reloadSound: {fileID: 8300000, guid: 2094f11a83477244985ba358fdfad827, type: 3}
+  shotSound: {fileID: 8300000, guid: 838bd77cda52b5a47ad775619c97fb2a, type: 3}
+  reloadSound: {fileID: 8300000, guid: e70e8614064e05144b2240f847b185ed, type: 3}
   emptySound: {fileID: 8300000, guid: 2dd4c42996dc3ca4d8b2d9cac307c497, type: 3}
   shotVolume: 0.853
   reloadVolume: 1
@@ -4969,7 +4969,7 @@ SpriteRenderer:
   m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -198929506401869900, guid: 7f1b2f9b41ae6294ca7ef19ef4de9241, type: 3}
+  m_Sprite: {fileID: -7273990888376118452, guid: 3f4c355a9f855b2458ad871e33738a4d, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -5088,7 +5088,7 @@ GameObject:
   - component: {fileID: 3006224865479806908}
   - component: {fileID: 3783060676390865692}
   m_Layer: 3
-  m_Name: AK556
+  m_Name: "\u30E9\u30A4\u30D5\u30EB"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5257,7 +5257,7 @@ Transform:
   m_GameObject: {fileID: 8019550305541348133}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.41, y: 0.091, z: 0}
+  m_LocalPosition: {x: -0.54, y: 0.056, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

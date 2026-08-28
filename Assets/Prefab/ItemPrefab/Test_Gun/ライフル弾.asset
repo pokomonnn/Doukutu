@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 37e1cd549aca8224bb45e804f25c00d4, type: 3}
-  m_Name: "\u30B7\u30E7\u30C3\u30C8\u30AC\u30F3\u30B7\u30A7\u30EB"
+  m_Name: "\u30E9\u30A4\u30D5\u30EB\u5F3E"
   m_EditorClassIdentifier: Assembly-CSharp::AmmoItemData
-  itemId: shotgunshell_001
-  displayName: "\uFF11\uFF12\u30B2\u30FC\u30B8\u30B7\u30A7\u30EB"
+  itemId: Raihulammor_001
+  displayName: "\u30E9\u30A4\u30D5\u30EB\u5F3E"
   description: "\u30B7\u30E7\u30C3\u30C8\u30AC\u30F3\u7528\u306E\u5F3E"
-  icon: {fileID: 9148860471220752040, guid: c92b1b95a33f70a4380eacab74e79c32, type: 3}
+  icon: {fileID: 471423682383467802, guid: 62b6c6274e011514ab89dbd3125c4159, type: 3}
   localizedDisplayName:
     m_TableReference:
       m_TableCollectionName: 
@@ -43,11 +43,11 @@ MonoBehaviour:
   canSellToShop: 1
   weight: 0.02
   canDiscard: 1
-  ammoTypeName: 12GAGE
-  ammoCaliberId: 12GAGE
+  ammoTypeName: 20mm
+  ammoCaliberId: 20mm
   ammoVariant: 0
-  damageMultiplier: 1.4
-  armorPenetration: 0
+  damageMultiplier: 5
+  armorPenetration: 2
   references:
     version: 2
     RefIds: []
