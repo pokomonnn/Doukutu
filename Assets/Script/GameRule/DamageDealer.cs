@@ -17,6 +17,39 @@ public class DamageDealer : MonoBehaviour
     [Tooltip("ダメージを与えたら、このオブジェクトを消す（弾用）")]
     [SerializeField] private bool destroyOnHit = true;
 
+    [Header("高速弾すり抜け対策")]
+    [Tooltip(
+        "オンの場合、Rigidbody2Dの次の物理フレーム移動区間を先読みして、" +
+        "CircleCastでも命中確認します。高速弾のEnemyすり抜け対策です。"
+    )]
+    [SerializeField] private bool enableContinuousHitSweep = true;
+
+    [Tooltip(
+        "オンの場合、この弾に使われているRigidbody2DのCollision Detectionを" +
+        "Continuousへ自動変更します。"
+    )]
+    [SerializeField] private bool forceContinuousCollisionDetection = true;
+
+    [Tooltip(
+        "先読みCircleCastの太さ倍率です。" +
+        "Bullet Colliderの短い辺を基準にします。通常は0.8～1.0でOKです。"
+    )]
+    [SerializeField, Range(0.1f, 2f)]
+    private float sweepRadiusScale = 0.9f;
+
+    [Tooltip(
+        "次フレームの移動距離へ追加する余裕距離です。" +
+        "薄いColliderをより確実に拾いたい場合に少し増やします。"
+    )]
+    [SerializeField, Min(0f)]
+    private float sweepExtraDistance = 0.02f;
+
+    [Header("高速弾すり抜け診断")]
+    [Tooltip(
+        "オンにすると、Triggerではなく先読みCastでEnemyを拾った時だけログを出します。"
+    )]
+    [SerializeField] private bool logSweepHits = false;
+
     private readonly HashSet<CharacterHealth> damagedTargets = new();
 
     private AmmoItemData runtimeAmmoData;
@@ -26,6 +59,9 @@ public class DamageDealer : MonoBehaviour
     // 0 = 通常攻撃。
     // 0以外 = 同じ1回のショットに属する弾/Pelletを識別するID。
     private int runtimeDamageGroupId;
+
+    private Collider2D damageCollider;
+    private Rigidbody2D bulletRigidbody;
 
     public int BaseDamage => Mathf.Max(1, damage);
     public int CurrentDamage => runtimeDamage >= 0
@@ -42,16 +78,130 @@ public class DamageDealer : MonoBehaviour
         ? runtimeAmmoData.ArmorPenetration
         : 0f;
 
+    private void Awake()
+    {
+        CachePhysicsReferences();
+        ApplyContinuousCollisionDetection();
+    }
+
     private void Reset()
     {
         Collider2D col = GetComponent<Collider2D>();
-        col.isTrigger = true;
+
+        if (col != null)
+        {
+            col.isTrigger = true;
+        }
+
+        CachePhysicsReferences();
+        ApplyContinuousCollisionDetection();
     }
 
     private void OnEnable()
     {
         damagedTargets.Clear();
         runtimeDamageGroupId = 0;
+
+        CachePhysicsReferences();
+        ApplyContinuousCollisionDetection();
+    }
+
+    private void FixedUpdate()
+    {
+        if (!enableContinuousHitSweep)
+        {
+            return;
+        }
+
+        CachePhysicsReferences();
+
+        if (damageCollider == null ||
+            bulletRigidbody == null ||
+            !bulletRigidbody.simulated)
+        {
+            return;
+        }
+
+        Vector2 velocity = bulletRigidbody.linearVelocity;
+        float speed = velocity.magnitude;
+
+        if (speed <= 0.001f)
+        {
+            return;
+        }
+
+        float castDistance =
+            (speed * Time.fixedDeltaTime) +
+            Mathf.Max(0f, sweepExtraDistance);
+
+        if (castDistance <= 0.001f)
+        {
+            return;
+        }
+
+        Bounds bounds = damageCollider.bounds;
+
+        float minimumExtent = Mathf.Min(
+            Mathf.Abs(bounds.extents.x),
+            Mathf.Abs(bounds.extents.y)
+        );
+
+        float radius = Mathf.Max(
+            0.01f,
+            minimumExtent *
+            Mathf.Clamp(sweepRadiusScale, 0.1f, 2f)
+        );
+
+        Vector2 origin = bounds.center;
+        Vector2 direction = velocity / speed;
+
+        RaycastHit2D[] hits = Physics2D.CircleCastAll(
+            origin,
+            radius,
+            direction,
+            castDistance
+        );
+
+        if (hits == null || hits.Length == 0)
+        {
+            return;
+        }
+
+        System.Array.Sort(
+            hits,
+            (a, b) => a.distance.CompareTo(b.distance)
+        );
+
+        foreach (RaycastHit2D hit in hits)
+        {
+            Collider2D hitCollider = hit.collider;
+
+            if (hitCollider == null ||
+                IsOwnCollider(hitCollider))
+            {
+                continue;
+            }
+
+            if (TryDealDamage(hitCollider, true))
+            {
+                if (logSweepHits)
+                {
+                    Debug.Log(
+                        "[DamageDealer][Sweep命中] " +
+                        $"Bullet={name} / " +
+                        $"Target={hitCollider.name} / " +
+                        $"Distance={hit.distance:F3} / " +
+                        $"Speed={speed:F2}",
+                        this
+                    );
+                }
+
+                if (destroyOnHit)
+                {
+                    return;
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -100,34 +250,46 @@ public class DamageDealer : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        TryDealDamage(other);
+        TryDealDamage(other, false);
     }
 
     private void OnTriggerStay2D(Collider2D other)
     {
-        TryDealDamage(other);
+        TryDealDamage(other, false);
     }
 
-    private void TryDealDamage(Collider2D other)
+    /// <summary>
+    /// 有効なDamage Targetへ処理を行えた場合trueを返します。
+    /// Triggerと高速弾Sweepの両方から共通利用します。
+    /// </summary>
+    private bool TryDealDamage(
+        Collider2D other,
+        bool fromSweep)
     {
+        if (other == null || IsOwnCollider(other))
+        {
+            return false;
+        }
+
         CharacterHealth targetHealth =
             other.GetComponentInParent<CharacterHealth>();
 
         if (targetHealth == null || targetHealth.IsDead)
         {
-            return;
+            return false;
         }
 
         int targetLayer = targetHealth.gameObject.layer;
 
         if ((targetLayers.value & (1 << targetLayer)) == 0)
         {
-            return;
+            return false;
         }
 
-        if (hitOnlyOncePerTarget && damagedTargets.Contains(targetHealth))
+        if (hitOnlyOncePerTarget &&
+            damagedTargets.Contains(targetHealth))
         {
-            return;
+            return false;
         }
 
         EnemyHitReaction2D hitReaction =
@@ -135,7 +297,12 @@ public class DamageDealer : MonoBehaviour
 
         if (!targetHealth.IsInvincible)
         {
-            hitReaction?.NotifyHitSource(transform.position);
+            Vector3 hitSourcePosition =
+                fromSweep && bulletRigidbody != null
+                    ? (Vector3)bulletRigidbody.position
+                    : transform.position;
+
+            hitReaction?.NotifyHitSource(hitSourcePosition);
         }
 
         targetHealth.TakeDamage(
@@ -147,7 +314,85 @@ public class DamageDealer : MonoBehaviour
 
         if (destroyOnHit)
         {
+            if (damageCollider != null)
+            {
+                damageCollider.enabled = false;
+            }
+
+            if (bulletRigidbody != null)
+            {
+                bulletRigidbody.linearVelocity = Vector2.zero;
+            }
+
             Destroy(gameObject);
         }
+
+        return true;
+    }
+
+    private bool IsOwnCollider(Collider2D other)
+    {
+        if (other == null)
+        {
+            return false;
+        }
+
+        if (damageCollider != null &&
+            other == damageCollider)
+        {
+            return true;
+        }
+
+        Transform otherTransform = other.transform;
+
+        return otherTransform == transform ||
+               otherTransform.IsChildOf(transform) ||
+               transform.IsChildOf(otherTransform);
+    }
+
+    private void CachePhysicsReferences()
+    {
+        if (damageCollider == null)
+        {
+            damageCollider = GetComponent<Collider2D>();
+        }
+
+        if (bulletRigidbody == null)
+        {
+            bulletRigidbody = GetComponent<Rigidbody2D>();
+
+            if (bulletRigidbody == null)
+            {
+                bulletRigidbody =
+                    GetComponentInParent<Rigidbody2D>();
+            }
+        }
+    }
+
+    private void ApplyContinuousCollisionDetection()
+    {
+        if (!forceContinuousCollisionDetection)
+        {
+            return;
+        }
+
+        CachePhysicsReferences();
+
+        if (bulletRigidbody == null)
+        {
+            return;
+        }
+
+        bulletRigidbody.collisionDetectionMode =
+            CollisionDetectionMode2D.Continuous;
+    }
+
+    private void OnValidate()
+    {
+        sweepRadiusScale =
+            Mathf.Clamp(sweepRadiusScale, 0.1f, 2f);
+
+        sweepExtraDistance =
+            Mathf.Max(0f, sweepExtraDistance);
     }
 }

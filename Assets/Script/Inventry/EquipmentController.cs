@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 public enum EquipmentResult
@@ -141,6 +141,62 @@ public class EquipmentController : MonoBehaviour
             return false;
         }
 
+        SetEquippedItem(slotType, item);
+
+        result = EquipmentResult.Success;
+        OnEquipmentChanged?.Invoke();
+
+        return true;
+    }
+
+    /// <summary>
+    /// 通常Inventoryを経由していない外部InventoryItemを直接装備します。
+    /// 地面から拾った武器など、同じInventoryItem個体をそのまま装備したい時に使用します。
+    ///
+    /// 注意：
+    /// 通常Inventory内にすでに入っているItemには TryEquipItem() を使用してください。
+    /// </summary>
+    public bool TryEquipExternalItem(
+        InventoryItem item,
+        out EquipmentResult result)
+    {
+        result = EquipmentResult.InvalidItem;
+
+        if (item == null || item.ItemData == null)
+        {
+            return false;
+        }
+
+        // 装備品は必ず1個ずつ扱う。
+        if (item.Amount != 1)
+        {
+            result = EquipmentResult.InvalidStackAmount;
+            return false;
+        }
+
+        if (!TryGetEquipmentSlot(
+                item.ItemData,
+                out EquipmentSlotType slotType))
+        {
+            result = EquipmentResult.UnsupportedItem;
+            return false;
+        }
+
+        if (slotType == EquipmentSlotType.None)
+        {
+            result = EquipmentResult.InvalidSlot;
+            return false;
+        }
+
+        // すでに装備がある場合は交換しない。
+        if (HasEquippedItem(slotType))
+        {
+            result = EquipmentResult.SlotOccupied;
+            return false;
+        }
+
+        // Inventoryへ入れず、このInventoryItem個体をそのまま装備する。
+        // StoredMagazineAmmo / Durability / Jam状態なども同じ個体なので維持される。
         SetEquippedItem(slotType, item);
 
         result = EquipmentResult.Success;

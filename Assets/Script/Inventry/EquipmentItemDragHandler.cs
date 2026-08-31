@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 
 [DisallowMultipleComponent]
@@ -16,6 +16,22 @@ public class EquipmentItemDragHandler : MonoBehaviour,
 
     [Header("入力設定")]
     [SerializeField] private KeyCode rotateKey = KeyCode.R;
+
+    [Header("装備Itemの外ドロップ")]
+    [Tooltip(
+        "オンの場合、装備中ItemをInventory系UIの外で離すと、" +
+        "Playerの足元へ地面Itemとして捨てます。"
+    )]
+    [SerializeField] private bool dropEquippedItemOutsideInventory = true;
+
+    [Tooltip(
+        "装備Itemを地面へ生成するPlayerItemDropper。" +
+        "未設定ならPlayerから自動取得します。"
+    )]
+    [SerializeField] private PlayerItemDropper playerItemDropper;
+
+    [Header("デバッグ")]
+    [SerializeField] private bool showDropDebugLogs = false;
 
     private EquipmentSlotUI equipmentSlotUI;
     private InventorySoundPlayer soundPlayer;
@@ -41,6 +57,7 @@ public class EquipmentItemDragHandler : MonoBehaviour,
 
         FindEquipmentSlotUI();
         FindSoundPlayer();
+        FindPlayerItemDropper();
     }
 
     private void Update()
@@ -181,8 +198,9 @@ public class EquipmentItemDragHandler : MonoBehaviour,
             return;
         }
 
-        bool moved = false;
-
+        // -----------------------------------------------------
+        // 1. 通常Inventoryへ戻す
+        // -----------------------------------------------------
         if (TryFindTargetGrid(
                 eventData,
                 out InventoryGridUI targetGridUI,
@@ -191,7 +209,7 @@ public class EquipmentItemDragHandler : MonoBehaviour,
             Vector2Int targetPosition =
                 pointerGridPosition - dragCellOffset;
 
-            moved =
+            bool moved =
                 equipmentSlotUI.TryUnequipToInventoryPosition(
                     targetPosition.x,
                     targetPosition.y,
@@ -202,6 +220,11 @@ public class EquipmentItemDragHandler : MonoBehaviour,
             if (moved)
             {
                 soundPlayer?.PlayPlace();
+
+                LogDrop(
+                    $"装備ItemをInventoryへ戻しました：" +
+                    $"{equipmentSlotUI.GetEquippedItem()?.ItemData?.DisplayName}"
+                );
             }
             else
             {
@@ -212,13 +235,196 @@ public class EquipmentItemDragHandler : MonoBehaviour,
 
                 soundPlayer?.PlayFailed();
             }
-        }
-        else
-        {
-            soundPlayer?.PlayFailed();
+
+            FinishDrag();
+            return;
         }
 
+        // -----------------------------------------------------
+        // 2. 装備枠・ItemBox Gridなど、Inventory系UIの上
+        // -----------------------------------------------------
+        // 有効な通常Inventory位置ではないだけで、
+        // Inventory系UI上にいる場合は誤って地面へ捨てない。
+        if (IsPointerOverInventoryRelatedUI(eventData))
+        {
+            soundPlayer?.PlayFailed();
+
+            LogDrop(
+                "Inventory系UI上なので地面ドロップしません。"
+            );
+
+            FinishDrag();
+            return;
+        }
+
+        // -----------------------------------------------------
+        // 3. Inventory系UIの完全な外 → 地面へ捨てる
+        // -----------------------------------------------------
+        if (dropEquippedItemOutsideInventory &&
+            TryDropEquippedItemToWorld())
+        {
+            soundPlayer?.PlayPlace();
+
+            LogDrop(
+                "装備中ItemをInventory外へドラッグして地面へ捨てました。"
+            );
+
+            FinishDrag();
+            return;
+        }
+
+        // CanDiscard=false / Quest Item / Dropper未設定など
+        // 地面へ捨てられなかった場合は装備枠へ戻す。
+        soundPlayer?.PlayFailed();
+
+        LogDrop(
+            "装備Itemを地面へ捨てられなかったため、装備枠へ戻します。"
+        );
+
         FinishDrag();
+    }
+
+    private bool TryDropEquippedItemToWorld()
+    {
+        if (!FindEquipmentSlotUI() ||
+            !FindPlayerItemDropper())
+        {
+            return false;
+        }
+
+        EquipmentController equipmentController =
+            equipmentSlotUI.EquipmentControllerRef;
+
+        if (equipmentController == null)
+        {
+            return false;
+        }
+
+        InventoryItem item =
+            equipmentSlotUI.GetEquippedItem();
+
+        if (item == null || item.ItemData == null)
+        {
+            return false;
+        }
+
+        // PlayerItemDropper側で
+        // CanDiscard=false / Quest Item を既存仕様どおり拒否します。
+        return playerItemDropper.TryDropEquippedItem(
+            equipmentController,
+            equipmentSlotUI.SlotType
+        );
+    }
+
+    private bool IsPointerOverInventoryRelatedUI(
+        PointerEventData eventData)
+    {
+        if (eventData == null ||
+            EventSystem.current == null)
+        {
+            return false;
+        }
+
+        System.Collections.Generic.List<RaycastResult> results =
+            new System.Collections.Generic.List<RaycastResult>();
+
+        EventSystem.current.RaycastAll(
+            eventData,
+            results
+        );
+
+        foreach (RaycastResult result in results)
+        {
+            GameObject target = result.gameObject;
+
+            if (target == null)
+            {
+                continue;
+            }
+
+            // 通常Inventory / ItemBox Inventory
+            if (target.GetComponentInParent<InventoryGridUI>() != null)
+            {
+                return true;
+            }
+
+            // PrimaryWeapon / Helmetなどの装備枠
+            if (target.GetComponentInParent<EquipmentSlotUI>() != null)
+            {
+                return true;
+            }
+
+            // Context Menu上で離した時も誤廃棄しない。
+            if (target.GetComponentInParent<InventoryContextMenuUI>() != null)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool FindPlayerItemDropper()
+    {
+        if (playerItemDropper != null)
+        {
+            return true;
+        }
+
+        if (FindEquipmentSlotUI())
+        {
+            InventoryController inventoryController =
+                equipmentSlotUI.InventoryController;
+
+            if (inventoryController != null)
+            {
+                playerItemDropper =
+                    inventoryController.GetComponent<PlayerItemDropper>();
+
+                if (playerItemDropper == null)
+                {
+                    playerItemDropper =
+                        inventoryController.GetComponentInParent<
+                            PlayerItemDropper
+                        >();
+                }
+            }
+        }
+
+        if (playerItemDropper == null)
+        {
+            GameObject player =
+                GameObject.FindGameObjectWithTag("Player");
+
+            if (player != null)
+            {
+                playerItemDropper =
+                    player.GetComponent<PlayerItemDropper>();
+            }
+        }
+
+        if (playerItemDropper == null)
+        {
+            playerItemDropper =
+                Object.FindAnyObjectByType<PlayerItemDropper>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        return playerItemDropper != null;
+    }
+
+    private void LogDrop(string message)
+    {
+        if (!showDropDebugLogs)
+        {
+            return;
+        }
+
+        Debug.Log(
+            $"[EquipmentItemDragHandler] {message}",
+            this
+        );
     }
 
     private void TryRotateDuringDrag()

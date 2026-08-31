@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -31,6 +31,18 @@ public class ItemBoxInteractable : MonoBehaviour
     [Header("操作")]
     [SerializeField] private KeyCode openKey = KeyCode.E;
     [SerializeField] private string playerTag = "Player";
+
+    [Header("地面Itemとの操作優先順位")]
+    [Tooltip(
+        "オンの場合、ItemBoxの前に拾える地面Itemがある時は、" +
+        "同じEキーでItem拾得を優先します。"
+    )]
+    [SerializeField] private bool prioritizeWorldItemPickup = true;
+
+    [Tooltip(
+        "拾える地面Itemがある間、ItemBox側の「E:開ける」と接近アイコンを隠します。"
+    )]
+    [SerializeField] private bool hideBoxPromptWhilePickupAvailable = true;
 
     [Header("開く演出")]
     [Tooltip("Eを押してからItemBoxPanelを表示するまでの秒数")]
@@ -93,6 +105,8 @@ public class ItemBoxInteractable : MonoBehaviour
     private bool isOpening;
     private Coroutine openCoroutine;
 
+    private bool hasPriorityWorldItemPickup;
+
     private bool IsPlayerInRange => playerColliders.Count > 0;
 
     private void Awake()
@@ -145,6 +159,7 @@ public class ItemBoxInteractable : MonoBehaviour
         }
 
         isOpening = false;
+        hasPriorityWorldItemPickup = false;
         openProgressUI?.Hide();
         SetNearbyIconVisible(false);
     }
@@ -161,6 +176,7 @@ public class ItemBoxInteractable : MonoBehaviour
 
     private void Update()
     {
+        RefreshWorldItemPickupPriority();
         RefreshInteractionVisuals();
         UpdateNearbyIconAnimation();
 
@@ -173,10 +189,32 @@ public class ItemBoxInteractable : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(openKey))
+        if (!Input.GetKeyDown(openKey))
         {
-            BeginOpen();
+            return;
         }
+
+        if (prioritizeWorldItemPickup)
+        {
+            // WorldItemPickup側が先にUpdateされていた場合。
+            if (WorldItemPickup.WasPickupInputConsumedThisFrame)
+            {
+                RefreshWorldItemPickupPriority();
+                RefreshInteractionVisuals();
+                return;
+            }
+
+            // ItemBox側が先にUpdateされていた場合でも、
+            // Playerに一番近い地面Itemを先に拾わせる。
+            if (WorldItemPickup.TryHandleNearestPickupInput(openKey))
+            {
+                RefreshWorldItemPickupPriority();
+                RefreshInteractionVisuals();
+                return;
+            }
+        }
+
+        BeginOpen();
     }
 
     private void BeginOpen()
@@ -260,12 +298,14 @@ public class ItemBoxInteractable : MonoBehaviour
         }
 
         playerColliders.Add(other);
+        RefreshWorldItemPickupPriority();
         RefreshInteractionVisuals();
     }
 
     private void OnTriggerExit2D(Collider2D other)
     {
         playerColliders.Remove(other);
+        RefreshWorldItemPickupPriority();
         RefreshInteractionVisuals();
     }
 
@@ -351,6 +391,20 @@ public class ItemBoxInteractable : MonoBehaviour
         }
     }
 
+    private void RefreshWorldItemPickupPriority()
+    {
+        if (!prioritizeWorldItemPickup ||
+            !IsPlayerInRange ||
+            isOpening)
+        {
+            hasPriorityWorldItemPickup = false;
+            return;
+        }
+
+        hasPriorityWorldItemPickup =
+            WorldItemPickup.HasPickupCandidateForKey(openKey);
+    }
+
     private void RefreshInteractionVisuals()
     {
         bool shouldShow = ShouldShowInteractionVisuals();
@@ -361,8 +415,14 @@ public class ItemBoxInteractable : MonoBehaviour
 
     private bool ShouldShowInteractionVisuals()
     {
+        bool blockedByWorldItem =
+            prioritizeWorldItemPickup &&
+            hideBoxPromptWhilePickupAvailable &&
+            hasPriorityWorldItemPickup;
+
         return IsPlayerInRange &&
                !isOpening &&
+               !blockedByWorldItem &&
                itemBoxInventory != null &&
                (!FindItemBoxUIController() ||
                 !itemBoxUIController.IsOpen);

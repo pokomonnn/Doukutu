@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(PlayerMove))]
@@ -23,6 +23,17 @@ public class FallDamage : MonoBehaviour
     [Tooltip("この距離以上を落下すると骨折します")]
     [SerializeField, Min(0f)] private float fractureFallDistance = 13f;
 
+    [Header("壁登り連携")]
+    [Tooltip(
+        "壁登り中は落下距離を計測しません。" +
+        "未設定ならPlayer本体から自動取得します。"
+    )]
+    [SerializeField] private WallClimbController wallClimbController;
+
+    [Header("デバッグ")]
+    [Tooltip("壁登りによる落下計測リセットをConsoleへ表示します")]
+    [SerializeField] private bool showWallFallDebugLogs = false;
+
     private Rigidbody2D rb;
     private PlayerMove playerMove;
     private CharacterHealth health;
@@ -31,73 +42,171 @@ public class FallDamage : MonoBehaviour
     private bool wasGrounded;
     private bool isTrackingFall;
     private float highestY;
+    private bool wasWallClimbing;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         playerMove = GetComponent<PlayerMove>();
         health = GetComponent<CharacterHealth>();
-        statusConditions =
-            GetComponent<PlayerStatusConditionController>();
+        statusConditions = GetComponent<PlayerStatusConditionController>();
+        FindWallClimbController();
     }
 
     private void Start()
     {
         wasGrounded = playerMove.IsGrounded;
 
-        // 空中からゲーム開始した場合にも対応
+        bool isWallClimbing = IsWallClimbingNow();
+        wasWallClimbing = isWallClimbing;
+
+        if (isWallClimbing)
+        {
+            ResetFallTrackingToCurrentPosition();
+            return;
+        }
+
         if (!wasGrounded)
         {
-            isTrackingFall = true;
-            highestY = rb.position.y;
+            StartFallTrackingFromCurrentPosition();
         }
     }
 
     private void FixedUpdate()
     {
-        bool isGrounded = playerMove.IsGrounded;
-
-        // 地面から離れた瞬間に落下距離の計測を開始
-        if (wasGrounded && !isGrounded)
+        if (playerMove == null || rb == null)
         {
-            isTrackingFall = true;
-            highestY = rb.position.y;
+            return;
         }
 
-        // 空中で一番高かった位置を保存
+        FindWallClimbController();
+
+        bool isGrounded = playerMove.IsGrounded;
+        bool isWallClimbing = IsWallClimbingNow();
+
+        // 壁を伝っている間は落下ではない。
+        // 壁を掴む前に溜まっていた落下距離もここで破棄する。
+        if (isWallClimbing)
+        {
+            if (!wasWallClimbing && showWallFallDebugLogs)
+            {
+                Debug.Log(
+                    "[FallDamage] 壁登り開始：落下距離の計測をリセットします。",
+                    this
+                );
+            }
+
+            ResetFallTrackingToCurrentPosition();
+            wasGrounded = isGrounded;
+            wasWallClimbing = true;
+            return;
+        }
+
+        // 壁から離れた地点を、新しい自由落下の開始地点にする。
+        if (wasWallClimbing && !isWallClimbing)
+        {
+            if (!isGrounded)
+            {
+                StartFallTrackingFromCurrentPosition();
+
+                if (showWallFallDebugLogs)
+                {
+                    Debug.Log(
+                        $"[FallDamage] 壁を離れました：" +
+                        $"Y={rb.position.y:F2} から自由落下を再計測します。",
+                        this
+                    );
+                }
+            }
+            else
+            {
+                ResetFallTrackingToCurrentPosition();
+            }
+        }
+
+        // 通常のジャンプ・崖落下。
+        if (wasGrounded && !isGrounded)
+        {
+            StartFallTrackingFromCurrentPosition();
+        }
+
+        // 壁離脱など、wasGroundedがfalseのまま空中へ移ったケースの保険。
+        if (!isGrounded && !isTrackingFall)
+        {
+            StartFallTrackingFromCurrentPosition();
+        }
+
+        // 上昇があれば最高地点を更新する。
         if (isTrackingFall && !isGrounded)
         {
             highestY = Mathf.Max(highestY, rb.position.y);
         }
 
-        // 空中 → 接地した瞬間
+        // 空中 → 接地した瞬間。
         if (!wasGrounded && isGrounded && isTrackingFall)
         {
-            float fallDistance = highestY - rb.position.y;
+            float fallDistance = Mathf.Max(
+                0f,
+                highestY - rb.position.y
+            );
 
             ApplyLandingEffects(fallDistance);
-
             isTrackingFall = false;
         }
 
         wasGrounded = isGrounded;
+        wasWallClimbing = false;
+    }
+
+    private void StartFallTrackingFromCurrentPosition()
+    {
+        isTrackingFall = true;
+        highestY = rb != null
+            ? rb.position.y
+            : transform.position.y;
+    }
+
+    private void ResetFallTrackingToCurrentPosition()
+    {
+        isTrackingFall = false;
+        highestY = rb != null
+            ? rb.position.y
+            : transform.position.y;
+    }
+
+    private bool IsWallClimbingNow()
+    {
+        return wallClimbController != null &&
+               wallClimbController.IsWallClimbing;
+    }
+
+    private void FindWallClimbController()
+    {
+        if (wallClimbController != null)
+        {
+            return;
+        }
+
+        wallClimbController = GetComponent<WallClimbController>();
+
+        if (wallClimbController == null)
+        {
+            wallClimbController = GetComponentInParent<WallClimbController>();
+        }
     }
 
     private void ApplyLandingEffects(float fallDistance)
     {
-        // すでに死亡している場合は処理しない
         if (health == null || health.IsDead)
         {
             return;
         }
 
-        // 無敵中は従来どおり落下ダメージを受けない
         if (!health.IsInvincible)
         {
             ApplyFallDamage(fallDistance);
         }
 
-        // 致命傷になった落下では骨折状態を付けない
         if (!health.IsDead)
         {
             TryCauseFracture(fallDistance);
@@ -155,7 +264,6 @@ public class FallDamage : MonoBehaviour
         damagePerUnit = Mathf.Max(0, damagePerUnit);
         maxDamage = Mathf.Max(1, maxDamage);
 
-        // 骨折の閾値が安全距離を下回らないようにする
         fractureFallDistance = Mathf.Max(
             safeFallDistance,
             fractureFallDistance

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine.Localization;
 using TMPro;
 using UnityEngine;
@@ -7,6 +7,17 @@ using UnityEngine;
 [RequireComponent(typeof(SpriteRenderer))]
 public class WorldItemPickup : MonoBehaviour
 {
+    // 同じフレーム内で、地面ItemのE入力を複数のInteractableが
+    // 二重に処理しないための共有フラグ。
+    private static int pickupInputConsumedFrame = -1;
+
+    /// <summary>
+    /// このフレームのE入力が、すでに地面Itemの拾得へ使われたか。
+    /// ItemBoxなど、同じキーを使うInteractableから確認できます。
+    /// </summary>
+    public static bool WasPickupInputConsumedThisFrame =>
+        pickupInputConsumedFrame == Time.frameCount;
+
     [Header("拾う設定")]
     [SerializeField] private KeyCode pickupKey = KeyCode.E;
 
@@ -62,11 +73,29 @@ public class WorldItemPickup : MonoBehaviour
     [SerializeField] private SpriteRenderer itemSpriteRenderer;
     [SerializeField] private InventoryController inventoryController;
 
+    [Tooltip(
+        "武器未装備時に拾った武器をPrimaryWeaponへ自動装備するための参照です。" +
+        "未設定なら自動取得します。"
+    )]
+    [SerializeField] private EquipmentController equipmentController;
+
     [Tooltip("ロープモード中にEキー拾得を止めるための参照です。未設定なら自動取得します")]
     [SerializeField] private PlayerRopePullController ropePullController;
 
     [Tooltip("物を持つ操作へEキーを優先するための参照です。未設定なら自動取得します")]
     [SerializeField] private PlayerCarryController2D carryController;
+
+    [Header("武器の自動装備")]
+    [Tooltip(
+        "オンの場合、PrimaryWeaponが空の時に地面の武器を拾うと、" +
+        "通常Inventoryへ入れず直接PrimaryWeaponへ装備します。"
+    )]
+    [SerializeField] private bool autoEquipWeaponWhenEmpty = true;
+
+    [Tooltip(
+        "自動装備が成功した時にConsoleへログを表示します。"
+    )]
+    [SerializeField] private bool logAutoEquipWeapon = true;
 
     [Header("プレイヤー判定")]
     [Tooltip("プレイヤーがアイテムを拾える範囲として使用するCollider2Dです。DroppedItemの子に作成したPickupRangeを設定してください。PlayerとDroppedItemのLayer CollisionをOFFにしていても、この範囲をOverlap判定して拾得できます。")]
@@ -219,6 +248,7 @@ public class WorldItemPickup : MonoBehaviour
         ApplyStackAmountPosition();
 
         FindInventoryController();
+        FindEquipmentController();
         RefreshPlayerInRangeState();
 
         RefreshVisual();
@@ -297,10 +327,138 @@ public class WorldItemPickup : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(pickupKey))
+        if (Input.GetKeyDown(pickupKey) &&
+            !WasPickupInputConsumedThisFrame)
         {
-            TryPickup();
+            // 複数Itemが重なっていても、
+            // Playerに一番近い拾得可能Itemだけを1個処理する。
+            TryHandleNearestPickupInput(pickupKey);
         }
+    }
+
+    /// <summary>
+    /// 指定キーで拾える地面Itemが現在存在するか確認します。
+    /// ItemBoxの「E:開ける」表示を、Item拾得が優先される間だけ
+    /// 隠すためにも使用します。
+    /// </summary>
+    public static bool HasPickupCandidateForKey(KeyCode key)
+    {
+        return FindNearestPickupCandidate(key) != null;
+    }
+
+    /// <summary>
+    /// 指定キーで拾えるItemの中からPlayerに一番近い1個を選び、
+    /// そのItemへ入力を消費させます。
+    ///
+    /// true：
+    /// 拾得対象が存在し、このフレームの入力をItem拾得へ使用した。
+    ///
+    /// Inventory満杯などで実際の拾得に失敗しても、
+    /// ItemBoxを同じE入力で開かないよう入力自体は消費します。
+    /// </summary>
+    public static bool TryHandleNearestPickupInput(KeyCode key)
+    {
+        if (WasPickupInputConsumedThisFrame)
+        {
+            return true;
+        }
+
+        WorldItemPickup candidate =
+            FindNearestPickupCandidate(key);
+
+        if (candidate == null)
+        {
+            return false;
+        }
+
+        pickupInputConsumedFrame = Time.frameCount;
+
+        candidate.TryPickup();
+        return true;
+    }
+
+    /// <summary>
+    /// ItemBoxなど外部Interactableから、
+    /// このItemが「今Eで拾える状態か」を確認するための判定です。
+    /// ロープ・運搬・拾得Delayも従来どおり尊重します。
+    /// </summary>
+    public bool CanReceivePickupInputNow()
+    {
+        RefreshPlayerInRangeState();
+
+        return droppedItem != null &&
+               droppedItem.ItemData != null &&
+               !isPickingUp &&
+               IsPlayerInRange &&
+               Time.time >= canPickupAfterTime &&
+               !IsRopeModeBlockingPickup() &&
+               !IsCarryInteractionBlockingPickup();
+    }
+
+    private static WorldItemPickup FindNearestPickupCandidate(
+        KeyCode key)
+    {
+        WorldItemPickup[] pickups =
+            FindObjectsByType<WorldItemPickup>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None
+            );
+
+        if (pickups == null || pickups.Length == 0)
+        {
+            return null;
+        }
+
+        PlayerMove player =
+            FindAnyObjectByType<PlayerMove>(
+                FindObjectsInactive.Exclude
+            );
+
+        Vector3 playerPosition =
+            player != null
+                ? player.transform.position
+                : Vector3.zero;
+
+        WorldItemPickup nearest = null;
+        float nearestSqrDistance = float.PositiveInfinity;
+
+        foreach (WorldItemPickup pickup in pickups)
+        {
+            if (pickup == null ||
+                pickup.pickupKey != key ||
+                !pickup.CanReceivePickupInputNow())
+            {
+                continue;
+            }
+
+            float sqrDistance;
+
+            if (player != null)
+            {
+                sqrDistance =
+                    (pickup.transform.position - playerPosition)
+                    .sqrMagnitude;
+            }
+            else
+            {
+                // PlayerMoveが見つからない場合でも、
+                // 候補が1個なら正常に選べるようにする。
+                sqrDistance = nearest == null
+                    ? 0f
+                    : 1f;
+            }
+
+            if (nearest != null &&
+                sqrDistance >= nearestSqrDistance)
+            {
+                continue;
+            }
+
+            nearest = pickup;
+            nearestSqrDistance = sqrDistance;
+        }
+
+        return nearest;
     }
 
     public void Setup(InventoryItem item)
@@ -352,6 +510,16 @@ public class WorldItemPickup : MonoBehaviour
         if (droppedItem.ItemData is SkillCardData skillCardData)
         {
             return TryPickupSkillCard(skillCardData);
+        }
+
+        // PrimaryWeaponが空なら、地面の武器を通常Inventoryへ入れる前に
+        // 同じInventoryItem個体のまま直接装備する。
+        //
+        // これにより通常Inventoryが満杯でも、
+        // 装備枠が空いていれば武器を拾って装備できます。
+        if (TryAutoEquipPickedWeapon())
+        {
+            return true;
         }
 
         if (!FindInventoryController())
@@ -418,6 +586,99 @@ public class WorldItemPickup : MonoBehaviour
         if (stackAmountText != null)
         {
             stackAmountText.enabled = false;
+        }
+
+        Destroy(gameObject);
+        return true;
+    }
+
+    /// <summary>
+    /// 武器未装備時だけ、地面の武器を直接PrimaryWeaponへ装備します。
+    ///
+    /// falseの場合は失敗とは限りません。
+    /// 「武器ではない」「すでに武器装備済み」などの場合もfalseを返し、
+    /// 呼び出し元が従来の通常Inventory拾得へフォールバックします。
+    /// </summary>
+    private bool TryAutoEquipPickedWeapon()
+    {
+        if (!autoEquipWeaponWhenEmpty ||
+            droppedItem == null ||
+            droppedItem.ItemData == null ||
+            droppedItem.ItemData is not WeaponItemData)
+        {
+            return false;
+        }
+
+        // 武器は1個単位で装備する前提。
+        // 万一Stack状態なら従来Inventory処理へ回す。
+        if (droppedItem.Amount != 1)
+        {
+            return false;
+        }
+
+        if (!FindEquipmentController())
+        {
+            return false;
+        }
+
+        // すでにPrimaryWeaponがある時は交換せず、
+        // 今まで通り通常Inventoryへ拾う。
+        if (equipmentController.IsSlotOccupied(
+                EquipmentSlotType.PrimaryWeapon))
+        {
+            return false;
+        }
+
+        isPickingUp = true;
+
+        // WorldItemが持っている同じInventoryItem個体を直接渡す。
+        InventoryItem weaponItem = droppedItem;
+
+        if (!equipmentController.TryEquipExternalItem(
+                weaponItem,
+                out EquipmentResult equipResult))
+        {
+            isPickingUp = false;
+
+            if (logAutoEquipWeapon)
+            {
+                Debug.LogWarning(
+                    $"WorldItemPickup: 武器の自動装備に失敗しました。" +
+                    $" Item={weaponItem.ItemData.DisplayName}" +
+                    $" / Result={equipResult}",
+                    this
+                );
+            }
+
+            return false;
+        }
+
+        // EquipmentControllerが同じ個体を保持したので、
+        // WorldItem側から参照を外して地面Itemとして保存されないようにする。
+        droppedItem = null;
+
+        PlayWorldSound(
+            pickupSound,
+            pickupSoundVolume
+        );
+
+        if (pickupPromptText != null)
+        {
+            pickupPromptText.enabled = false;
+        }
+
+        if (stackAmountText != null)
+        {
+            stackAmountText.enabled = false;
+        }
+
+        if (logAutoEquipWeapon)
+        {
+            Debug.Log(
+                $"武器を拾って自動装備しました：" +
+                $"{weaponItem.ItemData.DisplayName}",
+                this
+            );
         }
 
         Destroy(gameObject);
@@ -725,6 +986,42 @@ public class WorldItemPickup : MonoBehaviour
 
         return carryController != null &&
                carryController.BlocksWorldItemPickup;
+    }
+
+    private bool FindEquipmentController()
+    {
+        if (equipmentController != null)
+        {
+            return true;
+        }
+
+        // PlayerのInventoryControllerと同じGameObject/親階層にある
+        // EquipmentControllerを優先して取得する。
+        if (inventoryController != null)
+        {
+            equipmentController =
+                inventoryController.GetComponent<EquipmentController>();
+
+            if (equipmentController == null)
+            {
+                equipmentController =
+                    inventoryController.GetComponentInParent<
+                        EquipmentController
+                    >();
+            }
+
+            if (equipmentController != null)
+            {
+                return true;
+            }
+        }
+
+        equipmentController =
+            FindAnyObjectByType<EquipmentController>(
+                FindObjectsInactive.Include
+            );
+
+        return equipmentController != null;
     }
 
     private bool FindInventoryController()

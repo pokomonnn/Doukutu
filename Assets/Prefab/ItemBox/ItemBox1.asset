@@ -17,9 +17,9 @@ MonoBehaviour:
     chancePercent: 72.8
     minAmount: 1
     maxAmount: 3
-  - itemData: {fileID: 11400000, guid: a3b808ca916280a46816c5033eac419a, type: 2}
+  - itemData: {fileID: 11400000, guid: c375d2bc72fdf754a9bb76c08017179c, type: 2}
     chancePercent: 40
-    minAmount: 8
+    minAmount: 1
     maxAmount: 10
   - itemData: {fileID: 11400000, guid: fb52aa05e33bca54e9a1f901280855d0, type: 2}
     chancePercent: 40

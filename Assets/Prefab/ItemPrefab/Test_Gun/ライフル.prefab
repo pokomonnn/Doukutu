@@ -4920,6 +4920,8 @@ MonoBehaviour:
   brokenVolume: 1
   isGunEquipped: 1
   casingParticleSystem: {fileID: 3624690500876985592}
+  weaponAnimator: {fileID: 0}
+  cockingVolume: 1
 --- !u!212 &7593345582623411913
 SpriteRenderer:
   serializedVersion: 2
