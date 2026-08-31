@@ -402,6 +402,10 @@ public class TownConversationController : MonoBehaviour
                 UpgradeFacilityFromChoice(choice);
                 break;
 
+            case TownConversationChoiceAction.OpenWeaponRepair:
+                OpenWeaponRepair();
+                break;
+
             default:
                 SetChoiceButtonsInteractable(true);
                 LogWarning("未対応の選択肢Actionです。");
@@ -1039,6 +1043,28 @@ public class TownConversationController : MonoBehaviour
 
         CloseConversation(false, false);
         pawnShopUIController.OpenPawnShop();
+    }
+
+    /// <summary>
+    /// 武器商人の会話選択肢「武器修理」から、
+    /// 通常の購入・売却画面を開かずに修理画面だけを開きます。
+    /// </summary>
+    private void OpenWeaponRepair()
+    {
+        FindReferences();
+
+        if (pawnShopUIController == null)
+        {
+            ShowStatusMessage(
+                "PawnShopUIControllerが見つからないため武器修理画面を開けません。",
+                true
+            );
+            SetChoiceButtonsInteractable(true);
+            return;
+        }
+
+        CloseConversation(false, false);
+        pawnShopUIController.OpenWeaponRepair();
     }
 
     private bool TryClaimCurrentReward(out string resultMessage)

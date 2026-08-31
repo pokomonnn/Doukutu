@@ -357,7 +357,10 @@ public enum TownConversationChoiceAction
     ClaimMissionReward,
     OpenPawnShop,
     CloseDialogue,
-    UpgradeFacility
+    UpgradeFacility,
+
+    // 既存Actionの数値を変えないため、必ず末尾へ追加する。
+    OpenWeaponRepair
 }
 
 [Serializable]

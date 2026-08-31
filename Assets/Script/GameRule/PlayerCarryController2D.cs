@@ -12,8 +12,9 @@ public enum PlayerCarryState2D
 
 /// <summary>
 /// CarryableObject2Dを手前に持つ／背負う／落とす操作を管理します。
-/// E：拾う、手前持ちと背負いの切り替え
-/// F：手前持ちは少し前へ、背負い中は真下へ落とす
+/// Carry Key：拾う
+/// Carry Mode Switch Key：手前持ちと背負いの切り替え
+/// Drop Key：手前持ちは少し前へ、背負い中は真下へ落とす
 /// </summary>
 [DefaultExecutionOrder(-130)]
 [DisallowMultipleComponent]
@@ -81,7 +82,16 @@ public class PlayerCarryController2D : MonoBehaviour
     [SerializeField, Min(0f)] private float playerCollisionIgnoreDuration = 0.25f;
 
     [Header("入力")]
+    [Tooltip("地面のNPC・CarryableObject2Dを拾うキーです")]
     [SerializeField] private KeyCode carryKey = KeyCode.E;
+
+    [Tooltip(
+        "手前持ち <-> 背負い を切り替える専用キーです。" +
+        "Carry Keyとは別のキーを設定してください。"
+    )]
+    [SerializeField] private KeyCode carryModeSwitchKey = KeyCode.Q;
+
+    [Tooltip("持っているNPC・CarryableObject2Dを下ろすキーです")]
     [SerializeField] private KeyCode dropKey = KeyCode.F;
 
     [Header("持てる物の探索")]
@@ -91,9 +101,19 @@ public class PlayerCarryController2D : MonoBehaviour
 
     [Header("Text表示")]
     [SerializeField] private TMP_Text carryModeText;
-    [SerializeField] private string pickupPrompt = "E：持つ";
-    [SerializeField] private string frontCarryPrompt = "E：背負う　F：前に置く";
-    [SerializeField] private string backpackPrompt = "E：手前に持つ　F：真下に置く";
+
+    [Tooltip(
+        "ONの場合、操作Promptのキー名をCarry Key / Carry Mode Switch Key / Drop Keyから" +
+        "自動生成します。キーを変更しても表示が自動で追従します。"
+    )]
+    [SerializeField] private bool useAutomaticKeyPrompts = true;
+
+    [SerializeField] private string pickupPrompt = "持つ";
+    [SerializeField] private string frontCarryPrompt = "背負う";
+    [SerializeField] private string backpackPrompt = "手前に持つ";
+    [SerializeField] private string frontDropPrompt = "前に置く";
+    [SerializeField] private string backpackDropPrompt = "真下に置く";
+
     [SerializeField] private string frontCarryLabel = "手前に持っています";
     [SerializeField] private string backpackLabel = "背負っています";
 
@@ -222,11 +242,22 @@ public class PlayerCarryController2D : MonoBehaviour
         consumedCarryInputThisFrame = false;
         FindReferences();
 
-        if (logInputEvents && (Input.GetKeyDown(carryKey) || Input.GetKeyDown(dropKey)))
+        if (logInputEvents &&
+            (Input.GetKeyDown(carryKey) ||
+             Input.GetKeyDown(carryModeSwitchKey) ||
+             Input.GetKeyDown(dropKey)))
         {
+            string pressedKey =
+                Input.GetKeyDown(carryKey)
+                    ? carryKey.ToString()
+                    : Input.GetKeyDown(carryModeSwitchKey)
+                        ? carryModeSwitchKey.ToString()
+                        : dropKey.ToString();
+
             Log(
                 $"[Carry診断][入力] " +
-                $"Key={(Input.GetKeyDown(carryKey) ? carryKey.ToString() : dropKey.ToString())} / " +
+                $"Key={pressedKey} / PickupKey={carryKey} / " +
+                $"SwitchKey={carryModeSwitchKey} / DropKey={dropKey} / " +
                 $"State={currentState} / IsCarrying={IsCarrying} / " +
                 $"PromptTarget={(promptTarget != null ? promptTarget.name : "なし")} / " +
                 $"InputBlocked={IsInputBlocked()} / PickupBlock={GetNewPickupBlockReason()}"
@@ -644,7 +675,7 @@ public class PlayerCarryController2D : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(carryKey))
+        if (Input.GetKeyDown(carryModeSwitchKey))
         {
             consumedCarryInputThisFrame = true;
 
@@ -977,7 +1008,7 @@ public class PlayerCarryController2D : MonoBehaviour
         {
             if (promptTarget != null)
             {
-                promptTarget.ShowPrompt(pickupPrompt);
+                promptTarget.ShowPrompt(GetPickupPromptText());
             }
 
             return;
@@ -992,7 +1023,7 @@ public class PlayerCarryController2D : MonoBehaviour
 
         if (promptTarget != null)
         {
-            promptTarget.ShowPrompt(pickupPrompt);
+            promptTarget.ShowPrompt(GetPickupPromptText());
         }
     }
 
@@ -1015,11 +1046,71 @@ public class PlayerCarryController2D : MonoBehaviour
             return;
         }
 
-        carriedTarget.ShowPrompt(
-            currentState == PlayerCarryState2D.Front
+        carriedTarget.ShowPrompt(GetCurrentCarryPromptText());
+    }
+
+    private string GetPickupPromptText()
+    {
+        if (!useAutomaticKeyPrompts)
+        {
+            return pickupPrompt;
+        }
+
+        return $"{carryKey}：{ExtractActionLabel(pickupPrompt, "持つ")}";
+    }
+
+    private string GetCurrentCarryPromptText()
+    {
+        if (!useAutomaticKeyPrompts)
+        {
+            return currentState == PlayerCarryState2D.Front
                 ? frontCarryPrompt
-                : backpackPrompt
-        );
+                : backpackPrompt;
+        }
+
+        if (currentState == PlayerCarryState2D.Front)
+        {
+            return
+                $"{carryModeSwitchKey}：{ExtractActionLabel(frontCarryPrompt, "背負う")}　" +
+                $"{dropKey}：{ExtractActionLabel(frontDropPrompt, "前に置く")}";
+        }
+
+        return
+            $"{carryModeSwitchKey}：{ExtractActionLabel(backpackPrompt, "手前に持つ")}　" +
+            $"{dropKey}：{ExtractActionLabel(backpackDropPrompt, "真下に置く")}";
+    }
+
+    private static string ExtractActionLabel(
+        string configuredText,
+        string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(configuredText))
+        {
+            return fallback;
+        }
+
+        string value = configuredText.Trim();
+
+        int colon = value.IndexOf('：');
+        if (colon < 0)
+        {
+            colon = value.IndexOf(':');
+        }
+
+        if (colon >= 0 && colon + 1 < value.Length)
+        {
+            value = value.Substring(colon + 1).Trim();
+        }
+
+        int separator = value.IndexOf('　');
+        if (separator >= 0)
+        {
+            value = value.Substring(0, separator).Trim();
+        }
+
+        return string.IsNullOrWhiteSpace(value)
+            ? fallback
+            : value;
     }
 
     private void RefreshCarryText()
@@ -1438,6 +1529,24 @@ public class PlayerCarryController2D : MonoBehaviour
         backpackTransitionDuration = Mathf.Max(0f, backpackTransitionDuration);
         minimumCarrySpeedMultiplier = Mathf.Clamp(minimumCarrySpeedMultiplier, 0.05f, 1f);
         repeatedDiagnosticInterval = Mathf.Max(0.1f, repeatedDiagnosticInterval);
+
+        if (carryModeSwitchKey == carryKey)
+        {
+            Debug.LogWarning(
+                "[PlayerCarryController2D] Carry Key と Carry Mode Switch Key が同じです。" +
+                "別のキーを設定してください。",
+                this
+            );
+        }
+
+        if (carryModeSwitchKey == dropKey)
+        {
+            Debug.LogWarning(
+                "[PlayerCarryController2D] Carry Mode Switch Key と Drop Key が同じです。" +
+                "別のキーを設定してください。",
+                this
+            );
+        }
     }
 
     private void OnDrawGizmosSelected()

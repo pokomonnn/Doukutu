@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(RectTransform))]
@@ -8,7 +9,9 @@ public class EquipmentItemDragHandler : MonoBehaviour,
     IBeginDragHandler,
     IDragHandler,
     IEndDragHandler,
-    IPointerClickHandler
+    IPointerClickHandler,
+    IPointerEnterHandler,
+    IPointerExitHandler
 {
     [Header("ドラッグ中の見た目")]
     [SerializeField, Range(0.1f, 1f)]
@@ -30,6 +33,14 @@ public class EquipmentItemDragHandler : MonoBehaviour,
     )]
     [SerializeField] private PlayerItemDropper playerItemDropper;
 
+    [Header("武器修理：装備武器の選択色")]
+    [SerializeField]
+    private Color repairSelectedBackgroundColor =
+        new Color(0.18f, 0.55f, 0.28f, 0.96f);
+
+    [SerializeField]
+    private Color repairSelectedIconColor = Color.white;
+
     [Header("デバッグ")]
     [SerializeField] private bool showDropDebugLogs = false;
 
@@ -50,6 +61,11 @@ public class EquipmentItemDragHandler : MonoBehaviour,
 
     private InventoryContextMenuUI contextMenuUI;
 
+    private Image itemBackgroundImage;
+    private Image itemIconImage;
+    private bool lastRepairModeActive;
+    private bool lastRepairSelected;
+
     private void Awake()
     {
         itemRect = GetComponent<RectTransform>();
@@ -58,10 +74,13 @@ public class EquipmentItemDragHandler : MonoBehaviour,
         FindEquipmentSlotUI();
         FindSoundPlayer();
         FindPlayerItemDropper();
+        FindRepairVisualReferences();
     }
 
     private void Update()
     {
+        RefreshRepairSelectionVisual();
+
         if (!isDragging)
         {
             return;
@@ -73,16 +92,15 @@ public class EquipmentItemDragHandler : MonoBehaviour,
         }
     }
 
-    public void OnPointerClick(PointerEventData eventData)
+    /// <summary>
+    /// 装備スロット上のItemへカーソルを乗せた時も、
+    /// 通常Inventoryと同じTooltipを表示します。
+    /// </summary>
+    public void OnPointerEnter(
+        PointerEventData eventData)
     {
-        if (eventData.button !=
-                PointerEventData.InputButton.Right ||
-            isDragging)
-        {
-            return;
-        }
-
-        if (!FindEquipmentSlotUI())
+        if (isDragging ||
+            !FindEquipmentSlotUI())
         {
             return;
         }
@@ -90,10 +108,98 @@ public class EquipmentItemDragHandler : MonoBehaviour,
         InventoryItem item =
             equipmentSlotUI.GetEquippedItem();
 
-        if (item == null || item.ItemData == null)
+        if (item == null ||
+            item.ItemData == null)
         {
             return;
         }
+
+        Canvas canvas =
+            GetComponentInParent<Canvas>()?.rootCanvas;
+
+        if (canvas == null)
+        {
+            return;
+        }
+
+        // 装備Itemは商人在庫ではないので、
+        // merchantStockはnullで表示します。
+        InventoryItemTooltipUI.Show(
+            item,
+            canvas,
+            null
+        );
+    }
+
+    public void OnPointerExit(
+        PointerEventData eventData)
+    {
+        InventoryItem item =
+            equipmentSlotUI != null
+                ? equipmentSlotUI.GetEquippedItem()
+                : null;
+
+        InventoryItemTooltipUI.HideFor(item);
+    }
+
+    private void OnDisable()
+    {
+        InventoryItem item =
+            equipmentSlotUI != null
+                ? equipmentSlotUI.GetEquippedItem()
+                : null;
+
+        InventoryItemTooltipUI.HideFor(item);
+    }
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (isDragging ||
+            !FindEquipmentSlotUI())
+        {
+            return;
+        }
+
+        InventoryItem item =
+            equipmentSlotUI.GetEquippedItem();
+
+        if (item == null ||
+            item.ItemData == null)
+        {
+            return;
+        }
+
+        // 武器修理画面では、装備中の武器も左クリックで
+        // 通常Inventoryと同じ選択集合へ追加／解除します。
+        if (eventData.button ==
+                PointerEventData.InputButton.Left &&
+            item.ItemData is WeaponItemData)
+        {
+            MerchantWeaponRepairController
+                repairController =
+                    MerchantWeaponRepairController
+                        .ActiveInstance;
+
+            if (repairController != null &&
+                repairController.IsOpen &&
+                repairController
+                    .TryToggleRepairSelectionFromEquipmentUI(
+                        item
+                    ))
+            {
+                RefreshRepairSelectionVisual(true);
+                return;
+            }
+        }
+
+        if (eventData.button !=
+            PointerEventData.InputButton.Right)
+        {
+            return;
+        }
+
+        // ContextMenuとTooltipが重ならないよう閉じる。
+        InventoryItemTooltipUI.HideFor(item);
 
         if (!FindContextMenuUI())
         {
@@ -135,6 +241,22 @@ public class EquipmentItemDragHandler : MonoBehaviour,
         {
             return;
         }
+
+        MerchantWeaponRepairController
+            repairController =
+                MerchantWeaponRepairController
+                    .ActiveInstance;
+
+        // 修理画面では装備Itemを移動させず、
+        // 左クリックで修理対象を選ぶ操作を優先します。
+        if (repairController != null &&
+            repairController.IsOpen)
+        {
+            return;
+        }
+
+        // ドラッグ開始時はTooltipを消す。
+        InventoryItemTooltipUI.HideFor(item);
 
         rootCanvas = GetComponentInParent<Canvas>()?.rootCanvas;
 
@@ -628,6 +750,88 @@ public class EquipmentItemDragHandler : MonoBehaviour,
         }
 
         equipmentSlotUI?.RefreshSlotVisual();
+    }
+
+    private void RefreshRepairSelectionVisual(
+        bool force = false)
+    {
+        if (!FindEquipmentSlotUI())
+        {
+            return;
+        }
+
+        InventoryItem item =
+            equipmentSlotUI.GetEquippedItem();
+
+        MerchantWeaponRepairController
+            repairController =
+                MerchantWeaponRepairController
+                    .ActiveInstance;
+
+        bool repairModeActive =
+            repairController != null &&
+            repairController.IsOpen;
+
+        bool selected =
+            repairModeActive &&
+            item != null &&
+            item.ItemData is WeaponItemData &&
+            repairController
+                .IsItemSelectedForRepair(item);
+
+        // 選択中はEquipmentSlotUI側のRefreshで色が戻されても
+        // 次のFrameに必ず選択色を再適用します。
+        if (selected)
+        {
+            FindRepairVisualReferences();
+
+            if (itemBackgroundImage != null)
+            {
+                itemBackgroundImage.color =
+                    repairSelectedBackgroundColor;
+            }
+
+            if (itemIconImage != null)
+            {
+                itemIconImage.color =
+                    repairSelectedIconColor;
+            }
+        }
+        else if (force ||
+                 lastRepairSelected ||
+                 lastRepairModeActive != repairModeActive)
+        {
+            // 選択解除／修理画面Close時は
+            // EquipmentSlotUIの通常色へ戻します。
+            equipmentSlotUI.RefreshSlotVisual();
+        }
+
+        lastRepairModeActive =
+            repairModeActive;
+
+        lastRepairSelected =
+            selected;
+    }
+
+    private void FindRepairVisualReferences()
+    {
+        if (itemBackgroundImage == null)
+        {
+            itemBackgroundImage =
+                GetComponent<Image>();
+        }
+
+        if (itemIconImage == null)
+        {
+            Transform iconTransform =
+                transform.Find("Icon");
+
+            if (iconTransform != null)
+            {
+                itemIconImage =
+                    iconTransform.GetComponent<Image>();
+            }
+        }
     }
 
     private bool FindEquipmentSlotUI()

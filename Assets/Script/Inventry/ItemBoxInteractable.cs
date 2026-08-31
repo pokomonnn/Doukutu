@@ -17,15 +17,26 @@ public class ItemBoxInteractable : MonoBehaviour
     /// </summary>
     public event Action<ItemBoxInteractable> Opened;
 
+    /// <summary>
+    /// すでに一度開かれたかを返します。
+    ///
+    /// 通常のItemBoxはItemBoxSaveIdentity.WasOpenedを使用し、
+    /// ItemBoxSaveIdentityを持たない死亡NPCのCorpseLootなどは
+    /// このコンポーネント内のランタイム開封済み状態を使用します。
+    /// </summary>
     public bool WasOpened =>
-        saveIdentity != null && saveIdentity.WasOpened;
+        wasOpenedThisSession ||
+        (saveIdentity != null && saveIdentity.WasOpened);
 
     [Header("参照")]
     [SerializeField] private ItemBoxInventory itemBoxInventory;
     [SerializeField] private ItemBoxUIController itemBoxUIController;
     [SerializeField] private ItemBoxSaveIdentity saveIdentity;
 
-    [Tooltip("一度開封済みの箱は待ち時間なしで開きます")]
+    [Tooltip(
+        "一度開封済みなら2回目以降は待ち時間なしで開きます。" +
+        "ItemBoxSaveIdentityを持たない死亡NPCのCorpseLootにも対応します。"
+    )]
     [SerializeField] private bool skipOpenDelayAfterFirstOpen = true;
 
     [Header("操作")]
@@ -104,6 +115,14 @@ public class ItemBoxInteractable : MonoBehaviour
     private bool isPromptLabelSubscribed;
     private bool isOpening;
     private Coroutine openCoroutine;
+
+    // ItemBoxSaveIdentityを持たない死亡NPCのCorpseLootなどでも、
+    // 1回目だけ待ち時間を発生させるためのランタイム開封済み状態。
+    //
+    // OnDisableではリセットしません。
+    // CorpseLootのItemBoxInteractableが一時的に無効化されても、
+    // 同じオブジェクトが存在している間は開封済みを維持します。
+    private bool wasOpenedThisSession;
 
     private bool hasPriorityWorldItemPickup;
 
@@ -240,8 +259,7 @@ public class ItemBoxInteractable : MonoBehaviour
     {
         float effectiveOpenDelay =
             skipOpenDelayAfterFirstOpen &&
-            saveIdentity != null &&
-            saveIdentity.WasOpened
+            WasOpened
                 ? 0f
                 : openDelay;
 
@@ -272,7 +290,14 @@ public class ItemBoxInteractable : MonoBehaviour
             !itemBoxUIController.IsOpen)
         {
             itemBoxUIController.Open(itemBoxInventory);
+
+            // SaveIdentityが無い死亡NPCのCorpseLootでも、
+            // この瞬間から2回目以降は待ち時間なしにします。
+            wasOpenedThisSession = true;
+
+            // 通常ItemBoxは従来どおりセーブ可能な開封済み状態も更新します。
             saveIdentity?.MarkOpened();
+
             Opened?.Invoke(this);
         }
 

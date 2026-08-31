@@ -1,3 +1,4 @@
+﻿using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -6,18 +7,38 @@ using UnityEngine.UI;
 
 /// <summary>
 /// ItemBoxInventoryを商人の商品棚として表示し、
-/// 選択した商品を所持金で購入します。
+/// 選択した複数の商品をまとめて購入します。
 ///
-/// 商品の選択は、Merchant Inventory Grid上のアイテムを左クリックします。
-/// InventoryGridUI / InventoryItemUI本体を変更せずに動作します。
+/// 【複数選択】
+/// ・Merchant InventoryのItemを左クリックすると購入選択
+/// ・選択したItemはInventoryItemUI側で色変更
+/// ・別Itemをクリックしても前の選択を保持
+/// ・選択済みItemをもう一度クリックすると選択解除
 ///
-/// 購入数は従来の +/- Button に加えてSliderでも変更できます。
-/// Sliderの最大値は、在庫・店舗購入上限・所持金・インベントリ空き容量から
-/// 「現在実際に購入できる最大数」を自動計算します。
+/// 【数量Slider】
+/// ・弾薬などCanStack=trueで複数購入可能なItemを選択すると、
+///   クリック位置の近くへSliderを表示
+/// ・SliderはそのItemの購入数だけを変更
+/// ・Slider最大値は在庫数と店舗MaxPurchaseAmountを基準にする
+///
+/// 【一括購入】
+/// ・Total Price Textは選択中すべての合計金額
+/// ・購入ボタンで選択中すべてを一括購入
+/// ・購入前に所持金とPlayer Inventory全体の空き容量をまとめて検証
+/// ・空き不足なら「スペースがない」
+/// ・所持金不足なら「所持金が足りない」
+///
+/// 武器修理画面の開閉はPawnShopUIController側で独立して管理します。
 /// </summary>
 [DisallowMultipleComponent]
 public class MerchantPurchaseController : MonoBehaviour
 {
+    public static MerchantPurchaseController ActiveInstance
+    {
+        get;
+        private set;
+    }
+
     [Header("商品・プレイヤーのGrid UI")]
     [Tooltip("商人のItemBoxInventoryを表示するInventoryGridUIです。Inventory Controllerは空欄にします。")]
     [SerializeField] private InventoryGridUI merchantInventoryGridUI;
@@ -29,22 +50,69 @@ public class MerchantPurchaseController : MonoBehaviour
     [SerializeField] private TownPlayerInventoryController townPlayerInventory;
     [SerializeField] private GameSessionManager gameSessionManager;
 
-    [Header("武器屋修理連携")]
-    [Tooltip("同じ商人画面に置いたMerchantWeaponRepairController。未設定なら子から自動検索します。")]
-    [SerializeField] private MerchantWeaponRepairController weaponRepairController;
-
     [Header("店舗・所持金表示")]
     [SerializeField] private TMP_Text shopNameText;
     [SerializeField] private TMP_Text moneyText;
 
-    [Header("選択商品表示")]
+    [Header("最後に操作した商品表示")]
     [SerializeField] private Image selectedItemIcon;
     [SerializeField] private TMP_Text selectedItemNameText;
     [SerializeField] private TMP_Text unitPriceText;
     [SerializeField] private TMP_Text stockText;
     [SerializeField] private TMP_Text purchaseAmountText;
+
+    [Tooltip("選択中すべての商品を合計した購入予定金額を表示します。")]
     [SerializeField] private TMP_Text totalPriceText;
+
     [SerializeField] private TMP_Text statusText;
+
+    [Header("購入エラーStatus演出")]
+    [Tooltip("所持金不足メッセージを下から上へ移動しながらフェードアウトさせます。")]
+    [SerializeField] private bool animateInsufficientMoneyStatus = true;
+
+    [Tooltip("所持金不足の演出時間です。")]
+    [SerializeField, Min(0.1f)]
+    private float insufficientMoneyStatusDuration = 1.2f;
+
+    [Tooltip("所持金不足の開始位置を元のStatusText位置から何px下げるか。")]
+    [SerializeField]
+    private float insufficientMoneyStatusStartYOffset = 36f;
+
+    [Tooltip("所持金不足の終了時に元の位置から何px上へ移動するか。")]
+    [SerializeField]
+    private float insufficientMoneyStatusEndYOffset = 28f;
+
+    [Tooltip("所持金不足の開始時透明度です。1で完全表示。")]
+    [SerializeField, Range(0f, 1f)]
+    private float insufficientMoneyStatusStartAlpha = 1f;
+
+    [Tooltip("所持金不足の終了時透明度です。通常は0。")]
+    [SerializeField, Range(0f, 1f)]
+    private float insufficientMoneyStatusEndAlpha = 0f;
+
+    [Space(8f)]
+    [Tooltip("Inventory空き不足メッセージを下から上へ移動しながらフェードアウトさせます。")]
+    [SerializeField] private bool animateInventoryFullStatus = true;
+
+    [Tooltip("Inventory空き不足の演出時間です。")]
+    [SerializeField, Min(0.1f)]
+    private float inventoryFullStatusDuration = 1.2f;
+
+    [Tooltip("Inventory空き不足の開始位置を元のStatusText位置から何px下げるか。")]
+    [SerializeField]
+    private float inventoryFullStatusStartYOffset = 36f;
+
+    [Tooltip("Inventory空き不足の終了時に元の位置から何px上へ移動するか。")]
+    [SerializeField]
+    private float inventoryFullStatusEndYOffset = 28f;
+
+    [Tooltip("Inventory空き不足の開始時透明度です。1で完全表示。")]
+    [SerializeField, Range(0f, 1f)]
+    private float inventoryFullStatusStartAlpha = 1f;
+
+    [Tooltip("Inventory空き不足の終了時透明度です。通常は0。")]
+    [SerializeField, Range(0f, 1f)]
+    private float inventoryFullStatusEndAlpha = 0f;
 
     [Header("購入操作")]
     [SerializeField] private Button decreaseAmountButton;
@@ -52,27 +120,58 @@ public class MerchantPurchaseController : MonoBehaviour
     [SerializeField] private Button purchaseButton;
 
     [Header("購入数Slider")]
-    [Tooltip("購入数を一気に変更するSliderです。未設定でも従来の+/-Buttonだけで動作します。")]
+    [Tooltip("最後に選択したスタック可能Itemの購入数を変更するSliderです。")]
     [SerializeField] private Slider purchaseAmountSlider;
 
-    [Tooltip("Slider全体をまとめた親Objectです。銃・防具など1個購入の商品では非表示にしたい場合に設定します。未設定ならSlider自身を表示/非表示にします。")]
+    [Tooltip("Slider全体の親Object。カーソル付近へ移動させる対象です。未設定ならSlider自身を使います。")]
     [SerializeField] private GameObject purchaseAmountSliderRoot;
 
-    [Tooltip("オンなら、スタック不可または最大1個しか購入できない商品ではSliderを隠します。")]
+    [Tooltip("オンなら、スタック不可または1個しか買えないItemではSliderを隠します。")]
     [SerializeField] private bool hideSliderForSinglePurchaseItems = true;
 
-    [Tooltip("オンならSliderの最大値を、在庫だけでなく所持金とインベントリ空き容量にも合わせます。")]
-    [SerializeField] private bool limitSliderByMoneyAndInventory = true;
+    [Tooltip(
+        "オンならSlider最大値は在庫数と店舗購入上限のみを使用します。" +
+        "所持金・Inventory空きは購入ボタンを押した時にまとめて判定するので、通常はON推奨です。"
+    )]
+    [SerializeField] private bool selectionSliderUsesStockOnly = true;
 
-    [Header("購入成功サウンド")]
-    [Tooltip("購入成功時の効果音を再生するAudioSourceです。未設定なら同じGameObjectから探します。")]
+    [Header("Sliderの表示位置")]
+    [Tooltip(
+        "Itemをクリックした時、そのクリック位置の近くへSliderを表示します。" +
+        "Slider操作中に動いてしまわないよう、クリック後はその場所に固定します。"
+    )]
+    [SerializeField] private bool placeSliderNearClickedItem = true;
+
+    [SerializeField]
+    private Vector2 sliderCursorOffset = new Vector2(24f, -16f);
+
+    [Header("購入サウンド")]
+    [Tooltip("購入関連の効果音を再生するAudioSourceです。未設定なら同じGameObjectから探します。")]
     [SerializeField] private AudioSource audioSource;
 
-    [Tooltip("購入が正常に完了した時だけ再生する効果音です。")]
+    [Tooltip("一括購入が正常に完了した時だけ再生する効果音です。")]
     [SerializeField] private AudioClip purchaseSuccessClip;
 
     [SerializeField, Range(0f, 1f)]
     private float purchaseSoundVolume = 1f;
+
+    [Tooltip("Itemを選択した時・選択解除した時に共通で鳴らす効果音です。")]
+    [SerializeField] private AudioClip itemSelectionToggleClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float itemSelectionToggleVolume = 1f;
+
+    [Tooltip("購入ボタンを押したが購入できなかった時に鳴らす効果音です。")]
+    [SerializeField] private AudioClip purchaseFailedClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float purchaseFailedVolume = 1f;
+
+    [Tooltip("購入数Sliderの値が1段階変わった時に鳴らす効果音です。")]
+    [SerializeField] private AudioClip sliderMoveClip;
+
+    [SerializeField, Range(0f, 1f)]
+    private float sliderMoveVolume = 1f;
 
     [Header("表示文言")]
     [SerializeField] private string moneyFormat = "所持金：¥{0:N0}";
@@ -80,19 +179,39 @@ public class MerchantPurchaseController : MonoBehaviour
     [SerializeField] private string stockFormat = "在庫：{0:N0}";
     [SerializeField] private string amountFormat = "購入数：{0:N0}";
     [SerializeField] private string totalPriceFormat = "合計：¥{0:N0}";
+
     [SerializeField] private string selectItemMessage =
         "商品を左クリックしてください。";
+
     [SerializeField] private string insufficientMoneyMessage =
         "所持金が足りません。";
+
     [SerializeField] private string inventoryFullMessage =
         "プレイヤーインベントリに空きがありません。";
+
     [SerializeField] private string soldOutMessage =
         "この商品は売り切れです。";
-    [SerializeField] private string purchaseSuccessFormat =
-        "{0} ×{1} を ¥{2:N0} で購入しました。";
+
+    [Header("一括購入の表示文言")]
+    [SerializeField] private string cartInsufficientMoneyMessage =
+        "所持金が足りない";
+
+    [SerializeField] private string cartInventoryFullMessage =
+        "スペースがない";
+
+    [SerializeField] private string multiPurchaseSuccessFormat =
+        "{0}種類 / 合計 ¥{1:N0} を購入しました。";
 
     [Header("動作")]
+    [Tooltip(
+        "新しい複数選択方式では、Shopを開いた直後は未選択がおすすめです。" +
+        "ONなら必ず未選択で開始します。"
+    )]
+    [SerializeField] private bool startWithNoSelection = true;
+
+    [Tooltip("旧仕様互換。Start With No SelectionがOFFの時だけ最初の商品を自動選択します。")]
     [SerializeField] private bool selectFirstItemWhenOpened = true;
+
     [SerializeField] private bool captureInventoryAfterPurchase = true;
 
     [Header("デバッグ")]
@@ -100,19 +219,99 @@ public class MerchantPurchaseController : MonoBehaviour
 
     public bool IsOpen => isOpen;
     public MerchantStockInventory CurrentStock => currentStock;
+
+    /// <summary>
+    /// 旧コード互換。
+    /// 複数選択中のうち、最後にクリックして数量操作対象になっているItemです。
+    /// </summary>
     public InventoryItem SelectedItem => selectedItem;
+
+    /// <summary>
+    /// 旧コード互換。
+    /// 最後に操作しているItemの購入数です。
+    /// </summary>
     public int PurchaseAmount => purchaseAmount;
 
+    public int SelectedPurchaseEntryCount => selectedPurchases.Count;
+
     private MerchantStockInventory currentStock;
+
+    // 最後にクリックして数量Sliderの操作対象になっているItem。
     private InventoryItem selectedItem;
     private int purchaseAmount = 1;
+
+    // 複数選択の本体。InventoryItemごとに購入予定数を保持します。
+    private readonly Dictionary<InventoryItem, int> selectedPurchases =
+        new Dictionary<InventoryItem, int>();
+
     private bool isOpen;
     private bool isStockSubscribed;
     private bool isMoneySubscribed;
+    private bool isProcessingPurchase;
+
+    // Slider音の連打防止。
+    // 同じ整数値でonValueChangedが複数回飛んでも1回だけ鳴らします。
+    private int lastSliderSoundValue = int.MinValue;
+
+    private Coroutine statusAnimationCoroutine;
+    private RectTransform statusRectTransform;
+    private Vector2 statusBaseAnchoredPosition;
+    private Color statusBaseColor = Color.white;
+    private bool hasCapturedStatusBaseState;
+
+    private Vector2 lastSliderAnchorScreenPosition;
+    private bool hasSliderAnchor;
+
+    private readonly struct PurchaseSnapshot
+    {
+        public readonly InventoryItem StockItem;
+        public readonly ItemData ItemData;
+        public readonly int Amount;
+        public readonly int UnitPrice;
+        public readonly int TotalPrice;
+
+        public PurchaseSnapshot(
+            InventoryItem stockItem,
+            ItemData itemData,
+            int amount,
+            int unitPrice)
+        {
+            StockItem = stockItem;
+            ItemData = itemData;
+            Amount = Mathf.Max(0, amount);
+            UnitPrice = Mathf.Max(0, unitPrice);
+            TotalPrice = MultiplyPrice(UnitPrice, Amount);
+        }
+    }
+
+    private readonly struct RemovedStockEntry
+    {
+        public readonly ItemData ItemData;
+        public readonly int Amount;
+
+        public RemovedStockEntry(ItemData itemData, int amount)
+        {
+            ItemData = itemData;
+            Amount = Mathf.Max(0, amount);
+        }
+    }
+
+    private readonly struct PurchaseGroup
+    {
+        public readonly ItemData ItemData;
+        public readonly int Amount;
+
+        public PurchaseGroup(ItemData itemData, int amount)
+        {
+            ItemData = itemData;
+            Amount = Mathf.Max(0, amount);
+        }
+    }
 
     private void Awake()
     {
         FindReferences();
+        CaptureStatusBaseState();
         SetupButtons();
         SetupSlider();
         RefreshUI();
@@ -121,6 +320,7 @@ public class MerchantPurchaseController : MonoBehaviour
     private void OnEnable()
     {
         FindReferences();
+        CaptureStatusBaseState();
         SetupButtons();
         SetupSlider();
         SubscribeMoney();
@@ -129,12 +329,24 @@ public class MerchantPurchaseController : MonoBehaviour
 
     private void OnDisable()
     {
+        if (ActiveInstance == this)
+        {
+            ActiveInstance = null;
+        }
+
         UnsubscribeStock();
         UnsubscribeMoney();
+        HidePurchaseSlider();
+        StopStatusAnimation(true);
     }
 
     private void OnDestroy()
     {
+        if (ActiveInstance == this)
+        {
+            ActiveInstance = null;
+        }
+
         RemoveButtonListeners();
         RemoveSliderListener();
     }
@@ -149,12 +361,11 @@ public class MerchantPurchaseController : MonoBehaviour
             return;
         }
 
-        TrySelectItemUnderPointer();
+        TryToggleItemUnderPointer();
     }
 
     /// <summary>
-    /// 指定された商人のItemBoxInventoryを商品Gridへ接続します。
-    /// 開けた時だけtrueを返します。
+    /// 指定された商人の商品在庫を購入画面へ接続します。
     /// </summary>
     public bool OpenShop(MerchantStockInventory stockInventory)
     {
@@ -163,8 +374,9 @@ public class MerchantPurchaseController : MonoBehaviour
         UnsubscribeStock();
 
         currentStock = stockInventory;
-        selectedItem = null;
-        purchaseAmount = 1;
+
+        ClearAllSelections(false);
+
         isOpen = false;
 
         if (currentStock == null)
@@ -189,7 +401,8 @@ public class MerchantPurchaseController : MonoBehaviour
             return false;
         }
 
-        if (currentStock.StockInventory.BoxKind != ItemBoxKind.Shop)
+        if (currentStock.StockInventory == null ||
+            currentStock.StockInventory.BoxKind != ItemBoxKind.Shop)
         {
             SetStatus(
                 "商人のItemBoxInventoryはBox KindをShopにしてください。",
@@ -217,22 +430,20 @@ public class MerchantPurchaseController : MonoBehaviour
         SubscribeMoney();
 
         isOpen = true;
+        ActiveInstance = this;
 
-        weaponRepairController?.OpenRepairShop(currentStock);
-
-        if (selectFirstItemWhenOpened)
+        if (!startWithNoSelection &&
+            selectFirstItemWhenOpened)
         {
-            SelectFirstAvailableItem();
+            SelectFirstAvailableItemForLegacyMode();
         }
 
-        if (selectedItem == null)
-        {
-            SetStatus(selectItemMessage, false);
-        }
-        else
-        {
-            SetStatus(string.Empty, false);
-        }
+        SetStatus(
+            selectedPurchases.Count > 0
+                ? string.Empty
+                : selectItemMessage,
+            false
+        );
 
         RefreshUI();
 
@@ -246,13 +457,20 @@ public class MerchantPurchaseController : MonoBehaviour
 
     public void CloseShop()
     {
-        weaponRepairController?.CloseRepairShop();
         UnsubscribeStock();
+
         isOpen = false;
+        ClearAllSelections(false);
+
         currentStock = null;
-        selectedItem = null;
-        purchaseAmount = 1;
+
+        if (ActiveInstance == this)
+        {
+            ActiveInstance = null;
+        }
+
         SetStatus(string.Empty, false);
+        HidePurchaseSlider();
         RefreshUI();
     }
 
@@ -274,6 +492,30 @@ public class MerchantPurchaseController : MonoBehaviour
         playerInventoryGridUI?.RefreshInventoryUI();
     }
 
+    /// <summary>
+    /// InventoryItemUIから、購入選択色を出すために参照します。
+    /// </summary>
+    public bool IsItemSelectedForPurchase(InventoryItem item)
+    {
+        return isOpen &&
+               item != null &&
+               selectedPurchases.ContainsKey(item);
+    }
+
+    public int GetSelectedPurchaseAmount(InventoryItem item)
+    {
+        if (item == null)
+        {
+            return 0;
+        }
+
+        return selectedPurchases.TryGetValue(
+            item,
+            out int amount)
+            ? Mathf.Max(0, amount)
+            : 0;
+    }
+
     public void DecreasePurchaseAmount()
     {
         SetPurchaseAmount(purchaseAmount - 1);
@@ -291,181 +533,290 @@ public class MerchantPurchaseController : MonoBehaviour
 
     public void SetPurchaseAmountFromSlider(float sliderValue)
     {
-        SetPurchaseAmount(Mathf.RoundToInt(sliderValue));
+        int roundedValue =
+            Mathf.RoundToInt(sliderValue);
+
+        bool shouldPlaySliderSound =
+            selectedItem != null &&
+            selectedPurchases.ContainsKey(selectedItem) &&
+            roundedValue != lastSliderSoundValue;
+
+        SetPurchaseAmount(
+            roundedValue
+        );
+
+        if (shouldPlaySliderSound)
+        {
+            lastSliderSoundValue =
+                purchaseAmount;
+
+            PlaySliderMoveSound();
+        }
     }
 
+    /// <summary>
+    /// 現在選択中の商品をすべて一括購入します。
+    /// </summary>
     public bool TryPurchaseSelectedItem()
     {
         FindReferences();
 
-        if (!TryGetPurchaseContext(
+        if (!TryGetCartPurchaseContext(
                 out ItemBoxInventory stockInventory,
-                out InventoryController playerInventory,
-                out ItemData itemData))
+                out InventoryController playerInventory))
         {
+            PlayPurchaseFailedSound();
             return false;
         }
 
-        int stockLimitedMax = GetStockLimitedMaximumPurchaseAmount();
-        int amount = Mathf.Max(1, purchaseAmount);
+        PruneAndClampSelections();
 
-        if (stockLimitedMax <= 0 || selectedItem.Amount < amount)
+        if (selectedPurchases.Count == 0)
         {
-            SetStatus(soldOutMessage, true);
-            HandleStockChanged();
+            SetStatus(selectItemMessage, true);
+            PlayPurchaseFailedSound();
+            RefreshUI();
             return false;
         }
 
-        amount = Mathf.Min(amount, stockLimitedMax);
+        List<PurchaseSnapshot> snapshots =
+            BuildPurchaseSnapshots();
 
-        int unitPrice = currentStock.GetUnitBuyPrice(itemData);
-        int totalPrice = MultiplyPrice(unitPrice, amount);
+        if (snapshots.Count == 0)
+        {
+            SetStatus(selectItemMessage, true);
+            PlayPurchaseFailedSound();
+            RefreshUI();
+            return false;
+        }
+
+        int totalPrice = 0;
+
+        foreach (PurchaseSnapshot snapshot in snapshots)
+        {
+            if (snapshot.StockItem == null ||
+                snapshot.ItemData == null ||
+                !stockInventory.ContainsItem(snapshot.StockItem) ||
+                snapshot.Amount <= 0 ||
+                snapshot.StockItem.Amount < snapshot.Amount)
+            {
+                SetStatus(soldOutMessage, true);
+                PlayPurchaseFailedSound();
+                HandleStockChanged();
+                return false;
+            }
+
+            int maxForEntry =
+                GetStockLimitedMaximumPurchaseAmount(
+                    snapshot.StockItem
+                );
+
+            if (maxForEntry <= 0 ||
+                snapshot.Amount > maxForEntry)
+            {
+                SetStatus(soldOutMessage, true);
+                PlayPurchaseFailedSound();
+                HandleStockChanged();
+                return false;
+            }
+
+            totalPrice =
+                SafeAddPrice(
+                    totalPrice,
+                    snapshot.TotalPrice
+                );
+        }
 
         if (gameSessionManager == null)
         {
-            SetStatus("GameSessionManagerが見つかりません。", true);
-            return false;
-        }
-
-        if (!gameSessionManager.CanAfford(totalPrice))
-        {
-            SetStatus(insufficientMoneyMessage, true);
-            RefreshUI();
-            return false;
-        }
-
-        if (!CanFitItemAmount(
-                playerInventory.Grid,
-                itemData,
-                amount))
-        {
-            SetStatus(inventoryFullMessage, true);
-            RefreshUI();
-            return false;
-        }
-
-        int playerAmountBefore =
-            playerInventory.GetTotalAmount(itemData);
-
-        int removedFromStock = stockInventory.RemoveItemAmount(
-            selectedItem,
-            amount
-        );
-
-        if (removedFromStock != amount)
-        {
-            if (removedFromStock > 0)
-            {
-                stockInventory.TryAddItem(
-                    itemData,
-                    removedFromStock,
-                    out _
-                );
-            }
-
             SetStatus(
-                "在庫の取り出しに失敗しました。もう一度お試しください。",
+                "GameSessionManagerが見つかりません。",
                 true
             );
-            HandleStockChanged();
+            PlayPurchaseFailedSound();
             return false;
         }
 
+        // 購入ボタン自体は押せるままにして、
+        // 押した時に希望どおり不足理由をText表示します。
+        if (!gameSessionManager.CanAfford(totalPrice))
+        {
+            ShowInsufficientMoneyStatus();
+            PlayPurchaseFailedSound();
+            RefreshSelectedItemUI();
+            return false;
+        }
+
+        Dictionary<ItemData, int> groupedAmounts =
+            BuildGroupedPurchaseAmounts(snapshots);
+
+        if (!CanFitPurchaseSet(
+                playerInventory.Grid,
+                groupedAmounts))
+        {
+            ShowInventoryFullStatus();
+            PlayPurchaseFailedSound();
+            RefreshSelectedItemUI();
+            return false;
+        }
+
+        Dictionary<ItemData, int> playerAmountBefore =
+            CapturePlayerAmountsBefore(
+                playerInventory,
+                groupedAmounts
+            );
+
+        List<RemovedStockEntry> removedStock =
+            new List<RemovedStockEntry>();
+
+        isProcessingPurchase = true;
+
+        // 1) 商人在庫からすべて取り出す
+        foreach (PurchaseSnapshot snapshot in snapshots)
+        {
+            int removed =
+                stockInventory.RemoveItemAmount(
+                    snapshot.StockItem,
+                    snapshot.Amount
+                );
+
+            if (removed > 0)
+            {
+                removedStock.Add(
+                    new RemovedStockEntry(
+                        snapshot.ItemData,
+                        removed
+                    )
+                );
+            }
+
+            if (removed != snapshot.Amount)
+            {
+                RestoreRemovedStock(
+                    stockInventory,
+                    removedStock
+                );
+
+                isProcessingPurchase = false;
+
+                SetStatus(
+                    "在庫の取り出しに失敗しました。もう一度お試しください。",
+                    true
+                );
+
+                PlayPurchaseFailedSound();
+                ClearAllSelections(false);
+                RefreshUI();
+                return false;
+            }
+        }
+
+        // 2) 合計金額を支払う
         if (!gameSessionManager.TrySpendMoney(totalPrice))
         {
-            RestoreStock(stockInventory, itemData, amount);
-            SetStatus(insufficientMoneyMessage, true);
+            RestoreRemovedStock(
+                stockInventory,
+                removedStock
+            );
+
+            isProcessingPurchase = false;
+
+            ShowInsufficientMoneyStatus();
+            PlayPurchaseFailedSound();
+
             RefreshUI();
             return false;
         }
 
-        bool addedAll = playerInventory.TryAddItem(
-            itemData,
-            amount,
-            out int remainingAmount
-        );
+        // 3) Player Inventoryへまとめて追加
+        bool addSuccess = true;
 
-        if (!addedAll || remainingAmount > 0)
+        foreach (KeyValuePair<ItemData, int> pair
+                 in groupedAmounts)
         {
-            int playerAmountAfter =
-                playerInventory.GetTotalAmount(itemData);
-
-            int unexpectedlyAdded = Mathf.Max(
-                0,
-                playerAmountAfter - playerAmountBefore
-            );
-
-            if (unexpectedlyAdded > 0)
+            if (pair.Key == null ||
+                pair.Value <= 0)
             {
-                playerInventory.RemoveAmountByItemData(
-                    itemData,
-                    unexpectedlyAdded
-                );
+                continue;
             }
+
+            bool addedAll =
+                playerInventory.TryAddItem(
+                    pair.Key,
+                    pair.Value,
+                    out int remainingAmount
+                );
+
+            if (!addedAll || remainingAmount > 0)
+            {
+                addSuccess = false;
+                break;
+            }
+        }
+
+        if (!addSuccess)
+        {
+            // 念のため、途中まで追加されたItemを取り消す
+            RollbackPlayerInventory(
+                playerInventory,
+                playerAmountBefore
+            );
 
             if (totalPrice > 0)
             {
                 gameSessionManager.AddMoney(totalPrice);
             }
 
-            RestoreStock(stockInventory, itemData, amount);
+            RestoreRemovedStock(
+                stockInventory,
+                removedStock
+            );
 
-            SetStatus(inventoryFullMessage, true);
-            HandleStockChanged();
+            isProcessingPurchase = false;
+
+            ShowInventoryFullStatus();
+            PlayPurchaseFailedSound();
+
+            ClearAllSelections(false);
+            RefreshUI();
             return false;
         }
+
+        isProcessingPurchase = false;
+
+        int purchasedKindCount =
+            groupedAmounts.Count;
+
+        ClearAllSelections(false);
 
         CapturePlayerInventory();
         PlayPurchaseSuccessSound();
 
         SetStatus(
             string.Format(
-                purchaseSuccessFormat,
-                itemData.DisplayName,
-                amount,
+                string.IsNullOrWhiteSpace(
+                    multiPurchaseSuccessFormat)
+                    ? "{0}種類 / 合計 ¥{1:N0} を購入しました。"
+                    : multiPurchaseSuccessFormat,
+                purchasedKindCount,
                 totalPrice
             ),
             false
         );
 
-        if (selectedItem == null ||
-            !stockInventory.ContainsItem(selectedItem) ||
-            selectedItem.Amount <= 0)
-        {
-            SelectFirstAvailableItem();
-        }
-        else
-        {
-            int selectableMax = GetSelectableMaximumPurchaseAmount();
-
-            if (selectableMax > 0)
-            {
-                purchaseAmount = Mathf.Clamp(
-                    purchaseAmount,
-                    1,
-                    selectableMax
-                );
-            }
-            else
-            {
-                purchaseAmount = 1;
-            }
-        }
-
         RefreshUI();
 
         Log(
-            $"購入成功: {itemData.DisplayName} ×{amount} / " +
-            $"単価={unitPrice:N0} / 合計={totalPrice:N0}"
+            $"一括購入成功: 種類={purchasedKindCount} / " +
+            $"選択枠={snapshots.Count} / 合計={totalPrice:N0}"
         );
 
         return true;
     }
 
-    private bool TryGetPurchaseContext(
+    private bool TryGetCartPurchaseContext(
         out ItemBoxInventory stockInventory,
-        out InventoryController playerInventory,
-        out ItemData itemData)
+        out InventoryController playerInventory)
     {
         stockInventory = currentStock != null
             ? currentStock.StockInventory
@@ -475,40 +826,42 @@ public class MerchantPurchaseController : MonoBehaviour
             ? townPlayerInventory.InventoryController
             : null;
 
-        itemData = selectedItem != null
-            ? selectedItem.ItemData
-            : null;
-
         if (!isOpen || currentStock == null)
         {
-            SetStatus("購入画面が開かれていません。", true);
+            SetStatus(
+                "購入画面が開かれていません。",
+                true
+            );
             return false;
         }
 
-        if (stockInventory == null || stockInventory.Grid == null)
+        if (stockInventory == null ||
+            stockInventory.Grid == null)
         {
-            SetStatus("商人の商品在庫が見つかりません。", true);
+            SetStatus(
+                "商人の商品在庫が見つかりません。",
+                true
+            );
             return false;
         }
 
-        if (playerInventory == null || playerInventory.Grid == null)
+        if (playerInventory == null ||
+            playerInventory.Grid == null)
         {
-            SetStatus("プレイヤーインベントリが見つかりません。", true);
-            return false;
-        }
-
-        if (selectedItem == null ||
-            itemData == null ||
-            !stockInventory.ContainsItem(selectedItem))
-        {
-            SetStatus(selectItemMessage, true);
+            SetStatus(
+                "プレイヤーインベントリが見つかりません。",
+                true
+            );
             return false;
         }
 
         return true;
     }
 
-    private void TrySelectItemUnderPointer()
+    /// <summary>
+    /// Merchant InventoryのItemをクリックすると選択／解除します。
+    /// </summary>
+    private void TryToggleItemUnderPointer()
     {
         if (EventSystem.current == null ||
             merchantInventoryGridUI == null)
@@ -525,7 +878,10 @@ public class MerchantPurchaseController : MonoBehaviour
         List<RaycastResult> results =
             new List<RaycastResult>();
 
-        EventSystem.current.RaycastAll(pointerData, results);
+        EventSystem.current.RaycastAll(
+            pointerData,
+            results
+        );
 
         foreach (RaycastResult result in results)
         {
@@ -535,11 +891,13 @@ public class MerchantPurchaseController : MonoBehaviour
             }
 
             InventoryItemUI itemUI =
-                result.gameObject.GetComponentInParent<InventoryItemUI>();
+                result.gameObject
+                    .GetComponentInParent<InventoryItemUI>();
 
-            InventoryItem item = itemUI != null
-                ? itemUI.Item
-                : null;
+            InventoryItem item =
+                itemUI != null
+                    ? itemUI.Item
+                    : null;
 
             if (item == null ||
                 !merchantInventoryGridUI.ContainsItem(item))
@@ -547,12 +905,17 @@ public class MerchantPurchaseController : MonoBehaviour
                 continue;
             }
 
-            SelectItem(item);
+            ToggleItemSelection(
+                item,
+                pointerData.position
+            );
             return;
         }
     }
 
-    private void SelectItem(InventoryItem item)
+    private void ToggleItemSelection(
+        InventoryItem item,
+        Vector2 clickScreenPosition)
     {
         if (currentStock == null ||
             currentStock.StockInventory == null ||
@@ -563,19 +926,106 @@ public class MerchantPurchaseController : MonoBehaviour
             return;
         }
 
-        selectedItem = item;
-        purchaseAmount = 1;
-        SetStatus(string.Empty, false);
-        RefreshSelectedItemUI();
+        // 選択済みをもう一度クリック → 選択解除
+        if (selectedPurchases.Remove(item))
+        {
+            PlayItemSelectionToggleSound();
 
-        Log($"商品を選択しました: {item.ItemData.DisplayName}");
+            Log(
+                $"商品選択解除: {item.ItemData.DisplayName}"
+            );
+
+            if (selectedItem == item)
+            {
+                selectedItem = null;
+                purchaseAmount = 1;
+                lastSliderSoundValue = int.MinValue;
+                hasSliderAnchor = false;
+                SelectAnotherFocusedItem();
+            }
+
+            SetStatus(
+                selectedPurchases.Count > 0
+                    ? string.Empty
+                    : selectItemMessage,
+                false
+            );
+
+            RefreshUI();
+            return;
+        }
+
+        int maxAmount =
+            GetStockLimitedMaximumPurchaseAmount(item);
+
+        if (maxAmount <= 0)
+        {
+            SetStatus(soldOutMessage, true);
+            return;
+        }
+
+        // 未選択Itemをクリック → 選択へ追加
+        // 弾薬など複数購入可能なItemは、
+        // Sliderの現在のMAX値から購入数を開始します。
+        int initialPurchaseAmount =
+            Mathf.Max(
+                1,
+                GetSliderMaximumPurchaseAmount(item)
+            );
+
+        selectedPurchases[item] =
+            initialPurchaseAmount;
+
+        PlayItemSelectionToggleSound();
+
+        selectedItem = item;
+        purchaseAmount =
+            initialPurchaseAmount;
+
+        lastSliderSoundValue =
+            initialPurchaseAmount;
+
+        lastSliderAnchorScreenPosition =
+            clickScreenPosition;
+
+        hasSliderAnchor = true;
+
+        SetStatus(string.Empty, false);
+        RefreshUI();
+
+        Log(
+            $"商品選択追加: {item.ItemData.DisplayName} / " +
+            $"現在選択枠={selectedPurchases.Count}"
+        );
     }
 
-    private void SelectFirstAvailableItem()
+    private void SelectAnotherFocusedItem()
     {
+        foreach (KeyValuePair<InventoryItem, int> pair
+                 in selectedPurchases)
+        {
+            if (pair.Key == null)
+            {
+                continue;
+            }
+
+            selectedItem = pair.Key;
+            purchaseAmount =
+                Mathf.Max(1, pair.Value);
+
+            // 自動フォーカス切替ではクリック位置が無いので、
+            // Sliderは勝手に別場所へ出さない。
+            hasSliderAnchor = false;
+            return;
+        }
+
         selectedItem = null;
         purchaseAmount = 1;
+        hasSliderAnchor = false;
+    }
 
+    private void SelectFirstAvailableItemForLegacyMode()
+    {
         if (currentStock == null ||
             currentStock.StockInventory == null ||
             currentStock.StockInventory.Grid == null)
@@ -593,77 +1043,129 @@ public class MerchantPurchaseController : MonoBehaviour
                 continue;
             }
 
+            int initialPurchaseAmount =
+                Mathf.Max(
+                    1,
+                    GetSliderMaximumPurchaseAmount(item)
+                );
+
+            selectedPurchases[item] =
+                initialPurchaseAmount;
+
             selectedItem = item;
+            purchaseAmount =
+                initialPurchaseAmount;
+
+            lastSliderSoundValue =
+                initialPurchaseAmount;
+
+            hasSliderAnchor = false;
             return;
         }
     }
 
     private void SetPurchaseAmount(int value)
     {
-        int maxAmount = GetSelectableMaximumPurchaseAmount();
+        if (selectedItem == null ||
+            !selectedPurchases.ContainsKey(selectedItem))
+        {
+            purchaseAmount = 1;
+            RefreshSelectedItemUI();
+            return;
+        }
 
-        purchaseAmount = maxAmount <= 0
-            ? 1
-            : Mathf.Clamp(value, 1, maxAmount);
+        int maxAmount =
+            GetSliderMaximumPurchaseAmount(
+                selectedItem
+            );
+
+        purchaseAmount =
+            maxAmount <= 0
+                ? 1
+                : Mathf.Clamp(
+                    value,
+                    1,
+                    maxAmount
+                );
+
+        selectedPurchases[selectedItem] =
+            purchaseAmount;
 
         RefreshSelectedItemUI();
     }
 
     /// <summary>
-    /// 在庫数と店舗側の購入上限だけで決まる最大値です。
+    /// 在庫数と店舗側のMaxPurchaseAmountだけで決まる最大数。
     /// </summary>
-    private int GetStockLimitedMaximumPurchaseAmount()
+    private int GetStockLimitedMaximumPurchaseAmount(
+        InventoryItem item)
     {
-        if (selectedItem == null ||
-            selectedItem.ItemData == null ||
-            selectedItem.Amount <= 0)
+        if (item == null ||
+            item.ItemData == null ||
+            item.Amount <= 0)
         {
             return 0;
         }
 
-        int shopLimit = currentStock != null &&
-                        currentStock.ShopData != null
-            ? currentStock.ShopData.MaxPurchaseAmount
-            : 999;
+        int shopLimit =
+            currentStock != null &&
+            currentStock.ShopData != null
+                ? currentStock.ShopData.MaxPurchaseAmount
+                : 999;
 
         return Mathf.Max(
             0,
-            Mathf.Min(selectedItem.Amount, shopLimit)
+            Mathf.Min(
+                item.Amount,
+                shopLimit
+            )
         );
     }
 
-    /// <summary>
-    /// Sliderや+/-Buttonで現在選択できる最大購入数です。
-    /// 必要に応じて所持金とインベントリ空きも考慮します。
-    /// </summary>
-    private int GetSelectableMaximumPurchaseAmount()
+    private int GetSliderMaximumPurchaseAmount(
+        InventoryItem item)
     {
-        int upperLimit = GetStockLimitedMaximumPurchaseAmount();
+        int stockLimited =
+            GetStockLimitedMaximumPurchaseAmount(item);
 
-        if (upperLimit <= 0 ||
-            selectedItem == null ||
-            selectedItem.ItemData == null)
+        if (stockLimited <= 0 ||
+            item == null ||
+            item.ItemData == null)
         {
             return 0;
         }
 
-        if (!limitSliderByMoneyAndInventory)
+        // 新しい買い物かご方式では、基本的にここで
+        // 所持金・空き容量を制限せず、購入ボタン時に理由を表示します。
+        if (selectionSliderUsesStockOnly)
         {
-            return upperLimit;
+            return stockLimited;
         }
 
-        ItemData itemData = selectedItem.ItemData;
+        int upperLimit = stockLimited;
 
-        if (currentStock != null && gameSessionManager != null)
+        if (currentStock != null &&
+            gameSessionManager != null)
         {
-            int unitPrice = currentStock.GetUnitBuyPrice(itemData);
+            int unitPrice =
+                currentStock.GetUnitBuyPrice(
+                    item.ItemData
+                );
 
             if (unitPrice > 0)
             {
-                int affordableAmount =
-                    Mathf.Max(0, gameSessionManager.CurrentMoney / unitPrice);
+                int affordable =
+                    Mathf.Max(
+                        0,
+                        gameSessionManager.CurrentMoney /
+                        unitPrice
+                    );
 
-                upperLimit = Mathf.Min(upperLimit, affordableAmount);
+                upperLimit =
+                    Mathf.Min(
+                        upperLimit,
+                        affordable
+                    );
             }
         }
 
@@ -676,157 +1178,171 @@ public class MerchantPurchaseController : MonoBehaviour
             playerInventory != null &&
             playerInventory.Grid != null)
         {
-            upperLimit = GetMaximumFittableAmount(
-                playerInventory.Grid,
-                itemData,
-                upperLimit
-            );
+            upperLimit =
+                GetMaximumFittableAmount(
+                    playerInventory.Grid,
+                    item.ItemData,
+                    upperLimit
+                );
         }
 
         return Mathf.Max(0, upperLimit);
     }
 
-    /// <summary>
-    /// 指定上限までのうち、現在のGridへ実際に収まる最大個数を二分探索します。
-    /// </summary>
-    private static int GetMaximumFittableAmount(
-        InventoryGrid grid,
-        ItemData itemData,
-        int upperLimit)
-    {
-        if (grid == null || itemData == null || upperLimit <= 0)
-        {
-            return 0;
-        }
-
-        int low = 0;
-        int high = upperLimit;
-
-        while (low < high)
-        {
-            int mid = low + (high - low + 1) / 2;
-
-            if (CanFitItemAmount(grid, itemData, mid))
-            {
-                low = mid;
-            }
-            else
-            {
-                high = mid - 1;
-            }
-        }
-
-        return low;
-    }
-
     private void RefreshSelectedItemUI()
     {
-        bool hasSelection =
+        bool hasFocus =
             isOpen &&
             currentStock != null &&
             currentStock.StockInventory != null &&
             selectedItem != null &&
             selectedItem.ItemData != null &&
             currentStock.StockInventory.ContainsItem(selectedItem) &&
+            selectedPurchases.ContainsKey(selectedItem) &&
             selectedItem.Amount > 0;
 
-        ItemData itemData = hasSelection
-            ? selectedItem.ItemData
-            : null;
+        ItemData itemData =
+            hasFocus
+                ? selectedItem.ItemData
+                : null;
 
         if (selectedItemIcon != null)
         {
-            selectedItemIcon.sprite = itemData != null
-                ? itemData.Icon
-                : null;
+            selectedItemIcon.sprite =
+                itemData != null
+                    ? itemData.Icon
+                    : null;
+
             selectedItemIcon.enabled =
                 selectedItemIcon.sprite != null;
+
             selectedItemIcon.preserveAspect = true;
         }
 
         if (selectedItemNameText != null)
         {
-            selectedItemNameText.text = itemData != null
-                ? itemData.DisplayName
-                : "商品未選択";
+            selectedItemNameText.text =
+                itemData != null
+                    ? itemData.DisplayName
+                    : "商品未選択";
         }
 
-        int unitPrice = itemData != null && currentStock != null
-            ? currentStock.GetUnitBuyPrice(itemData)
-            : 0;
+        int unitPrice =
+            itemData != null &&
+            currentStock != null
+                ? currentStock.GetUnitBuyPrice(itemData)
+                : 0;
 
-        int stockLimitedMax = GetStockLimitedMaximumPurchaseAmount();
-        int selectableMax = GetSelectableMaximumPurchaseAmount();
+        int stockLimitedMax =
+            hasFocus
+                ? GetStockLimitedMaximumPurchaseAmount(
+                    selectedItem
+                )
+                : 0;
 
-        if (selectableMax > 0)
+        int sliderMax =
+            hasFocus
+                ? GetSliderMaximumPurchaseAmount(
+                    selectedItem
+                )
+                : 0;
+
+        if (hasFocus)
         {
-            purchaseAmount = Mathf.Clamp(
-                purchaseAmount,
-                1,
-                selectableMax
-            );
+            int savedAmount =
+                selectedPurchases.TryGetValue(
+                    selectedItem,
+                    out int currentAmount)
+                    ? currentAmount
+                    : 1;
+
+            purchaseAmount =
+                sliderMax > 0
+                    ? Mathf.Clamp(
+                        savedAmount,
+                        1,
+                        sliderMax
+                    )
+                    : 1;
+
+            selectedPurchases[selectedItem] =
+                purchaseAmount;
         }
         else
         {
             purchaseAmount = 1;
         }
 
-        int totalPrice = MultiplyPrice(
-            unitPrice,
-            hasSelection ? purchaseAmount : 0
+        int cartTotal =
+            CalculateCartTotal();
+
+        SetFormattedText(
+            unitPriceText,
+            unitPriceFormat,
+            unitPrice
         );
 
-        SetFormattedText(unitPriceText, unitPriceFormat, unitPrice);
         SetFormattedText(
             stockText,
             stockFormat,
-            hasSelection ? selectedItem.Amount : 0
+            hasFocus
+                ? selectedItem.Amount
+                : 0
         );
+
         SetFormattedText(
             purchaseAmountText,
             amountFormat,
-            hasSelection ? purchaseAmount : 0
+            hasFocus
+                ? purchaseAmount
+                : 0
         );
-        SetFormattedText(totalPriceText, totalPriceFormat, totalPrice);
+
+        SetFormattedText(
+            totalPriceText,
+            totalPriceFormat,
+            cartTotal
+        );
 
         RefreshPurchaseSlider(
-            hasSelection,
+            hasFocus,
             itemData,
             stockLimitedMax,
-            selectableMax
+            sliderMax
         );
 
         if (decreaseAmountButton != null)
         {
             decreaseAmountButton.interactable =
-                hasSelection &&
-                selectableMax > 0 &&
+                hasFocus &&
+                sliderMax > 0 &&
                 purchaseAmount > 1;
         }
 
         if (increaseAmountButton != null)
         {
             increaseAmountButton.interactable =
-                hasSelection &&
-                selectableMax > 0 &&
-                purchaseAmount < selectableMax;
+                hasFocus &&
+                sliderMax > 0 &&
+                purchaseAmount < sliderMax;
         }
 
         if (purchaseButton != null)
         {
+            // あえて所持金・空き容量では無効化しません。
+            // 押した時に不足理由をStatus Textへ表示します。
             purchaseButton.interactable =
-                hasSelection &&
-                selectableMax > 0 &&
-                gameSessionManager != null &&
-                gameSessionManager.CanAfford(totalPrice);
+                isOpen &&
+                currentStock != null &&
+                selectedPurchases.Count > 0;
         }
     }
 
     private void RefreshPurchaseSlider(
-        bool hasSelection,
+        bool hasFocus,
         ItemData itemData,
         int stockLimitedMax,
-        int selectableMax)
+        int sliderMax)
     {
         if (purchaseAmountSlider == null)
         {
@@ -834,17 +1350,21 @@ public class MerchantPurchaseController : MonoBehaviour
         }
 
         bool supportsMultiple =
-            hasSelection &&
+            hasFocus &&
             itemData != null &&
             itemData.CanStack &&
             stockLimitedMax > 1;
 
         bool shouldShow =
-            !hideSliderForSinglePurchaseItems || supportsMultiple;
+            (!hideSliderForSinglePurchaseItems ||
+             supportsMultiple) &&
+            (!placeSliderNearClickedItem ||
+             hasSliderAnchor);
 
-        GameObject sliderDisplayRoot = purchaseAmountSliderRoot != null
-            ? purchaseAmountSliderRoot
-            : purchaseAmountSlider.gameObject;
+        GameObject sliderDisplayRoot =
+            purchaseAmountSliderRoot != null
+                ? purchaseAmountSliderRoot
+                : purchaseAmountSlider.gameObject;
 
         if (sliderDisplayRoot != null &&
             sliderDisplayRoot.activeSelf != shouldShow)
@@ -854,43 +1374,449 @@ public class MerchantPurchaseController : MonoBehaviour
 
         purchaseAmountSlider.wholeNumbers = true;
         purchaseAmountSlider.minValue = 1f;
-        purchaseAmountSlider.maxValue = Mathf.Max(1, selectableMax);
+        purchaseAmountSlider.maxValue =
+            Mathf.Max(1, sliderMax);
+
         purchaseAmountSlider.interactable =
-            shouldShow && hasSelection && selectableMax > 1;
+            shouldShow &&
+            hasFocus &&
+            sliderMax > 1;
 
-        float sliderValue = selectableMax > 0
-            ? Mathf.Clamp(purchaseAmount, 1, selectableMax)
-            : 1f;
+        float sliderValue =
+            sliderMax > 0
+                ? Mathf.Clamp(
+                    purchaseAmount,
+                    1,
+                    sliderMax
+                )
+                : 1f;
 
-        purchaseAmountSlider.SetValueWithoutNotify(sliderValue);
+        purchaseAmountSlider.SetValueWithoutNotify(
+            sliderValue
+        );
+
+        if (shouldShow &&
+            placeSliderNearClickedItem &&
+            hasSliderAnchor)
+        {
+            PositionSliderNearScreenPoint(
+                lastSliderAnchorScreenPosition
+            );
+        }
     }
 
-    private void RefreshMoneyText()
+    private void PositionSliderNearScreenPoint(
+        Vector2 screenPoint)
     {
-        int money = gameSessionManager != null
-            ? gameSessionManager.CurrentMoney
-            : 0;
+        RectTransform sliderRect =
+            GetSliderRootRect();
 
-        SetFormattedText(moneyText, moneyFormat, money);
+        if (sliderRect == null)
+        {
+            return;
+        }
+
+        Canvas canvas =
+            sliderRect.GetComponentInParent<Canvas>()?.rootCanvas;
+
+        if (canvas == null)
+        {
+            return;
+        }
+
+        RectTransform parentRect =
+            sliderRect.parent as RectTransform;
+
+        if (parentRect == null)
+        {
+            parentRect =
+                canvas.transform as RectTransform;
+        }
+
+        if (parentRect == null)
+        {
+            return;
+        }
+
+        float scale =
+            Mathf.Max(
+                0.0001f,
+                canvas.scaleFactor
+            );
+
+        float widthPixels =
+            sliderRect.rect.width * scale;
+
+        float heightPixels =
+            sliderRect.rect.height * scale;
+
+        float xOffset =
+            Mathf.Abs(sliderCursorOffset.x);
+
+        bool placeLeft =
+            screenPoint.x +
+            xOffset +
+            widthPixels >
+            Screen.width;
+
+        Vector2 targetScreenPoint =
+            screenPoint;
+
+        if (placeLeft)
+        {
+            sliderRect.pivot =
+                new Vector2(1f, 1f);
+
+            targetScreenPoint.x -= xOffset;
+        }
+        else
+        {
+            sliderRect.pivot =
+                new Vector2(0f, 1f);
+
+            targetScreenPoint.x += xOffset;
+        }
+
+        targetScreenPoint.y +=
+            sliderCursorOffset.y;
+
+        targetScreenPoint.y =
+            Mathf.Clamp(
+                targetScreenPoint.y,
+                heightPixels + 4f,
+                Screen.height - 4f
+            );
+
+        Camera uiCamera =
+            canvas.renderMode ==
+            RenderMode.ScreenSpaceOverlay
+                ? null
+                : canvas.worldCamera;
+
+        if (RectTransformUtility
+            .ScreenPointToWorldPointInRectangle(
+                parentRect,
+                targetScreenPoint,
+                uiCamera,
+                out Vector3 worldPoint))
+        {
+            sliderRect.position = worldPoint;
+        }
     }
 
-    private void HandleStockChanged()
+    private RectTransform GetSliderRootRect()
+    {
+        GameObject root =
+            purchaseAmountSliderRoot != null
+                ? purchaseAmountSliderRoot
+                : purchaseAmountSlider != null
+                    ? purchaseAmountSlider.gameObject
+                    : null;
+
+        return root != null
+            ? root.transform as RectTransform
+            : null;
+    }
+
+    private void HidePurchaseSlider()
+    {
+        GameObject root =
+            purchaseAmountSliderRoot != null
+                ? purchaseAmountSliderRoot
+                : purchaseAmountSlider != null
+                    ? purchaseAmountSlider.gameObject
+                    : null;
+
+        if (root != null &&
+            root.activeSelf)
+        {
+            root.SetActive(false);
+        }
+    }
+
+    private int CalculateCartTotal()
+    {
+        if (currentStock == null)
+        {
+            return 0;
+        }
+
+        int total = 0;
+
+        foreach (KeyValuePair<InventoryItem, int> pair
+                 in selectedPurchases)
+        {
+            InventoryItem item = pair.Key;
+
+            if (item == null ||
+                item.ItemData == null ||
+                pair.Value <= 0)
+            {
+                continue;
+            }
+
+            int unitPrice =
+                currentStock.GetUnitBuyPrice(
+                    item.ItemData
+                );
+
+            total =
+                SafeAddPrice(
+                    total,
+                    MultiplyPrice(
+                        unitPrice,
+                        pair.Value
+                    )
+                );
+        }
+
+        return total;
+    }
+
+    private List<PurchaseSnapshot>
+        BuildPurchaseSnapshots()
+    {
+        List<PurchaseSnapshot> snapshots =
+            new List<PurchaseSnapshot>();
+
+        if (currentStock == null)
+        {
+            return snapshots;
+        }
+
+        foreach (KeyValuePair<InventoryItem, int> pair
+                 in selectedPurchases)
+        {
+            InventoryItem item = pair.Key;
+
+            if (item == null ||
+                item.ItemData == null ||
+                pair.Value <= 0)
+            {
+                continue;
+            }
+
+            int unitPrice =
+                currentStock.GetUnitBuyPrice(
+                    item.ItemData
+                );
+
+            snapshots.Add(
+                new PurchaseSnapshot(
+                    item,
+                    item.ItemData,
+                    pair.Value,
+                    unitPrice
+                )
+            );
+        }
+
+        return snapshots;
+    }
+
+    private static Dictionary<ItemData, int>
+        BuildGroupedPurchaseAmounts(
+            List<PurchaseSnapshot> snapshots)
+    {
+        Dictionary<ItemData, int> grouped =
+            new Dictionary<ItemData, int>();
+
+        foreach (PurchaseSnapshot snapshot in snapshots)
+        {
+            if (snapshot.ItemData == null ||
+                snapshot.Amount <= 0)
+            {
+                continue;
+            }
+
+            grouped.TryGetValue(
+                snapshot.ItemData,
+                out int current
+            );
+
+            long next =
+                (long)current +
+                snapshot.Amount;
+
+            grouped[snapshot.ItemData] =
+                next > int.MaxValue
+                    ? int.MaxValue
+                    : (int)next;
+        }
+
+        return grouped;
+    }
+
+    private static Dictionary<ItemData, int>
+        CapturePlayerAmountsBefore(
+            InventoryController playerInventory,
+            Dictionary<ItemData, int> groupedAmounts)
+    {
+        Dictionary<ItemData, int> before =
+            new Dictionary<ItemData, int>();
+
+        if (playerInventory == null)
+        {
+            return before;
+        }
+
+        foreach (KeyValuePair<ItemData, int> pair
+                 in groupedAmounts)
+        {
+            if (pair.Key == null)
+            {
+                continue;
+            }
+
+            before[pair.Key] =
+                playerInventory.GetTotalAmount(
+                    pair.Key
+                );
+        }
+
+        return before;
+    }
+
+    private static void RollbackPlayerInventory(
+        InventoryController playerInventory,
+        Dictionary<ItemData, int> beforeAmounts)
+    {
+        if (playerInventory == null)
+        {
+            return;
+        }
+
+        foreach (KeyValuePair<ItemData, int> pair
+                 in beforeAmounts)
+        {
+            if (pair.Key == null)
+            {
+                continue;
+            }
+
+            int now =
+                playerInventory.GetTotalAmount(
+                    pair.Key
+                );
+
+            int added =
+                Mathf.Max(
+                    0,
+                    now - pair.Value
+                );
+
+            if (added > 0)
+            {
+                playerInventory.RemoveAmountByItemData(
+                    pair.Key,
+                    added
+                );
+            }
+        }
+    }
+
+    private void PruneAndClampSelections()
     {
         if (currentStock == null ||
             currentStock.StockInventory == null)
         {
-            selectedItem = null;
-            RefreshUI();
+            ClearAllSelections(false);
             return;
         }
 
-        if (selectedItem == null ||
-            !currentStock.StockInventory.ContainsItem(selectedItem) ||
-            selectedItem.Amount <= 0)
+        List<InventoryItem> removeList =
+            new List<InventoryItem>();
+
+        List<InventoryItem> keySnapshot =
+            new List<InventoryItem>(
+                selectedPurchases.Keys
+            );
+
+        foreach (InventoryItem item in keySnapshot)
         {
-            SelectFirstAvailableItem();
+            if (item == null ||
+                item.ItemData == null ||
+                !currentStock.StockInventory.ContainsItem(item) ||
+                item.Amount <= 0)
+            {
+                removeList.Add(item);
+                continue;
+            }
+
+            int max =
+                GetStockLimitedMaximumPurchaseAmount(item);
+
+            if (max <= 0)
+            {
+                removeList.Add(item);
+                continue;
+            }
+
+            selectedPurchases[item] =
+                Mathf.Clamp(
+                    selectedPurchases[item],
+                    1,
+                    max
+                );
         }
 
+        foreach (InventoryItem item in removeList)
+        {
+            selectedPurchases.Remove(item);
+        }
+
+        if (selectedItem == null ||
+            !selectedPurchases.ContainsKey(selectedItem))
+        {
+            SelectAnotherFocusedItem();
+        }
+        else
+        {
+            purchaseAmount =
+                selectedPurchases[selectedItem];
+        }
+    }
+
+    private void ClearAllSelections(
+        bool refreshUI)
+    {
+        selectedPurchases.Clear();
+
+        selectedItem = null;
+        purchaseAmount = 1;
+        lastSliderSoundValue = int.MinValue;
+
+        hasSliderAnchor = false;
+        HidePurchaseSlider();
+
+        if (refreshUI)
+        {
+            RefreshUI();
+        }
+    }
+
+    private void RefreshMoneyText()
+    {
+        int money =
+            gameSessionManager != null
+                ? gameSessionManager.CurrentMoney
+                : 0;
+
+        SetFormattedText(
+            moneyText,
+            moneyFormat,
+            money
+        );
+    }
+
+    private void HandleStockChanged()
+    {
+        if (isProcessingPurchase)
+        {
+            return;
+        }
+
+        PruneAndClampSelections();
         RefreshUI();
     }
 
@@ -934,12 +1860,15 @@ public class MerchantPurchaseController : MonoBehaviour
 
     private void SubscribeMoney()
     {
-        if (isMoneySubscribed || gameSessionManager == null)
+        if (isMoneySubscribed ||
+            gameSessionManager == null)
         {
             return;
         }
 
-        gameSessionManager.MoneyChanged += HandleMoneyChanged;
+        gameSessionManager.MoneyChanged +=
+            HandleMoneyChanged;
+
         isMoneySubscribed = true;
     }
 
@@ -952,7 +1881,8 @@ public class MerchantPurchaseController : MonoBehaviour
 
         if (gameSessionManager != null)
         {
-            gameSessionManager.MoneyChanged -= HandleMoneyChanged;
+            gameSessionManager.MoneyChanged -=
+                HandleMoneyChanged;
         }
 
         isMoneySubscribed = false;
@@ -1053,31 +1983,18 @@ public class MerchantPurchaseController : MonoBehaviour
             audioSource = GetComponent<AudioSource>();
         }
 
-        if (weaponRepairController == null)
-        {
-            weaponRepairController =
-                GetComponentInChildren<MerchantWeaponRepairController>(true);
-
-            if (weaponRepairController == null && transform.parent != null)
-            {
-                weaponRepairController =
-                    transform.parent.GetComponentInChildren<
-                        MerchantWeaponRepairController
-                    >(true);
-            }
-        }
-
         if (townPlayerInventory == null)
         {
             townPlayerInventory =
-                FindAnyObjectByType<TownPlayerInventoryController>(
-                    FindObjectsInactive.Include
-                );
+                FindAnyObjectByType<
+                    TownPlayerInventoryController
+                >(FindObjectsInactive.Include);
         }
 
         if (gameSessionManager == null)
         {
-            gameSessionManager = GameSessionManager.Instance;
+            gameSessionManager =
+                GameSessionManager.Instance;
         }
 
         if (gameSessionManager == null)
@@ -1111,111 +2028,275 @@ public class MerchantPurchaseController : MonoBehaviour
         );
     }
 
-    private void RestoreStock(
-        ItemBoxInventory stockInventory,
-        ItemData itemData,
-        int amount)
+    private void PlayItemSelectionToggleSound()
     {
-        if (stockInventory == null ||
-            itemData == null ||
-            amount <= 0)
+        PlayPurchaseUiSound(
+            itemSelectionToggleClip,
+            itemSelectionToggleVolume
+        );
+    }
+
+    private void PlayPurchaseFailedSound()
+    {
+        PlayPurchaseUiSound(
+            purchaseFailedClip,
+            purchaseFailedVolume
+        );
+    }
+
+    private void PlaySliderMoveSound()
+    {
+        PlayPurchaseUiSound(
+            sliderMoveClip,
+            sliderMoveVolume
+        );
+    }
+
+    private void PlayPurchaseUiSound(
+        AudioClip clip,
+        float volume)
+    {
+        if (clip == null)
         {
             return;
         }
 
-        bool restoredAll = stockInventory.TryAddItem(
-            itemData,
-            amount,
-            out int remainingAmount
-        );
+        if (audioSource == null)
+        {
+            FindReferences();
+        }
 
-        if (!restoredAll || remainingAmount > 0)
+        if (audioSource == null)
         {
             LogWarning(
-                $"購入失敗後に{itemData.DisplayName}を" +
-                $"{remainingAmount}個在庫へ戻せませんでした。"
+                "購入UI効果音を再生したいですが、AudioSourceが見つかりません。"
+            );
+            return;
+        }
+
+        audioSource.PlayOneShot(
+            clip,
+            Mathf.Clamp01(volume)
+        );
+    }
+
+    private static void RestoreRemovedStock(
+        ItemBoxInventory stockInventory,
+        List<RemovedStockEntry> removedStock)
+    {
+        if (stockInventory == null)
+        {
+            return;
+        }
+
+        foreach (RemovedStockEntry entry in removedStock)
+        {
+            if (entry.ItemData == null ||
+                entry.Amount <= 0)
+            {
+                continue;
+            }
+
+            stockInventory.TryAddItem(
+                entry.ItemData,
+                entry.Amount,
+                out _
             );
         }
     }
 
-    private static bool CanFitItemAmount(
+    /// <summary>
+    /// 選択中すべてのItemを同時に追加した時、
+    /// 現在のPlayer Inventoryへ収まるか仮配置して確認します。
+    /// </summary>
+    private static bool CanFitPurchaseSet(
         InventoryGrid grid,
-        ItemData itemData,
-        int amount)
+        Dictionary<ItemData, int> groupedAmounts)
     {
-        if (grid == null ||
-            itemData == null ||
-            amount <= 0)
+        if (grid == null)
         {
             return false;
         }
 
-        int remainingAmount = amount;
-        int maxStack = Mathf.Max(1, itemData.MaxStack);
+        bool[,] occupied =
+            BuildOccupiedMap(grid);
 
-        if (itemData.CanStack)
+        List<PurchaseGroup> groups =
+            new List<PurchaseGroup>();
+
+        foreach (KeyValuePair<ItemData, int> pair
+                 in groupedAmounts)
         {
-            foreach (InventoryItem existingItem in grid.Items)
+            if (pair.Key == null ||
+                pair.Value <= 0)
             {
-                if (existingItem == null ||
-                    existingItem.ItemData != itemData)
-                {
-                    continue;
-                }
-
-                int stackSpace = Mathf.Max(
-                    0,
-                    maxStack - existingItem.Amount
-                );
-
-                remainingAmount -= Mathf.Min(
-                    remainingAmount,
-                    stackSpace
-                );
-
-                if (remainingAmount <= 0)
-                {
-                    return true;
-                }
+                continue;
             }
+
+            groups.Add(
+                new PurchaseGroup(
+                    pair.Key,
+                    pair.Value
+                )
+            );
         }
 
-        bool[,] occupied = BuildOccupiedMap(grid);
-
-        while (remainingAmount > 0)
-        {
-            if (!TryReserveItemSpace(
-                    occupied,
-                    grid.Width,
-                    grid.Height,
-                    itemData))
+        // 大きいItemから先に仮配置すると、
+        // 小さいItemで大きな空間を先に埋める失敗を減らせます。
+        groups.Sort(
+            (a, b) =>
             {
-                return false;
+                Vector2Int aSize =
+                    a.ItemData.GetSize(false);
+
+                Vector2Int bSize =
+                    b.ItemData.GetSize(false);
+
+                int aArea =
+                    aSize.x * aSize.y;
+
+                int bArea =
+                    bSize.x * bSize.y;
+
+                return bArea.CompareTo(aArea);
+            }
+        );
+
+        foreach (PurchaseGroup group in groups)
+        {
+            ItemData itemData =
+                group.ItemData;
+
+            int remainingAmount =
+                group.Amount;
+
+            int maxStack =
+                Mathf.Max(
+                    1,
+                    itemData.MaxStack
+                );
+
+            // 既存Stackの空きへ先に詰める
+            if (itemData.CanStack)
+            {
+                foreach (InventoryItem existing
+                         in grid.Items)
+                {
+                    if (existing == null ||
+                        existing.ItemData != itemData)
+                    {
+                        continue;
+                    }
+
+                    int stackSpace =
+                        Mathf.Max(
+                            0,
+                            maxStack -
+                            existing.Amount
+                        );
+
+                    int fill =
+                        Mathf.Min(
+                            remainingAmount,
+                            stackSpace
+                        );
+
+                    remainingAmount -= fill;
+
+                    if (remainingAmount <= 0)
+                    {
+                        break;
+                    }
+                }
             }
 
-            remainingAmount -= Mathf.Min(
-                remainingAmount,
-                maxStack
-            );
+            // 残りは新しい枠を仮予約する
+            while (remainingAmount > 0)
+            {
+                if (!TryReserveItemSpace(
+                        occupied,
+                        grid.Width,
+                        grid.Height,
+                        itemData))
+                {
+                    return false;
+                }
+
+                remainingAmount -=
+                    Mathf.Min(
+                        remainingAmount,
+                        maxStack
+                    );
+            }
         }
 
         return true;
     }
 
-    private static bool[,] BuildOccupiedMap(InventoryGrid grid)
+    /// <summary>
+    /// 単一Item用。旧Slider互換用。
+    /// </summary>
+    private static int GetMaximumFittableAmount(
+        InventoryGrid grid,
+        ItemData itemData,
+        int upperLimit)
     {
-        bool[,] occupied = new bool[grid.Width, grid.Height];
+        if (grid == null ||
+            itemData == null ||
+            upperLimit <= 0)
+        {
+            return 0;
+        }
+
+        int low = 0;
+        int high = upperLimit;
+
+        while (low < high)
+        {
+            int mid =
+                low +
+                (high - low + 1) / 2;
+
+            Dictionary<ItemData, int> test =
+                new Dictionary<ItemData, int>
+                {
+                    { itemData, mid }
+                };
+
+            if (CanFitPurchaseSet(grid, test))
+            {
+                low = mid;
+            }
+            else
+            {
+                high = mid - 1;
+            }
+        }
+
+        return low;
+    }
+
+    private static bool[,] BuildOccupiedMap(
+        InventoryGrid grid)
+    {
+        bool[,] occupied =
+            new bool[
+                grid.Width,
+                grid.Height
+            ];
 
         foreach (InventoryItem item in grid.Items)
         {
-            if (item == null || item.ItemData == null)
+            if (item == null ||
+                item.ItemData == null)
             {
                 continue;
             }
 
-            Vector2Int size = item.ItemData.GetSize(
-                item.IsRotated
-            );
+            Vector2Int size =
+                item.ItemData.GetSize(
+                    item.IsRotated
+                );
 
             for (int y = item.GridY;
                  y < item.GridY + size.y;
@@ -1225,8 +2306,10 @@ public class MerchantPurchaseController : MonoBehaviour
                      x < item.GridX + size.x;
                      x++)
                 {
-                    if (x >= 0 && x < grid.Width &&
-                        y >= 0 && y < grid.Height)
+                    if (x >= 0 &&
+                        x < grid.Width &&
+                        y >= 0 &&
+                        y < grid.Height)
                     {
                         occupied[x, y] = true;
                     }
@@ -1270,11 +2353,16 @@ public class MerchantPurchaseController : MonoBehaviour
         ItemData itemData,
         bool isRotated)
     {
-        Vector2Int size = itemData.GetSize(isRotated);
+        Vector2Int size =
+            itemData.GetSize(isRotated);
 
-        for (int y = 0; y < gridHeight; y++)
+        for (int y = 0;
+             y < gridHeight;
+             y++)
         {
-            for (int x = 0; x < gridWidth; x++)
+            for (int x = 0;
+                 x < gridWidth;
+                 x++)
             {
                 if (!CanReserve(
                         occupied,
@@ -1295,7 +2383,10 @@ public class MerchantPurchaseController : MonoBehaviour
                          reserveX < x + size.x;
                          reserveX++)
                     {
-                        occupied[reserveX, reserveY] = true;
+                        occupied[
+                            reserveX,
+                            reserveY
+                        ] = true;
                     }
                 }
 
@@ -1322,9 +2413,13 @@ public class MerchantPurchaseController : MonoBehaviour
             return false;
         }
 
-        for (int y = startY; y < startY + size.y; y++)
+        for (int y = startY;
+             y < startY + size.y;
+             y++)
         {
-            for (int x = startX; x < startX + size.x; x++)
+            for (int x = startX;
+                 x < startX + size.x;
+                 x++)
             {
                 if (occupied[x, y])
                 {
@@ -1336,15 +2431,39 @@ public class MerchantPurchaseController : MonoBehaviour
         return true;
     }
 
-    private static int MultiplyPrice(int unitPrice, int amount)
+    private static int MultiplyPrice(
+        int unitPrice,
+        int amount)
     {
         long total =
-            (long)Mathf.Max(0, unitPrice) *
-            Mathf.Max(0, amount);
+            (long)Mathf.Max(
+                0,
+                unitPrice
+            ) *
+            Mathf.Max(
+                0,
+                amount
+            );
 
         return total > int.MaxValue
             ? int.MaxValue
-            : Mathf.Max(0, (int)total);
+            : Mathf.Max(
+                0,
+                (int)total
+            );
+    }
+
+    private static int SafeAddPrice(
+        int current,
+        int add)
+    {
+        long total =
+            (long)Mathf.Max(0, current) +
+            Mathf.Max(0, add);
+
+        return total > int.MaxValue
+            ? int.MaxValue
+            : (int)total;
     }
 
     private static void SetFormattedText(
@@ -1357,21 +2476,294 @@ public class MerchantPurchaseController : MonoBehaviour
             return;
         }
 
-        string safeFormat = string.IsNullOrWhiteSpace(format)
-            ? "{0}"
-            : format;
+        string safeFormat =
+            string.IsNullOrWhiteSpace(format)
+                ? "{0}"
+                : format;
 
-        target.text = string.Format(
-            safeFormat,
-            Mathf.Max(0, value)
+        target.text =
+            string.Format(
+                safeFormat,
+                Mathf.Max(0, value)
+            );
+    }
+
+    /// <summary>
+    /// 「所持金が足りない」を下から上へ移動しながらフェードアウト表示します。
+    /// </summary>
+    private void ShowInsufficientMoneyStatus()
+    {
+        string message =
+            string.IsNullOrWhiteSpace(
+                cartInsufficientMoneyMessage)
+                ? "所持金が足りない"
+                : cartInsufficientMoneyMessage;
+
+        if (!animateInsufficientMoneyStatus ||
+            statusText == null)
+        {
+            SetStatus(message, true);
+            return;
+        }
+
+        StartStatusAnimation(
+            message,
+            insufficientMoneyStatusDuration,
+            insufficientMoneyStatusStartYOffset,
+            insufficientMoneyStatusEndYOffset,
+            insufficientMoneyStatusStartAlpha,
+            insufficientMoneyStatusEndAlpha
         );
     }
 
-    private void SetStatus(string message, bool warning)
+    /// <summary>
+    /// 「スペースがない」を下から上へ移動しながらフェードアウト表示します。
+    /// </summary>
+    private void ShowInventoryFullStatus()
     {
+        string message =
+            string.IsNullOrWhiteSpace(
+                cartInventoryFullMessage)
+                ? "スペースがない"
+                : cartInventoryFullMessage;
+
+        if (!animateInventoryFullStatus ||
+            statusText == null)
+        {
+            SetStatus(message, true);
+            return;
+        }
+
+        StartStatusAnimation(
+            message,
+            inventoryFullStatusDuration,
+            inventoryFullStatusStartYOffset,
+            inventoryFullStatusEndYOffset,
+            inventoryFullStatusStartAlpha,
+            inventoryFullStatusEndAlpha
+        );
+    }
+
+    private void StartStatusAnimation(
+        string message,
+        float duration,
+        float startYOffset,
+        float endYOffset,
+        float startAlpha,
+        float endAlpha)
+    {
+        CaptureStatusBaseState();
+        StopStatusAnimation(true);
+
+        statusAnimationCoroutine =
+            StartCoroutine(
+                AnimateStatusMessage(
+                    message,
+                    duration,
+                    startYOffset,
+                    endYOffset,
+                    startAlpha,
+                    endAlpha
+                )
+            );
+
+        LogWarning(message);
+    }
+
+    private IEnumerator AnimateStatusMessage(
+        string message,
+        float requestedDuration,
+        float startYOffset,
+        float endYOffset,
+        float startAlpha,
+        float endAlpha)
+    {
+        if (statusText == null)
+        {
+            statusAnimationCoroutine = null;
+            yield break;
+        }
+
+        CaptureStatusBaseState();
+
+        if (statusRectTransform == null)
+        {
+            statusText.text = message;
+            statusAnimationCoroutine = null;
+            yield break;
+        }
+
+        statusText.text = message;
+
+        float duration =
+            Mathf.Max(
+                0.1f,
+                requestedDuration
+            );
+
+        Vector2 startPosition =
+            statusBaseAnchoredPosition +
+            Vector2.down *
+            Mathf.Abs(
+                startYOffset
+            );
+
+        Vector2 endPosition =
+            statusBaseAnchoredPosition +
+            Vector2.up *
+            Mathf.Abs(
+                endYOffset
+            );
+
+        Color startColor =
+            statusBaseColor;
+
+        startColor.a =
+            Mathf.Clamp01(startAlpha);
+
+        Color endColor =
+            statusBaseColor;
+
+        endColor.a =
+            Mathf.Clamp01(endAlpha);
+
+        statusRectTransform.anchoredPosition =
+            startPosition;
+
+        statusText.color =
+            startColor;
+
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+
+            float t =
+                Mathf.Clamp01(
+                    elapsed / duration
+                );
+
+            // 少しだけ滑らかに動く
+            float eased =
+                1f -
+                Mathf.Pow(
+                    1f - t,
+                    3f
+                );
+
+            statusRectTransform.anchoredPosition =
+                Vector2.LerpUnclamped(
+                    startPosition,
+                    endPosition,
+                    eased
+                );
+
+            statusText.color =
+                Color.Lerp(
+                    startColor,
+                    endColor,
+                    t
+                );
+
+            yield return null;
+        }
+
+        statusRectTransform.anchoredPosition =
+            endPosition;
+
+        statusText.color =
+            endColor;
+
+        // 完全に消えた後はTextを空にして、
+        // 次の通常Status表示に影響しないよう元の状態へ戻す。
+        if (Mathf.Clamp01(endAlpha) <= 0.001f)
+        {
+            statusText.text = string.Empty;
+        }
+
+        ResetStatusVisualState();
+
+        statusAnimationCoroutine = null;
+    }
+
+    private void CaptureStatusBaseState()
+    {
+        if (statusText == null ||
+            hasCapturedStatusBaseState)
+        {
+            return;
+        }
+
+        statusRectTransform =
+            statusText.rectTransform;
+
+        if (statusRectTransform != null)
+        {
+            statusBaseAnchoredPosition =
+                statusRectTransform.anchoredPosition;
+        }
+
+        statusBaseColor =
+            statusText.color;
+
+        hasCapturedStatusBaseState = true;
+    }
+
+    private void StopStatusAnimation(
+        bool resetVisual)
+    {
+        if (statusAnimationCoroutine != null)
+        {
+            StopCoroutine(
+                statusAnimationCoroutine
+            );
+
+            statusAnimationCoroutine = null;
+        }
+
+        if (resetVisual)
+        {
+            ResetStatusVisualState();
+        }
+    }
+
+    private void ResetStatusVisualState()
+    {
+        if (!hasCapturedStatusBaseState ||
+            statusText == null)
+        {
+            return;
+        }
+
+        if (statusRectTransform == null)
+        {
+            statusRectTransform =
+                statusText.rectTransform;
+        }
+
+        if (statusRectTransform != null)
+        {
+            statusRectTransform.anchoredPosition =
+                statusBaseAnchoredPosition;
+        }
+
+        statusText.color =
+            statusBaseColor;
+    }
+
+    private void SetStatus(
+        string message,
+        bool warning)
+    {
+        // 通常Statusを表示する時は、
+        // 所持金不足アニメーションを止めて元の位置・色へ戻します。
+        StopStatusAnimation(true);
+
         if (statusText != null)
         {
-            statusText.text = message ?? string.Empty;
+            statusText.text =
+                message ?? string.Empty;
         }
 
         if (string.IsNullOrWhiteSpace(message))
@@ -1393,7 +2785,10 @@ public class MerchantPurchaseController : MonoBehaviour
     {
         if (showDebugLogs)
         {
-            Debug.Log($"[MerchantPurchaseController] {message}", this);
+            Debug.Log(
+                $"[MerchantPurchaseController] {message}",
+                this
+            );
         }
     }
 
@@ -1407,7 +2802,57 @@ public class MerchantPurchaseController : MonoBehaviour
 
     private void OnValidate()
     {
-        purchaseSoundVolume = Mathf.Clamp01(purchaseSoundVolume);
+        purchaseSoundVolume =
+            Mathf.Clamp01(
+                purchaseSoundVolume
+            );
+
+        itemSelectionToggleVolume =
+            Mathf.Clamp01(
+                itemSelectionToggleVolume
+            );
+
+        purchaseFailedVolume =
+            Mathf.Clamp01(
+                purchaseFailedVolume
+            );
+
+        sliderMoveVolume =
+            Mathf.Clamp01(
+                sliderMoveVolume
+            );
+
+        insufficientMoneyStatusDuration =
+            Mathf.Max(
+                0.1f,
+                insufficientMoneyStatusDuration
+            );
+
+        insufficientMoneyStatusStartAlpha =
+            Mathf.Clamp01(
+                insufficientMoneyStatusStartAlpha
+            );
+
+        insufficientMoneyStatusEndAlpha =
+            Mathf.Clamp01(
+                insufficientMoneyStatusEndAlpha
+            );
+
+        inventoryFullStatusDuration =
+            Mathf.Max(
+                0.1f,
+                inventoryFullStatusDuration
+            );
+
+        inventoryFullStatusStartAlpha =
+            Mathf.Clamp01(
+                inventoryFullStatusStartAlpha
+            );
+
+        inventoryFullStatusEndAlpha =
+            Mathf.Clamp01(
+                inventoryFullStatusEndAlpha
+            );
 
         if (purchaseAmountSlider != null)
         {
