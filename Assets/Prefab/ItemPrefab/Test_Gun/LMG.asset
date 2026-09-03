@@ -46,12 +46,17 @@ MonoBehaviour:
   weaponPrefab: {fileID: 4584479946820505900, guid: efe755327747dab4fa4b2d89142d6af4, type: 3}
   fireMode: 1
   fireInterval: 0.1
+  cockingType: 0
+  cockingStartDelay: 0.15
+  cockingDuration: 0.65
+  cockingSound: {fileID: 0}
+  cockingAnimationTrigger: Cocking
   pelletCount: 1
   pelletSpreadAngle: 0
   compatibleAmmo: {fileID: 11400000, guid: 93515cc4ad9d7b94fb7ab404c2bbe1eb, type: 2}
   compatibleAmmoCaliberId: 
   maxDurability: 100
-  durabilityLossPerShot: 0.1
+  durabilityLossPerShot: 0.3
   jamStartDurabilityPercent: 0.5
   jamChanceAtStart: 0.01
   maxJamChanceAtZeroDurability: 0.25

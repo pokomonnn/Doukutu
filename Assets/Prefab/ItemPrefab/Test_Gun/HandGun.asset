@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1086a85c47509214a9c55f32cfb8431e, type: 3}
   m_Name: HandGun
   m_EditorClassIdentifier: Assembly-CSharp::WeaponItemData
-  itemId: item_id
-  displayName: "\u65B0\u3057\u3044\u30A2\u30A4\u30C6\u30E0"
+  itemId: handgun_001
+  displayName: 1911
   description: 
   icon: {fileID: -1461178650845398902, guid: 2e61c1ab57359924bbe7987a54b25956, type: 3}
   localizedDisplayName:
@@ -43,15 +43,20 @@ MonoBehaviour:
   canSellToShop: 1
   weight: 1.2
   canDiscard: 1
-  weaponPrefab: {fileID: 4584479946820505900, guid: b4468ad0456639f49abeac0724157b21, type: 3}
+  weaponPrefab: {fileID: 4584479946820505900, guid: a00fe7959b989b24793faefc86b56177, type: 3}
   fireMode: 0
   fireInterval: 0.15
+  cockingType: 0
+  cockingStartDelay: 0.15
+  cockingDuration: 0.65
+  cockingSound: {fileID: 0}
+  cockingAnimationTrigger: Cocking
   pelletCount: 1
   pelletSpreadAngle: 0
   compatibleAmmo: {fileID: 11400000, guid: a3b808ca916280a46816c5033eac419a, type: 2}
   compatibleAmmoCaliberId: 
   maxDurability: 100
-  durabilityLossPerShot: 0.1
+  durabilityLossPerShot: 1
   jamStartDurabilityPercent: 0.5
   jamChanceAtStart: 0.01
   maxJamChanceAtZeroDurability: 0.25

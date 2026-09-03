@@ -20,6 +20,13 @@ public class ItemBoxRandomLootInitializer : MonoBehaviour
     [Tooltip("抽選前に、ItemBoxInventoryのStarting Itemsを含む既存内容を空にします。")]
     [SerializeField] private bool clearExistingContentsBeforeRoll = true;
 
+    [Header("スキルカード連動")]
+    [Tooltip("ONなら『漁り屋』のItemBox追加抽選を反映します。通常のマップItemBoxはON推奨です。")]
+    [SerializeField] private bool allowSkillCardLootBonus = true;
+
+    [Tooltip("ONなら、RescuePersonTarget2D配下の救出NPC死体Lootには『漁り屋』を適用しません。")]
+    [SerializeField] private bool excludeRescueNpcCorpseLoot = true;
+
     [Header("デバッグ")]
     [SerializeField] private bool showDebugLogs;
 
@@ -113,40 +120,29 @@ public class ItemBoxRandomLootInitializer : MonoBehaviour
 
         foreach (ItemBoxLootTable.LootRollResult result in results)
         {
-            if (result.ItemData == null || result.Amount <= 0)
-            {
-                continue;
-            }
-
-            itemBoxInventory.TryAddItem(
-                result.ItemData,
-                result.Amount,
-                out int remainingAmount
-            );
-
-            int addedAmount = result.Amount - remainingAmount;
-
-            if (addedAmount > 0)
+            if (TryAddLootResult(result, false))
             {
                 addedKinds++;
             }
+        }
 
-            if (remainingAmount > 0)
-            {
-                Debug.LogWarning(
-                    $"[ItemBoxRandomLootInitializer] {result.ItemData.DisplayName} を " +
-                    $"{remainingAmount}個、箱の空き不足で入れられませんでした。",
-                    this
+        // 「漁り屋」：通常抽選とは別に、追加Itemを1種類だけ獲得できる抽選。
+        // Value=0.15なら15%で追加抽選します。
+        if (ShouldApplySkillCardLootBonus())
+        {
+            float bonusChance =
+                SkillCardEffectUtility.GetClamped01Value(
+                    SkillEffectType.ItemBoxExtraLootChance
                 );
-            }
 
-            if (showDebugLogs)
+            if (bonusChance > 0f &&
+                Roll01(random) < bonusChance &&
+                lootTable.TryRollBonusItem(random, out ItemBoxLootTable.LootRollResult bonusResult))
             {
-                Debug.Log(
-                    $"[ItemBoxRandomLootInitializer] {name}: " +
-                    $"{result.ItemData.DisplayName} {addedAmount}/{result.Amount}個を生成。",
-                    this
-                );
+                if (TryAddLootResult(bonusResult, true))
+                {
+                    addedKinds++;
+                }
             }
         }
 
@@ -161,6 +157,68 @@ public class ItemBoxRandomLootInitializer : MonoBehaviour
         }
 
         return true;
+    }
+
+    private bool TryAddLootResult(
+        ItemBoxLootTable.LootRollResult result,
+        bool fromSkillBonus)
+    {
+        if (result.ItemData == null || result.Amount <= 0)
+        {
+            return false;
+        }
+
+        itemBoxInventory.TryAddItem(
+            result.ItemData,
+            result.Amount,
+            out int remainingAmount
+        );
+
+        int addedAmount = result.Amount - remainingAmount;
+
+        if (remainingAmount > 0)
+        {
+            Debug.LogWarning(
+                $"[ItemBoxRandomLootInitializer] {result.ItemData.DisplayName} を " +
+                $"{remainingAmount}個、箱の空き不足で入れられませんでした。",
+                this
+            );
+        }
+
+        if (showDebugLogs)
+        {
+            string source = fromSkillBonus ? "漁り屋追加" : "通常抽選";
+            Debug.Log(
+                $"[ItemBoxRandomLootInitializer] {name}: [{source}] " +
+                $"{result.ItemData.DisplayName} {addedAmount}/{result.Amount}個を生成。",
+                this
+            );
+        }
+
+        return addedAmount > 0;
+    }
+
+    private bool ShouldApplySkillCardLootBonus()
+    {
+        if (!allowSkillCardLootBonus)
+        {
+            return false;
+        }
+
+        if (excludeRescueNpcCorpseLoot &&
+            GetComponentInParent<RescuePersonTarget2D>() != null)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static float Roll01(System.Random random)
+    {
+        return random != null
+            ? (float)random.NextDouble()
+            : UnityEngine.Random.value;
     }
 
     /// <summary>

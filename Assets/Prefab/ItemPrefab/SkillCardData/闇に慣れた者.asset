@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a257b8290dfc94b409820ea8c2455ef9, type: 3}
+  m_Name: "\u95C7\u306B\u6163\u308C\u305F\u8005"
+  m_EditorClassIdentifier: Assembly-CSharp::SkillCardData
+  itemId: Skill_player009
+  displayName: "\u95C7\u306B\u6163\u308C\u305F\u8005"
+  description: "\u4F4ESAN\u306B\u3088\u308B\u5C04\u6483\u30D6\u30EC -50%\uFF0FSAN\u56DE\u5FA9\u91CF
+    -20%"
+  icon: {fileID: -3101541092365725606, guid: 0797ea857adc24641b4fc44774228a69, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  width: 1
+  height: 1
+  canRotate: 1
+  maxStack: 1
+  purchasePrice: 0
+  sellPrice: 0
+  canSellToShop: 1
+  weight: 0
+  canDiscard: 1
+  rarity: 2
+  benefitText: "\u4F4ESAN\u306B\u3088\u308B\u5C04\u6483\u30D6\u30EC -50%"
+  drawbackText: "SAN\u56DE\u5FA9\u91CF -20%"
+  effects:
+  - effectType: 2
+    value: -0.5
+    conditions:
+    - conditionType: 3
+      percentThreshold: 0.2
+      weightThresholdKg: 0
+      requiredWeapon: {fileID: 0}
+      invert: 0
+  - effectType: 9
+    value: -0.2
+    conditions:
+    - conditionType: 3
+      percentThreshold: 0.2
+      weightThresholdKg: 0
+      requiredWeapon: {fileID: 0}
+      invert: 0
+  references:
+    version: 2
+    RefIds: []

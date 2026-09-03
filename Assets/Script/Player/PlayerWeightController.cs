@@ -161,10 +161,35 @@ public class PlayerWeightController : MonoBehaviour
 
     public bool IsCarryingExternalLoad => isCarryingExternalLoad;
 
-    public float CurrentCarryLoadMoveSpeedMultiplier =>
-        isCarryingExternalLoad
-            ? carryLoadSpeedMultiplier
-            : 1f;
+    public float CurrentCarryLoadMoveSpeedMultiplier
+    {
+        get
+        {
+            float rawMultiplier = isCarryingExternalLoad
+                ? carryLoadSpeedMultiplier
+                : 1f;
+
+            if (rawMultiplier >= 0.9999f ||
+                !SkillCardEffectUtility.IsCarryingRescuePerson())
+            {
+                return rawMultiplier;
+            }
+
+            // 「救助隊員」：速度倍率そのものを+40%するのではなく、
+            // 運搬によって失った速度（1 - rawMultiplier）の40%を取り戻します。
+            // 例：通常0.60倍 → ペナルティ0.40 → 40%軽減後は0.76倍。
+            float penaltyReduction =
+                SkillCardEffectUtility.GetClamped01Value(
+                    SkillEffectType.RescueCarryPenaltyReduction
+                );
+
+            float rawPenalty = 1f - Mathf.Clamp01(rawMultiplier);
+            float reducedPenalty =
+                rawPenalty * (1f - penaltyReduction);
+
+            return Mathf.Clamp01(1f - reducedPenalty);
+        }
+    }
 
     // 回復中の合計時間
     public float ConsumableUseDuration =>
@@ -522,7 +547,13 @@ public class PlayerWeightController : MonoBehaviour
         }
         else
         {
-            playerMove.jumpPower = baseJumpPower;
+            // 将来の「指定武器装備中だけジャンプ力UP」も、
+            // SkillCardData側のCondition + JumpPowerでそのまま対応できます。
+            playerMove.jumpPower =
+                baseJumpPower *
+                SkillCardEffectUtility.GetMultiplier(
+                    SkillEffectType.JumpPower
+                );
         }
     }
 

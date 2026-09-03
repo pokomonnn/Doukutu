@@ -182,7 +182,11 @@ public class DamageDealer : MonoBehaviour
                 continue;
             }
 
-            if (TryDealDamage(hitCollider, true))
+            if (TryDealDamage(
+                    hitCollider,
+                    true,
+                    hit.point
+                ))
             {
                 if (logSweepHits)
                 {
@@ -250,12 +254,12 @@ public class DamageDealer : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        TryDealDamage(other, false);
+        TryDealDamage(other, false, null);
     }
 
     private void OnTriggerStay2D(Collider2D other)
     {
-        TryDealDamage(other, false);
+        TryDealDamage(other, false, null);
     }
 
     /// <summary>
@@ -264,7 +268,8 @@ public class DamageDealer : MonoBehaviour
     /// </summary>
     private bool TryDealDamage(
         Collider2D other,
-        bool fromSweep)
+        bool fromSweep,
+        Vector2? explicitHitPoint)
     {
         if (other == null || IsOwnCollider(other))
         {
@@ -295,6 +300,21 @@ public class DamageDealer : MonoBehaviour
         EnemyHitReaction2D hitReaction =
             targetHealth.GetComponent<EnemyHitReaction2D>();
 
+        Vector3 hitWorldPosition;
+
+        if (explicitHitPoint.HasValue)
+        {
+            hitWorldPosition = explicitHitPoint.Value;
+        }
+        else
+        {
+            Vector2 sourcePosition = damageCollider != null
+                ? (Vector2)damageCollider.bounds.center
+                : (Vector2)transform.position;
+
+            hitWorldPosition = other.ClosestPoint(sourcePosition);
+        }
+
         if (!targetHealth.IsInvincible)
         {
             Vector3 hitSourcePosition =
@@ -307,7 +327,8 @@ public class DamageDealer : MonoBehaviour
 
         targetHealth.TakeDamage(
             CurrentDamage,
-            runtimeDamageGroupId
+            runtimeDamageGroupId,
+            hitWorldPosition
         );
 
         damagedTargets.Add(targetHealth);

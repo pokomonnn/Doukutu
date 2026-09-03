@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a257b8290dfc94b409820ea8c2455ef9, type: 3}
+  m_Name: "\u6F01\u308A\u5C4B"
+  m_EditorClassIdentifier: Assembly-CSharp::SkillCardData
+  itemId: Skill_player010
+  displayName: "\u6F01\u308A\u5C4B"
+  description: "ItemBox\u304B\u3089\u8FFD\u52A0\u30A2\u30A4\u30C6\u30E0\u7372\u5F97\u7387
+    +15%"
+  icon: {fileID: -6577110044990363448, guid: 0b2f62f3dc04cab4f80ded2b541c7e36, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  width: 1
+  height: 1
+  canRotate: 1
+  maxStack: 1
+  purchasePrice: 0
+  sellPrice: 0
+  canSellToShop: 1
+  weight: 0
+  canDiscard: 1
+  rarity: 1
+  benefitText: "ItemBox\u304B\u3089\u8FFD\u52A0\u30A2\u30A4\u30C6\u30E0\u7372\u5F97\u7387
+    +15%"
+  drawbackText: 
+  effects:
+  - effectType: 14
+    value: 0.15
+    conditions: []
+  references:
+    version: 2
+    RefIds: []

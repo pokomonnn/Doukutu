@@ -185,6 +185,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 20
   invincibilityDuration: 0.5
+  enableDamageDebugLog: 1
+  includePlayerDamageInDebugLog: 0
+  logBlockedDamage: 1
   audioSource: {fileID: 1786321803443853859}
   damageSound: {fileID: 8300000, guid: 4b9305695b4b2534cb5f1b2429b1b09c, type: 3}
   damageSoundVolume: 0.8
@@ -301,7 +304,7 @@ MonoBehaviour:
   disableCollidersWhileCarried: 1
   defaultPlayerCollisionIgnoreDuration: 0.25
   repickupDelay: 0.2
-  carryWeightKg: 10
+  carryWeightKg: 50
   applyPromptLocalPosition: 1
   promptLocalPosition: {x: 0, y: 1.1, z: 0}
   showDebugLogs: 0
@@ -528,6 +531,8 @@ MonoBehaviour:
   skipOpenDelayAfterFirstOpen: 1
   openKey: 101
   playerTag: Player
+  prioritizeWorldItemPickup: 1
+  hideBoxPromptWhilePickupAvailable: 1
   openDelay: 3
   openSound: {fileID: 8300000, guid: 20364a3819febb74389a396ec75ee23f, type: 3}
   openSoundVolume: 0.9

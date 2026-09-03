@@ -134,4 +134,10 @@ MonoBehaviour:
       facilityUpgradeData: {fileID: 11400000, guid: 4c4c0bc632463064b82ed7e5535165bf, type: 2}
       upgradeFailureBlockId: upgrade_failed
       selectionSoundOverride: {fileID: 0}
+    - choiceText: "\u4FEE\u7406"
+      action: 6
+      nextBlockId: upgrade_success
+      facilityUpgradeData: {fileID: 11400000, guid: 4c4c0bc632463064b82ed7e5535165bf, type: 2}
+      upgradeFailureBlockId: upgrade_failed
+      selectionSoundOverride: {fileID: 0}
     nextBlockId: 

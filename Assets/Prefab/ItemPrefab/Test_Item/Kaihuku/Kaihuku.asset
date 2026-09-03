@@ -41,11 +41,12 @@ MonoBehaviour:
   purchasePrice: 0
   sellPrice: 0
   canSellToShop: 1
-  weight: 10
+  weight: 0.5
   canDiscard: 1
   healAmount: 20
   foodRestoreAmount: 0
   waterRestoreAmount: 0
+  torchRestoreAmount: 0
   curedConditions: 0
   slowdownDuration: 5
   useMoveSpeedMultiplier: 0.5

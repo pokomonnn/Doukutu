@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a257b8290dfc94b409820ea8c2455ef9, type: 3}
+  m_Name: "\u30AF\u30A4\u30C3\u30AF\u30EA\u30ED\u30FC\u30C9"
+  m_EditorClassIdentifier: Assembly-CSharp::SkillCardData
+  itemId: Skill_quickliroad001
+  displayName: "\u30AF\u30A4\u30C3\u30AF\u30EA\u30ED\u30FC\u30C9"
+  description: "\u30B9\u30AD\u30EB\u30AB\u30FC\u30C9"
+  icon: {fileID: 6741274432287309109, guid: a986e78fddee96843a9d8ca05042cbb7, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  width: 1
+  height: 1
+  canRotate: 1
+  maxStack: 1
+  purchasePrice: 0
+  sellPrice: 0
+  canSellToShop: 1
+  weight: 0
+  canDiscard: 1
+  rarity: 0
+  benefitText: "\u30EA\u30ED\u30FC\u30C9\u6642\u9593 -20%"
+  drawbackText: 
+  effects:
+  - effectType: 1
+    value: -0.2
+    conditions: []
+  references:
+    version: 2
+    RefIds: []

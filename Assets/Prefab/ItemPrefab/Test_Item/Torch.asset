@@ -39,7 +39,7 @@ MonoBehaviour:
   canRotate: 1
   maxStack: 5
   purchasePrice: 75
-  sellPrice: 5
+  sellPrice: 30
   canSellToShop: 1
   weight: 1
   canDiscard: 1

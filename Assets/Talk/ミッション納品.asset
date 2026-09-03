@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bd60bfc4d6663934e94846057f06cc5f, type: 3}
-  m_Name: NewTownConversation
+  m_Name: "\u30DF\u30C3\u30B7\u30E7\u30F3\u7D0D\u54C1"
   m_EditorClassIdentifier: Assembly-CSharp::TownConversationData
   conversationType: 0
   residentId: resident_id

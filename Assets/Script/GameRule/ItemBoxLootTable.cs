@@ -162,6 +162,84 @@ public class ItemBoxLootTable : ScriptableObject
         return results;
     }
 
+
+    /// <summary>
+    /// 「漁り屋」などの追加抽選用です。
+    /// 通常Rollとは別枠で、ChancePercentを重みとして候補を1種類だけ選びます。
+    /// そのため、レアItem（ChancePercentが低いもの）は追加抽選でも選ばれにくくなります。
+    /// </summary>
+    public bool TryRollBonusItem(
+        System.Random random,
+        out LootRollResult result)
+    {
+        result = default;
+
+        if (entries == null || entries.Count == 0)
+        {
+            return false;
+        }
+
+        float totalWeight = 0f;
+
+        foreach (LootEntry entry in entries)
+        {
+            if (entry == null ||
+                entry.ItemData == null ||
+                entry.ChancePercent <= 0f)
+            {
+                continue;
+            }
+
+            totalWeight += entry.ChancePercent;
+        }
+
+        if (totalWeight <= 0f)
+        {
+            return false;
+        }
+
+        double roll01 = random != null
+            ? random.NextDouble()
+            : UnityEngine.Random.value;
+
+        float roll = (float)(roll01 * totalWeight);
+        float accumulated = 0f;
+        LootEntry fallback = null;
+
+        foreach (LootEntry entry in entries)
+        {
+            if (entry == null ||
+                entry.ItemData == null ||
+                entry.ChancePercent <= 0f)
+            {
+                continue;
+            }
+
+            fallback = entry;
+            accumulated += entry.ChancePercent;
+
+            if (roll <= accumulated)
+            {
+                result = new LootRollResult(
+                    entry.ItemData,
+                    entry.RollAmount(random)
+                );
+                return true;
+            }
+        }
+
+        if (fallback != null)
+        {
+            result = new LootRollResult(
+                fallback.ItemData,
+                fallback.RollAmount(random)
+            );
+            return true;
+        }
+
+        return false;
+    }
+
     private static void Shuffle<T>(
         IList<T> list,
         System.Random random)

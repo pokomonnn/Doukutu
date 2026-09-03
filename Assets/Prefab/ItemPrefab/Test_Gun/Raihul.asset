@@ -56,7 +56,7 @@ MonoBehaviour:
   compatibleAmmo: {fileID: 11400000, guid: 97f438417413bb74e962bb12158e0d0f, type: 2}
   compatibleAmmoCaliberId: 
   maxDurability: 100
-  durabilityLossPerShot: 0.1
+  durabilityLossPerShot: 6.2
   jamStartDurabilityPercent: 0.5
   jamChanceAtStart: 0.01
   maxJamChanceAtZeroDurability: 0.25

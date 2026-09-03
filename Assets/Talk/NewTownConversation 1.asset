@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd60bfc4d6663934e94846057f06cc5f, type: 3}
+  m_Name: NewTownConversation 1
+  m_EditorClassIdentifier: Assembly-CSharp::TownConversationData
+  conversationType: 0
+  residentId: resident_id
+  residentName: "\u4F4F\u4EBA"
+  defaultPortrait: {fileID: 0}
+  firstConversationBlockId: first
+  repeatConversationBlockId: repeat
+  mission: {fileID: 0}
+  trackMissionAfterAccept: 1
+  missionNotAcceptedBlockId: mission_offer
+  missionAcceptedJustNowBlockId: mission_accepted
+  missionInProgressBlockId: mission_progress
+  missionReadyToReportBlockId: mission_report
+  missionRewardClaimedBlockId: mission_finished
+  requireObjectiveCompleted: 1
+  moneyReward: 0
+  itemRewards: []
+  merchantStartBlockId: merchant
+  merchantShopData: {fileID: 0}
+  nextButtonText: "\u6B21\u3078"
+  closeButtonText: "\u9589\u3058\u308B"
+  blocks: []

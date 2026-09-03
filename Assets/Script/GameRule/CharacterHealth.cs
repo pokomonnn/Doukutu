@@ -46,6 +46,12 @@ public class CharacterHealth : MonoBehaviour
     public event Action<int, int> HealthChanged;
     public event Action Died;
 
+    /// <summary>
+    /// 実際にHPが減った時だけ通知します。
+    /// actualDamage / damageGroupId / hitWorldPosition
+    /// </summary>
+    public event Action<int, int, Vector3> Damaged;
+
     private Coroutine invincibilityCoroutine;
 
     // 現在の無敵時間を発生させた「1回の射撃」のDamage Group ID。
@@ -82,7 +88,7 @@ public class CharacterHealth : MonoBehaviour
     /// </summary>
     public void TakeDamage(int damage)
     {
-        TakeDamage(damage, 0);
+        TakeDamage(damage, 0, transform.position);
     }
 
     /// <summary>
@@ -99,6 +105,23 @@ public class CharacterHealth : MonoBehaviour
     public void TakeDamage(
         int damage,
         int damageGroupId)
+    {
+        TakeDamage(
+            damage,
+            damageGroupId,
+            transform.position
+        );
+    }
+
+    /// <summary>
+    /// Damage Group IDと命中したワールド座標付きダメージ。
+    /// DamagePopupなど、命中位置を使うUI用です。
+    /// 既存のTakeDamage呼び出しとの互換性は維持します。
+    /// </summary>
+    public void TakeDamage(
+        int damage,
+        int damageGroupId,
+        Vector3 hitWorldPosition)
     {
         bool isPlayer = ShouldUsePlayerSkillModifiers();
         bool shouldLog =
@@ -237,6 +260,18 @@ public class CharacterHealth : MonoBehaviour
         PlayDamageSound();
 
         NotifyHealthChanged();
+
+        // EnemyDamagePopupSpawnerなどへ、実際に減ったHP量と命中位置を通知。
+        // 死亡イベントより先に通知することで、死亡処理でEnemyが無効化されても
+        // 最後のダメージ数字を表示できるようにします。
+        if (actualDamage > 0)
+        {
+            Damaged?.Invoke(
+                actualDamage,
+                damageGroupId,
+                hitWorldPosition
+            );
+        }
 
         if (CurrentHealth <= 0)
         {

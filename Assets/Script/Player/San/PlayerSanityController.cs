@@ -137,6 +137,15 @@ public class PlayerSanityController : MonoBehaviour
             return 0f;
         }
 
+        amount *= SkillCardEffectUtility.GetMultiplier(
+            SkillEffectType.SanityRecovery
+        );
+
+        if (amount <= 0f)
+        {
+            return 0f;
+        }
+
         float previousSanity = currentSanity;
         SetSanityInternal(currentSanity + amount, true);
 
