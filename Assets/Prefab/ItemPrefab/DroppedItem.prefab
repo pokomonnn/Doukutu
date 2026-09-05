@@ -158,7 +158,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.24193144, y: 0.28510386}
+  m_Offset: {x: -0.028577805, y: 0.016092956}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0, y: 0}
@@ -168,7 +168,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1.3826609, y: 1.2702078}
+  m_Size: {x: 0.9559536, y: 0.73218596}
   m_EdgeRadius: 0
 --- !u!114 &1352356257342827503
 MonoBehaviour:
@@ -207,8 +207,11 @@ MonoBehaviour:
   soundSpatialBlend: 0
   itemSpriteRenderer: {fileID: 9171832562365942117}
   inventoryController: {fileID: 0}
+  equipmentController: {fileID: 0}
   ropePullController: {fileID: 0}
   carryController: {fileID: 0}
+  autoEquipWeaponWhenEmpty: 1
+  logAutoEquipWeapon: 1
   pickupRange: {fileID: 3342349186589636397}
   playerTag: Player
   references:

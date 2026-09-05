@@ -33,6 +33,13 @@ public class EnemyHitReaction2D : MonoBehaviour
     [Tooltip("ノックバック中にEnemyChaser2Dの追跡・攻撃を止める秒数")]
     [SerializeField, Min(0f)] private float hitStunDuration = 0.14f;
 
+    [Header("大型・重装敵の耐性")]
+    [Tooltip("0=通常、1=ノックバック完全無効。大型敵は0.7～0.9程度がおすすめです")]
+    [SerializeField, Range(0f, 1f)] private float knockbackResistance;
+
+    [Tooltip("0=通常、1=被弾硬直完全無効。大型敵・レア強敵向けです")]
+    [SerializeField, Range(0f, 1f)] private float hitStunResistance;
+
     [Header("被弾フラッシュ")]
     [SerializeField] private bool enableHitFlash = true;
 
@@ -131,24 +138,26 @@ public class EnemyHitReaction2D : MonoBehaviour
         FindReferences();
 
         Vector2 knockbackDirection = GetKnockbackDirection(sourcePosition);
+        float knockbackMultiplier = 1f - Mathf.Clamp01(knockbackResistance);
+        float stunMultiplier = 1f - Mathf.Clamp01(hitStunResistance);
 
-        if (enemyRigidbody != null)
+        if (enemyRigidbody != null && knockbackMultiplier > 0.0001f)
         {
             Vector2 velocity = enemyRigidbody.linearVelocity;
-            velocity.x = knockbackDirection.x * knockbackSpeed;
+            velocity.x = knockbackDirection.x * knockbackSpeed * knockbackMultiplier;
 
             if (upwardKnockbackSpeed > 0f)
             {
                 velocity.y = Mathf.Max(
                     velocity.y,
-                    upwardKnockbackSpeed
+                    upwardKnockbackSpeed * knockbackMultiplier
                 );
             }
 
             enemyRigidbody.linearVelocity = velocity;
         }
 
-        enemyChaser?.ApplyHitStun(hitStunDuration);
+        enemyChaser?.ApplyHitStun(hitStunDuration * stunMultiplier);
 
         if (enableHitFlash)
         {
@@ -382,6 +391,8 @@ public class EnemyHitReaction2D : MonoBehaviour
         knockbackSpeed = Mathf.Max(0f, knockbackSpeed);
         upwardKnockbackSpeed = Mathf.Max(0f, upwardKnockbackSpeed);
         hitStunDuration = Mathf.Max(0f, hitStunDuration);
+        knockbackResistance = Mathf.Clamp01(knockbackResistance);
+        hitStunResistance = Mathf.Clamp01(hitStunResistance);
         flashDuration = Mathf.Max(0.01f, flashDuration);
         flashCount = Mathf.Max(1, flashCount);
         flashIntensity = Mathf.Clamp01(flashIntensity);

@@ -29,6 +29,12 @@ public class EnemyDeathHandler2D : MonoBehaviour
     [Tooltip("未設定なら同じObjectから自動取得します")]
     [SerializeField] private EnemyDropTable2D dropTable;
 
+    [Tooltip("未設定なら同じObjectから自動取得します")]
+    [SerializeField] private EnemyRangedAttack2D rangedAttack;
+
+    [Tooltip("未設定なら同じObjectから自動取得します")]
+    [SerializeField] private EnemySanityAura2D sanityAura;
+
     [Tooltip("EnemyChaser2D以外にも、死亡時に止めたいBehaviourがあれば設定します")]
     [SerializeField] private Behaviour[] additionalBehavioursToDisable;
 
@@ -166,6 +172,16 @@ public class EnemyDeathHandler2D : MonoBehaviour
         if (hitReaction != null)
         {
             hitReaction.enabled = false;
+        }
+
+        if (rangedAttack != null)
+        {
+            rangedAttack.enabled = false;
+        }
+
+        if (sanityAura != null)
+        {
+            sanityAura.enabled = false;
         }
 
         foreach (Behaviour behaviour in additionalBehavioursToDisable)
@@ -422,6 +438,16 @@ public class EnemyDeathHandler2D : MonoBehaviour
         if (dropTable == null)
         {
             dropTable = GetComponent<EnemyDropTable2D>();
+        }
+
+        if (rangedAttack == null)
+        {
+            rangedAttack = GetComponent<EnemyRangedAttack2D>();
+        }
+
+        if (sanityAura == null)
+        {
+            sanityAura = GetComponent<EnemySanityAura2D>();
         }
     }
 

@@ -1,6 +1,12 @@
 using System;
 using UnityEngine;
 
+public enum EnemyCombatMovementStyle
+{
+    MeleeChase,
+    KeepDistance
+}
+
 /// <summary>
 /// 地上を左右に移動してプレイヤーを追跡・攻撃する2D敵です。
 /// 深い崖を避け、ジャンプ中に壁へ当たった場合は横移動を止めて
@@ -41,8 +47,19 @@ public class EnemyChaser2D : MonoBehaviour
     [Header("移動設定")]
     [SerializeField, Min(0f)] private float moveSpeed = 2.2f;
 
-    [Tooltip("この距離以内ではプレイヤーへさらに近づきません")]
+    [Tooltip("近接型では、この距離以内でプレイヤーへさらに近づきません")]
     [SerializeField, Min(0f)] private float stopDistance = 0.55f;
+
+    [Header("戦闘距離タイプ")]
+    [Tooltip("Melee Chase=従来の近接追跡。Keep Distance=遠距離敵向けに一定距離を保ちます")]
+    [SerializeField] private EnemyCombatMovementStyle combatMovementStyle =
+        EnemyCombatMovementStyle.MeleeChase;
+
+    [Tooltip("Keep Distance時、この距離より近いとプレイヤーから離れます")]
+    [SerializeField, Min(0f)] private float keepDistanceMinimum = 3f;
+
+    [Tooltip("Keep Distance時、この距離より遠いとプレイヤーへ近づきます")]
+    [SerializeField, Min(0f)] private float keepDistanceMaximum = 6f;
 
     [Header("崖・落下防止")]
     [Tooltip("オンなら、進行方向に深い崖がある時は手前で止まります")]
@@ -123,6 +140,9 @@ public class EnemyChaser2D : MonoBehaviour
     [SerializeField, Min(0)] private int maxFailedJumpAttemptsBeforeGivingUp = 2;
 
     [Header("攻撃設定")]
+    [Tooltip("オンならEnemyChaser2D自身の近接攻撃を使用します。遠距離敵ではオフ推奨です")]
+    [SerializeField] private bool enableBuiltInMeleeAttack = true;
+
     [SerializeField, Min(0f)] private float attackDistance = 0.8f;
 
     [SerializeField, Min(1)] private int attackDamage = 10;
@@ -147,6 +167,9 @@ public class EnemyChaser2D : MonoBehaviour
 
     public bool HasDetectedPlayer => hasDetectedPlayer;
     public Transform PlayerTransform => playerTransform;
+    public CharacterHealth PlayerHealth => playerHealth;
+    public EnemyCombatMovementStyle CombatMovementStyle => combatMovementStyle;
+    public float MoveSpeed => moveSpeed;
 
     // EnemyAnimator2D が移動アニメーションを判定するために使います。
     // 攻撃距離で停止している時、被弾中、崖・壁で諦めている時は false になります。
@@ -293,6 +316,7 @@ public class EnemyChaser2D : MonoBehaviour
             Mathf.Abs(horizontalDifference);
 
         bool canAttack =
+            enableBuiltInMeleeAttack &&
             distanceToPlayer <= attackDistance;
 
         if (canAttack)
@@ -302,14 +326,9 @@ public class EnemyChaser2D : MonoBehaviour
             if (stopWhileAttacking)
             {
                 desiredHorizontalSpeed = 0f;
+                UpdateSpriteDirection(Mathf.Sign(horizontalDifference));
                 return;
             }
-        }
-
-        if (absoluteHorizontalDifference <= stopDistance)
-        {
-            desiredHorizontalSpeed = 0f;
-            return;
         }
 
         if (isRecoveringFromWallHit)
@@ -318,14 +337,58 @@ public class EnemyChaser2D : MonoBehaviour
             return;
         }
 
-        float direction = Mathf.Sign(horizontalDifference);
+        float direction;
+        bool movingTowardPlayer;
+
+        if (combatMovementStyle == EnemyCombatMovementStyle.KeepDistance)
+        {
+            if (distanceToPlayer < keepDistanceMinimum)
+            {
+                // 近すぎるので後退。
+                direction = -Mathf.Sign(horizontalDifference);
+                movingTowardPlayer = false;
+            }
+            else if (distanceToPlayer > keepDistanceMaximum)
+            {
+                // 遠すぎるので接近。
+                direction = Mathf.Sign(horizontalDifference);
+                movingTowardPlayer = true;
+            }
+            else
+            {
+                // 適正距離では停止し、Player方向だけ向きます。
+                desiredHorizontalSpeed = 0f;
+                UpdateSpriteDirection(Mathf.Sign(horizontalDifference));
+                return;
+            }
+        }
+        else
+        {
+            if (absoluteHorizontalDifference <= stopDistance)
+            {
+                desiredHorizontalSpeed = 0f;
+                UpdateSpriteDirection(Mathf.Sign(horizontalDifference));
+                return;
+            }
+
+            direction = Mathf.Sign(horizontalDifference);
+            movingTowardPlayer = true;
+        }
+
+        if (Mathf.Abs(direction) <= 0.01f)
+        {
+            desiredHorizontalSpeed = 0f;
+            return;
+        }
 
         if (avoidDeepCliffs &&
             IsDeepCliffAhead(direction, out _))
         {
             desiredHorizontalSpeed = 0f;
 
-            if (giveUpWhenDeepCliff)
+            // Playerへ近づいている時だけ、従来どおり追跡断念を記録します。
+            // 遠距離型の後退中に崖があった場合は、その場で止まるだけです。
+            if (movingTowardPlayer && giveUpWhenDeepCliff)
             {
                 GiveUpTargetAtPath(direction, PathBlockReason.DeepCliff);
             }
@@ -928,6 +991,11 @@ public class EnemyChaser2D : MonoBehaviour
 
         moveSpeed = Mathf.Max(0f, moveSpeed);
         stopDistance = Mathf.Max(0f, stopDistance);
+        keepDistanceMinimum = Mathf.Max(0f, keepDistanceMinimum);
+        keepDistanceMaximum = Mathf.Max(
+            keepDistanceMinimum,
+            keepDistanceMaximum
+        );
 
         cliffCheckForwardOffset = Mathf.Max(0f, cliffCheckForwardOffset);
         cliffCheckStartHeight = Mathf.Max(0f, cliffCheckStartHeight);
@@ -998,7 +1066,6 @@ public class EnemyChaser2D : MonoBehaviour
                 )
             );
         }
-
         if (showCliffGizmo && enemyCollider != null)
         {
             Bounds bounds = enemyCollider.bounds;

@@ -20,6 +20,8 @@ public class EnemyAnimator2D : MonoBehaviour
     [SerializeField] private CharacterHealth health;
     [SerializeField] private Rigidbody2D enemyRigidbody;
     [SerializeField] private EnemyChaser2D enemyChaser;
+    [SerializeField] private EnemyRangedAttack2D rangedAttack;
+    [SerializeField] private EnemySanityAura2D sanityAura;
 
     [Header("移動パラメータ")]
     [Tooltip("空欄なら設定しません。IdleとChaseの切替に使うBoolです")]
@@ -37,6 +39,12 @@ public class EnemyAnimator2D : MonoBehaviour
     [Header("イベントTrigger")]
     [Tooltip("空欄なら攻撃Triggerは使いません。EnemyChaser2Dが実際に攻撃を試みた瞬間に呼ばれます")]
     [SerializeField] private string attackTriggerName = "Attack";
+
+    [Tooltip("空欄なら遠距離攻撃Triggerは使いません。EnemyRangedAttack2Dの発射時に呼ばれます")]
+    [SerializeField] private string rangedAttackTriggerName = "RangedAttack";
+
+    [Tooltip("空欄なら特殊攻撃Triggerは使いません。EnemySanityAura2Dの効果発生時に呼ばれます")]
+    [SerializeField] private string specialAttackTriggerName = "SpecialAttack";
 
     [Tooltip("空欄なら被弾Triggerは使いません。実際にHPが減った時に呼ばれます")]
     [SerializeField] private string hitTriggerName = "Hit";
@@ -160,6 +168,36 @@ public class EnemyAnimator2D : MonoBehaviour
         }
     }
 
+    private void HandleRangedAttackPerformed()
+    {
+        if (isDead)
+        {
+            return;
+        }
+
+        TriggerIfExists(rangedAttackTriggerName);
+
+        if (showStateLogs)
+        {
+            Debug.Log($"[EnemyAnimator2D] {name}: RangedAttack Trigger", this);
+        }
+    }
+
+    private void HandleSpecialEffectPerformed()
+    {
+        if (isDead)
+        {
+            return;
+        }
+
+        TriggerIfExists(specialAttackTriggerName);
+
+        if (showStateLogs)
+        {
+            Debug.Log($"[EnemyAnimator2D] {name}: SpecialAttack Trigger", this);
+        }
+    }
+
     private void HandleHealthChanged(int currentHealth, int maxHealth)
     {
         if (!hasCachedHealth)
@@ -207,6 +245,8 @@ public class EnemyAnimator2D : MonoBehaviour
         }
 
         ResetTriggerIfExists(attackTriggerName);
+        ResetTriggerIfExists(rangedAttackTriggerName);
+        ResetTriggerIfExists(specialAttackTriggerName);
         ResetTriggerIfExists(hitTriggerName);
         TriggerIfExists(deathTriggerName);
     }
@@ -249,6 +289,16 @@ public class EnemyAnimator2D : MonoBehaviour
             enemyChaser.AttackPerformed += HandleAttackPerformed;
         }
 
+        if (rangedAttack != null)
+        {
+            rangedAttack.RangedAttackPerformed += HandleRangedAttackPerformed;
+        }
+
+        if (sanityAura != null)
+        {
+            sanityAura.SpecialEffectPerformed += HandleSpecialEffectPerformed;
+        }
+
         isSubscribed = true;
     }
 
@@ -268,6 +318,16 @@ public class EnemyAnimator2D : MonoBehaviour
         if (enemyChaser != null)
         {
             enemyChaser.AttackPerformed -= HandleAttackPerformed;
+        }
+
+        if (rangedAttack != null)
+        {
+            rangedAttack.RangedAttackPerformed -= HandleRangedAttackPerformed;
+        }
+
+        if (sanityAura != null)
+        {
+            sanityAura.SpecialEffectPerformed -= HandleSpecialEffectPerformed;
         }
 
         isSubscribed = false;
@@ -323,6 +383,16 @@ public class EnemyAnimator2D : MonoBehaviour
 
         WarnIfConfiguredParameterIsMissing(
             attackTriggerName,
+            AnimatorControllerParameterType.Trigger
+        );
+
+        WarnIfConfiguredParameterIsMissing(
+            rangedAttackTriggerName,
+            AnimatorControllerParameterType.Trigger
+        );
+
+        WarnIfConfiguredParameterIsMissing(
+            specialAttackTriggerName,
             AnimatorControllerParameterType.Trigger
         );
 
@@ -456,6 +526,16 @@ public class EnemyAnimator2D : MonoBehaviour
         if (enemyChaser == null)
         {
             enemyChaser = GetComponent<EnemyChaser2D>();
+        }
+
+        if (rangedAttack == null)
+        {
+            rangedAttack = GetComponent<EnemyRangedAttack2D>();
+        }
+
+        if (sanityAura == null)
+        {
+            sanityAura = GetComponent<EnemySanityAura2D>();
         }
 
         if (animator == null)

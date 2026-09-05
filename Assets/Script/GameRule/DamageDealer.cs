@@ -325,8 +325,26 @@ public class DamageDealer : MonoBehaviour
             hitReaction?.NotifyHitSource(hitSourcePosition);
         }
 
+        int finalDamage = CurrentDamage;
+
+        EnemyArmor2D enemyArmor =
+            targetHealth.GetComponent<EnemyArmor2D>();
+
+        if (enemyArmor == null)
+        {
+            enemyArmor = targetHealth.GetComponentInChildren<EnemyArmor2D>(true);
+        }
+
+        if (enemyArmor != null)
+        {
+            finalDamage = enemyArmor.CalculateDamageAfterArmor(
+                CurrentDamage,
+                ArmorPenetration
+            );
+        }
+
         targetHealth.TakeDamage(
-            CurrentDamage,
+            finalDamage,
             runtimeDamageGroupId,
             hitWorldPosition
         );

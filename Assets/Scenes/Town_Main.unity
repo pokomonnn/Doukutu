@@ -15587,8 +15587,14 @@ MonoBehaviour:
   - itemData: {fileID: 11400000, guid: 59d3f0fec4f9cde41820b132c33ef8ea, type: 2}
     amount: 10
   - itemData: {fileID: 11400000, guid: c9fd4e26b48a0ab4995b954c5847b9c7, type: 2}
-    amount: 10
+    amount: 5
   - itemData: {fileID: 11400000, guid: 4e7046421b99b8d47bd6599f6af96914, type: 2}
+    amount: 10
+  - itemData: {fileID: 11400000, guid: ea7581793bcc8bb46b4e27ace4109183, type: 2}
+    amount: 40
+  - itemData: {fileID: 11400000, guid: 0d2dd774c2af1554fb1d5a54475d3883, type: 2}
+    amount: 10
+  - itemData: {fileID: 11400000, guid: e87d47f2940217b47af3665eeb649d48, type: 2}
     amount: 10
   buyPriceMultiplier: 1
   sellPriceMultiplier: 1
