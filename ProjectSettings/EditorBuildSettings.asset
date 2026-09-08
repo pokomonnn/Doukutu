@@ -29,6 +29,15 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Result.unity
     guid: 837ed1185e3f6bc49bc884a0a610c67f
+  - enabled: 1
+    path: Assets/Scenes/Doukutu_2.unity
+    guid: 128a6611527af7c41aeeb463fec68933
+  - enabled: 1
+    path: Assets/Scenes/Doukutu_3.unity
+    guid: 3f5dae4dfa54e894b8809ee853ac1ecd
+  - enabled: 1
+    path: Assets/Scenes/Doukutu_4.unity
+    guid: 448df1b17c1e8274bb373bec5ea7496c
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: b5f2ff8dbed4de943a1ee7e94004ed9a, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

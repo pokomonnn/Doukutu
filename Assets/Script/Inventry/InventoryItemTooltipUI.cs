@@ -1,4 +1,4 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -847,6 +847,14 @@ public class InventoryItemTooltipUI : MonoBehaviour
 
     private void EnsureVisuals()
     {
+        // Prefab Assetそのものや、Scene切替中でまだ有効なSceneに属していないObjectには
+        // 子UIを自動生成しません。Prefab AssetへSetParentしようとすると、
+        // Unityがデータ破損防止のためエラーにするためです。
+        if (!CanModifyRuntimeHierarchy())
+        {
+            return;
+        }
+
         panelRect =
             GetComponent<RectTransform>();
 
@@ -1642,6 +1650,28 @@ public class InventoryItemTooltipUI : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 実行中かつ、実際にロード済みScene上に存在するObjectだけ
+    /// Tooltipの子UIを生成・変更できるようにします。
+    /// Prefab AssetはSceneが無効なのでfalseになります。
+    /// </summary>
+    private bool CanModifyRuntimeHierarchy()
+    {
+        if (!Application.isPlaying)
+        {
+            return false;
+        }
+
+        if (gameObject == null)
+        {
+            return false;
+        }
+
+        var scene = gameObject.scene;
+
+        return scene.IsValid() && scene.isLoaded;
+    }
+
     private static Sprite GetWhiteSprite()
     {
         if (whiteSprite != null)
@@ -1703,7 +1733,9 @@ public class InventoryItemTooltipUI : MonoBehaviour
                 weaponDamageSliderHeight
             );
 
-        if (Application.isPlaying)
+        // Play中でもPrefab AssetのOnValidateが呼ばれる場合があります。
+        // 実際にロード済みScene上のObjectだけ更新します。
+        if (CanModifyRuntimeHierarchy())
         {
             EnsureVisuals();
             ApplyFontToAllTexts();

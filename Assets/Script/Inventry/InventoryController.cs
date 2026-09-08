@@ -15,6 +15,7 @@ public enum ItemUseResult
     WaterIsFull,
     FoodAndWaterAreFull,
     TorchIsFull,
+    TorchItemNotFound,
 
     NoUsableEffect,
 
@@ -506,6 +507,51 @@ public class InventoryController : MonoBehaviour
         }
 
         return removedTotal;
+    }
+
+    /// <summary>
+    /// インベントリ内から松明回復効果を持つ消耗品を1つ探し、
+    /// 通常のTryUseItem()経由で自動使用します。
+    /// 1キーなどのショートカットから呼ぶことを想定しています。
+    /// </summary>
+    public bool TryUseFirstTorch(out ItemUseResult result)
+    {
+        result = ItemUseResult.TorchItemNotFound;
+
+        if (!isInitialized)
+        {
+            InitializeInventory();
+        }
+
+        if (inventoryGrid == null)
+        {
+            return false;
+        }
+
+        // TryUseItem()成功時にスタックが0になって削除される可能性があるため、
+        // 元Listを直接列挙せずスナップショットから探します。
+        List<InventoryItem> items =
+            new List<InventoryItem>(inventoryGrid.Items);
+
+        foreach (InventoryItem item in items)
+        {
+            if (item == null || item.ItemData == null || item.Amount <= 0)
+            {
+                continue;
+            }
+
+            if (!(item.ItemData is ConsumableItemData consumableData) ||
+                !consumableData.CanRestoreTorch)
+            {
+                continue;
+            }
+
+            // 通常の右クリック使用と同じ処理を通す。
+            // 松明満タン・Player死亡・Controller不足なども既存判定をそのまま利用する。
+            return TryUseItem(item, out result);
+        }
+
+        return false;
     }
 
     // 消耗品を使用する

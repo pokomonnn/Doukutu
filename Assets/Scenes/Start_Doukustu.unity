@@ -290,11 +290,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bc780aeb2fdfda24c9910687d18f11df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStatusConditionController
---- !u!82 &76742661 stripped
-AudioSource:
-  m_CorrespondingSourceObject: {fileID: 1744139609449430758, guid: e4f9170dfca79a545b540dbb952f3975, type: 3}
-  m_PrefabInstance: {fileID: 8519354185895446000}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &76742662 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1484419611754063742, guid: e4f9170dfca79a545b540dbb952f3975, type: 3}
@@ -12405,7 +12400,7 @@ Tilemap:
     second:
       serializedVersion: 2
       m_TileIndex: 2
-      m_TileSpriteIndex: 1
+      m_TileSpriteIndex: 4294967295
       m_TileMatrixIndex: 0
       m_TileColorIndex: 1
       m_TileObjectToInstantiateIndex: 65535
@@ -12415,7 +12410,7 @@ Tilemap:
     second:
       serializedVersion: 2
       m_TileIndex: 2
-      m_TileSpriteIndex: 1
+      m_TileSpriteIndex: 4294967295
       m_TileMatrixIndex: 0
       m_TileColorIndex: 1
       m_TileObjectToInstantiateIndex: 65535
@@ -12425,7 +12420,7 @@ Tilemap:
     second:
       serializedVersion: 2
       m_TileIndex: 2
-      m_TileSpriteIndex: 1
+      m_TileSpriteIndex: 4294967295
       m_TileMatrixIndex: 0
       m_TileColorIndex: 1
       m_TileObjectToInstantiateIndex: 65535
@@ -12447,7 +12442,7 @@ Tilemap:
     m_RefCount: 1062
     m_Data: {fileID: -3077338362222238373, guid: f8351cd1234650b489a40c40b8c0802f, type: 3}
   - serializedVersion: 2
-    m_RefCount: 3
+    m_RefCount: 0
     m_Data: {fileID: 1026043486}
   m_TileMatrixArray:
   - serializedVersion: 2
@@ -49534,6 +49529,10 @@ PrefabInstance:
       propertyPath: equipmentController
       value: 
       objectReference: {fileID: 901321304}
+    - target: {fileID: 5963835024709554564, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5964471655568354182, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: playerWeightController
       value: 
@@ -49557,7 +49556,7 @@ PrefabInstance:
     - target: {fileID: 6681684930962201023, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: takeAllAudioSource
       value: 
-      objectReference: {fileID: 76742661}
+      objectReference: {fileID: 7660361531672240133}
     - target: {fileID: 6681684930962201023, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: playerWeightController
       value: 
@@ -49627,6 +49626,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+--- !u!82 &7660361531672240133 stripped
+AudioSource:
+  m_CorrespondingSourceObject: {fileID: 4777162217370665377, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+  m_PrefabInstance: {fileID: 7660361531672240132}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &8143715033098905448
 PrefabInstance:
   m_ObjectHideFlags: 0
