@@ -1,7 +1,9 @@
-﻿using System;
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 /// <summary>
@@ -38,6 +40,66 @@ public class StageExpeditionPanelController : MonoBehaviour
 
     [SerializeField]
     private TMP_Text requiredSuppliesText;
+
+    [Header("開催中ミッション一覧")]
+    [Tooltip("MissionButtonを自動生成する親です。Scroll View > Viewport > Content を設定してください。")]
+    [SerializeField]
+    private Transform missionListContent;
+
+    [Tooltip("StageExpeditionMissionButtonUIを付けたミッションButton Prefabです。")]
+    [SerializeField]
+    private StageExpeditionMissionButtonUI missionButtonPrefab;
+
+    [Tooltip("ContentにVerticalLayoutGroup / ContentSizeFitterが無い場合、実行時に補助設定します。")]
+    [SerializeField]
+    private bool autoConfigureMissionListLayout = true;
+
+    [SerializeField, Min(1f)]
+    private float missionButtonPreferredHeight = 56f;
+
+    [SerializeField, Min(0f)]
+    private float missionButtonSpacing = 8f;
+
+    [SerializeField, Min(0f)]
+    private float missionListPadding = 4f;
+
+    [Header("ミッション詳細")]
+    [Tooltip("右側のミッション詳細エリア全体。未設定でもText/Imageだけ設定すれば動作します。")]
+    [SerializeField]
+    private GameObject missionDetailRoot;
+
+    [SerializeField]
+    private Image missionImage;
+
+    [SerializeField]
+    private TMP_Text missionTitleText;
+
+    [Tooltip("Scroll ViewのContent内に置いた説明Textを設定します。")]
+    [SerializeField]
+    private TMP_Text missionDescriptionText;
+
+    [Tooltip("説明欄のScrollRectです。ミッション切替時に一番上へ戻します。")]
+    [SerializeField]
+    private ScrollRect missionDescriptionScrollRect;
+
+    [SerializeField]
+    private string noMissionTitle = "開催中ミッションなし";
+
+    [SerializeField, TextArea(2, 4)]
+    private string noMissionDescription =
+        "この洞窟では現在開催中のミッションはありません。";
+
+    [Header("出撃時のミッション自動受注")]
+    [Tooltip("ONなら「出発する」を押した時、この洞窟の開催中ミッションをGameSessionManagerへ自動受注します。")]
+    [SerializeField]
+    private bool autoAcceptStageMissionsOnDepart = true;
+
+    [Tooltip("開催中ミッションのうち、最初に受注できたミッションを自動追跡します。")]
+    [SerializeField]
+    private bool trackFirstAcceptedMission = true;
+
+    [SerializeField]
+    private bool showMissionDebugLogs = true;
 
     [Header("Button")]
     [SerializeField]
@@ -100,12 +162,35 @@ public class StageExpeditionPanelController : MonoBehaviour
     private Vector3 panelBaseScale = Vector3.one;
     private bool isDeparting;
 
+    private readonly List<StageExpeditionMissionButtonUI> missionButtons =
+        new List<StageExpeditionMissionButtonUI>();
+
+    private int selectedMissionIndex = -1;
+
+    // 今回の出撃パネルに実際に表示しているランダム抽選結果。
+    private readonly List<MissionDefinition2D> currentStageMissions =
+        new List<MissionDefinition2D>();
+
+    // 同じ町シーン内では、パネルを閉じて開き直しても再抽選しないためのキャッシュ。
+    private readonly Dictionary<StageExpeditionData, List<MissionDefinition2D>>
+        stageMissionSelectionCache =
+            new Dictionary<StageExpeditionData, List<MissionDefinition2D>>();
+
     /// <summary>
     /// 現在パネルで選択されているステージ。
     /// 将来、ミッション一覧を表示する時にも利用できます。
     /// </summary>
     public StageExpeditionData CurrentStageData =>
         selectedStageData;
+
+    public int SelectedMissionIndex =>
+        selectedMissionIndex;
+
+    public MissionDefinition2D SelectedMission =>
+        GetCurrentMission(selectedMissionIndex);
+
+    public IReadOnlyList<MissionDefinition2D> CurrentStageMissions =>
+        currentStageMissions;
 
     public bool IsOpen =>
         panelRoot != null &&
@@ -122,6 +207,7 @@ public class StageExpeditionPanelController : MonoBehaviour
     private void Awake()
     {
         EnsureInitialized();
+        SceneManager.activeSceneChanged += HandleActiveSceneChanged;
 
         if (panelRoot != null)
         {
@@ -155,6 +241,8 @@ public class StageExpeditionPanelController : MonoBehaviour
 
     private void OnDestroy()
     {
+        SceneManager.activeSceneChanged -= HandleActiveSceneChanged;
+
         if (departButton != null)
         {
             departButton.onClick.RemoveListener(Depart);
@@ -164,6 +252,8 @@ public class StageExpeditionPanelController : MonoBehaviour
         {
             closeButton.onClick.RemoveListener(Close);
         }
+
+        ClearMissionButtons();
     }
 
     /// <summary>
@@ -203,6 +293,8 @@ public class StageExpeditionPanelController : MonoBehaviour
             panelRoot.SetActive(true);
         }
 
+        RefreshMissionSection();
+
         isDeparting = false;
         ResetDepartureFade();
 
@@ -215,6 +307,8 @@ public class StageExpeditionPanelController : MonoBehaviour
         {
             closeButton.interactable = true;
         }
+
+        SetMissionButtonsInteractable(true);
 
         PlayOpenSound();
         PlayOpenAnimation();
@@ -255,6 +349,9 @@ public class StageExpeditionPanelController : MonoBehaviour
 
         selectedStageData = null;
         selectedTransitionButton = null;
+        selectedMissionIndex = -1;
+        ClearMissionButtons();
+        currentStageMissions.Clear();
 
         if (panelRoot != null) panelRoot.SetActive(false);
 
@@ -267,6 +364,9 @@ public class StageExpeditionPanelController : MonoBehaviour
 
         selectedStageData = null;
         selectedTransitionButton = null;
+        selectedMissionIndex = -1;
+        ClearMissionButtons();
+        currentStageMissions.Clear();
 
         if (panelRoot != null)
         {
@@ -278,8 +378,14 @@ public class StageExpeditionPanelController : MonoBehaviour
     {
         isDeparting = true;
 
+        if (autoAcceptStageMissionsOnDepart)
+        {
+            AcceptCurrentStageMissions();
+        }
+
         if (departButton != null) departButton.interactable = false;
         if (closeButton != null) closeButton.interactable = false;
+        SetMissionButtonsInteractable(false);
 
         PlayDepartSound();
         EnsureDepartureFadeVisual();
@@ -324,6 +430,7 @@ public class StageExpeditionPanelController : MonoBehaviour
             isDeparting = false;
             if (departButton != null) departButton.interactable = true;
             if (closeButton != null) closeButton.interactable = true;
+            SetMissionButtonsInteractable(true);
             ResetDepartureFade();
         }
     }
@@ -613,6 +720,603 @@ public class StageExpeditionPanelController : MonoBehaviour
         }
     }
 
+
+    // ---------------------------------------------------------------------
+    // 出撃パネル内の開催中ミッション表示
+    // ---------------------------------------------------------------------
+
+    private void RefreshMissionSection()
+    {
+        PrepareCurrentStageMissions();
+        RebuildMissionButtons();
+
+        int firstMissionIndex = FindFirstValidMissionIndex();
+
+        if (firstMissionIndex >= 0)
+        {
+            SelectMission(firstMissionIndex);
+        }
+        else
+        {
+            selectedMissionIndex = -1;
+            RefreshMissionDetails(null);
+        }
+    }
+
+    private void RebuildMissionButtons()
+    {
+        ClearMissionButtons();
+
+        if (selectedStageData == null)
+        {
+            return;
+        }
+
+        EnsureMissionListLayout();
+
+        if (missionListContent == null ||
+            missionButtonPrefab == null)
+        {
+            if (showMissionDebugLogs)
+            {
+                Debug.LogWarning(
+                    "[StageExpeditionPanelController] " +
+                    "Mission List Content または Mission Button Prefab が未設定です。" +
+                    "詳細表示だけは可能ですが、ミッション一覧Buttonは生成されません。",
+                    this
+                );
+            }
+
+            return;
+        }
+
+        IReadOnlyList<MissionDefinition2D> missions =
+            currentStageMissions;
+
+        if (missions == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < missions.Count; i++)
+        {
+            MissionDefinition2D mission = missions[i];
+
+            if (mission == null)
+            {
+                continue;
+            }
+
+            StageExpeditionMissionButtonUI item =
+                Instantiate(
+                    missionButtonPrefab,
+                    missionListContent
+                );
+
+            item.name =
+                $"ExpeditionMissionButton_{i + 1}_{mission.name}";
+
+            item.Setup(
+                i,
+                mission,
+                HandleMissionButtonClicked
+            );
+
+            PrepareMissionButtonLayout(item);
+            missionButtons.Add(item);
+        }
+
+        ForceRebuildMissionListLayout();
+    }
+
+    private void ClearMissionButtons()
+    {
+        for (int i = 0; i < missionButtons.Count; i++)
+        {
+            StageExpeditionMissionButtonUI item =
+                missionButtons[i];
+
+            if (item != null)
+            {
+                Destroy(item.gameObject);
+            }
+        }
+
+        missionButtons.Clear();
+    }
+
+    private void HandleMissionButtonClicked(
+        int missionIndex)
+    {
+        if (isDeparting)
+        {
+            return;
+        }
+
+        SelectMission(missionIndex);
+    }
+
+    /// <summary>
+    /// 出撃パネル上で説明を表示するミッションを切り替えます。
+    /// これは受注選択ではなく、詳細を見るための選択です。
+    /// </summary>
+    public void SelectMission(int missionIndex)
+    {
+        if (selectedStageData == null)
+        {
+            return;
+        }
+
+        MissionDefinition2D mission =
+            GetCurrentMission(missionIndex);
+
+        if (mission == null)
+        {
+            return;
+        }
+
+        selectedMissionIndex = missionIndex;
+
+        for (int i = 0; i < missionButtons.Count; i++)
+        {
+            StageExpeditionMissionButtonUI item =
+                missionButtons[i];
+
+            if (item != null)
+            {
+                item.SetSelected(
+                    item.MissionIndex ==
+                    selectedMissionIndex
+                );
+            }
+        }
+
+        RefreshMissionDetails(mission);
+    }
+
+    private void RefreshMissionDetails(
+        MissionDefinition2D mission)
+    {
+        bool hasMission = mission != null;
+
+        if (missionDetailRoot != null)
+        {
+            missionDetailRoot.SetActive(true);
+        }
+
+        if (missionTitleText != null)
+        {
+            missionTitleText.text =
+                hasMission
+                    ? mission.DisplayName
+                    : noMissionTitle;
+        }
+
+        if (missionDescriptionText != null)
+        {
+            string description =
+                hasMission
+                    ? mission.Description
+                    : noMissionDescription;
+
+            missionDescriptionText.text =
+                string.IsNullOrWhiteSpace(description)
+                    ? "説明なし"
+                    : description;
+        }
+
+        if (missionImage != null)
+        {
+            Sprite sprite =
+                hasMission
+                    ? mission.MissionImage
+                    : null;
+
+            missionImage.sprite = sprite;
+            missionImage.enabled = sprite != null;
+        }
+
+        ResetMissionDescriptionScroll();
+    }
+
+    private void ResetMissionDescriptionScroll()
+    {
+        if (missionDescriptionScrollRect == null)
+        {
+            return;
+        }
+
+        Canvas.ForceUpdateCanvases();
+        missionDescriptionScrollRect.StopMovement();
+        missionDescriptionScrollRect.verticalNormalizedPosition = 1f;
+    }
+
+    private int FindFirstValidMissionIndex()
+    {
+        for (int i = 0; i < currentStageMissions.Count; i++)
+        {
+            if (currentStageMissions[i] != null)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private MissionDefinition2D GetCurrentMission(int index)
+    {
+        if (index < 0 || index >= currentStageMissions.Count)
+        {
+            return null;
+        }
+
+        return currentStageMissions[index];
+    }
+
+    /// <summary>
+    /// この町シーン内でまだ抽選していなければMission Poolから重複なしで抽選します。
+    /// 一度抽選したステージは、パネルを閉じて開き直しても同じ結果を使います。
+    /// </summary>
+    private void PrepareCurrentStageMissions()
+    {
+        currentStageMissions.Clear();
+
+        if (selectedStageData == null)
+        {
+            return;
+        }
+
+        if (stageMissionSelectionCache.TryGetValue(
+                selectedStageData,
+                out List<MissionDefinition2D> cachedMissions))
+        {
+            currentStageMissions.AddRange(cachedMissions);
+
+            if (showMissionDebugLogs)
+            {
+                Debug.Log(
+                    "[StageExpeditionPanelController] " +
+                    $"抽選済みミッションを再利用：Stage={selectedStageData.StageName} / " +
+                    $"Count={currentStageMissions.Count}",
+                    this
+                );
+            }
+
+            return;
+        }
+
+        List<MissionDefinition2D> validPool =
+            BuildUniqueValidMissionPool(selectedStageData);
+
+        int drawCount = Mathf.Min(
+            selectedStageData.RandomMissionCount,
+            validPool.Count
+        );
+
+        // Fisher-YatesでPoolをシャッフルし、先頭から必要件数を採用します。
+        for (int i = validPool.Count - 1; i > 0; i--)
+        {
+            int swapIndex = UnityEngine.Random.Range(0, i + 1);
+            MissionDefinition2D temp = validPool[i];
+            validPool[i] = validPool[swapIndex];
+            validPool[swapIndex] = temp;
+        }
+
+        for (int i = 0; i < drawCount; i++)
+        {
+            currentStageMissions.Add(validPool[i]);
+        }
+
+        stageMissionSelectionCache[selectedStageData] =
+            new List<MissionDefinition2D>(currentStageMissions);
+
+        if (showMissionDebugLogs)
+        {
+            Debug.Log(
+                "[StageExpeditionPanelController] " +
+                $"ランダムミッション抽選：Stage={selectedStageData.StageName} / " +
+                $"Pool={validPool.Count} / Draw={currentStageMissions.Count}",
+                this
+            );
+
+            for (int i = 0; i < currentStageMissions.Count; i++)
+            {
+                MissionDefinition2D mission = currentStageMissions[i];
+                Debug.Log(
+                    "[StageExpeditionPanelController] " +
+                    $"  Mission{i + 1}={mission.DisplayName} / MissionId={mission.MissionId}",
+                    this
+                );
+            }
+        }
+    }
+
+    private List<MissionDefinition2D> BuildUniqueValidMissionPool(
+        StageExpeditionData stageData)
+    {
+        List<MissionDefinition2D> result =
+            new List<MissionDefinition2D>();
+
+        if (stageData == null || stageData.MissionPool == null)
+        {
+            return result;
+        }
+
+        HashSet<MissionDefinition2D> seenAssets =
+            new HashSet<MissionDefinition2D>();
+
+        HashSet<string> seenMissionIds =
+            new HashSet<string>(StringComparer.Ordinal);
+
+        IReadOnlyList<MissionDefinition2D> pool =
+            stageData.MissionPool;
+
+        for (int i = 0; i < pool.Count; i++)
+        {
+            MissionDefinition2D mission = pool[i];
+
+            if (mission == null || !seenAssets.Add(mission))
+            {
+                continue;
+            }
+
+            string missionId = mission.MissionId?.Trim() ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(missionId) &&
+                !seenMissionIds.Add(missionId))
+            {
+                if (showMissionDebugLogs)
+                {
+                    Debug.LogWarning(
+                        "[StageExpeditionPanelController] " +
+                        $"Mission Pool内に同じMissionId『{missionId}』が複数あるため、" +
+                        $"{mission.DisplayName} は重複候補から除外しました。",
+                        this
+                    );
+                }
+
+                continue;
+            }
+
+            result.Add(mission);
+        }
+
+        return result;
+    }
+
+    private void HandleActiveSceneChanged(Scene oldScene, Scene newScene)
+    {
+        // 町シーンを離れたら抽選固定を解除します。
+        // 次に町へ戻って出撃パネルを開いた時は新しく抽選されます。
+        stageMissionSelectionCache.Clear();
+        currentStageMissions.Clear();
+    }
+
+    private void SetMissionButtonsInteractable(
+        bool interactable)
+    {
+        for (int i = 0; i < missionButtons.Count; i++)
+        {
+            if (missionButtons[i] != null)
+            {
+                missionButtons[i].SetInteractable(
+                    interactable
+                );
+            }
+        }
+    }
+
+    private void EnsureMissionListLayout()
+    {
+        if (!autoConfigureMissionListLayout ||
+            missionListContent == null)
+        {
+            return;
+        }
+
+        VerticalLayoutGroup layout =
+            missionListContent.GetComponent<
+                VerticalLayoutGroup
+            >();
+
+        if (layout == null)
+        {
+            layout =
+                missionListContent.gameObject
+                    .AddComponent<VerticalLayoutGroup>();
+        }
+
+        int padding =
+            Mathf.RoundToInt(
+                Mathf.Max(0f, missionListPadding)
+            );
+
+        layout.childAlignment =
+            TextAnchor.UpperCenter;
+
+        layout.padding =
+            new RectOffset(
+                padding,
+                padding,
+                padding,
+                padding
+            );
+
+        layout.spacing =
+            Mathf.Max(0f, missionButtonSpacing);
+
+        layout.childControlWidth = true;
+        layout.childControlHeight = false;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+
+        ContentSizeFitter fitter =
+            missionListContent.GetComponent<
+                ContentSizeFitter
+            >();
+
+        if (fitter == null)
+        {
+            fitter =
+                missionListContent.gameObject
+                    .AddComponent<ContentSizeFitter>();
+        }
+
+        fitter.horizontalFit =
+            ContentSizeFitter.FitMode.Unconstrained;
+
+        fitter.verticalFit =
+            ContentSizeFitter.FitMode.PreferredSize;
+    }
+
+    private void PrepareMissionButtonLayout(
+        StageExpeditionMissionButtonUI item)
+    {
+        if (item == null)
+        {
+            return;
+        }
+
+        LayoutElement layout =
+            item.GetComponent<LayoutElement>();
+
+        if (layout == null)
+        {
+            layout =
+                item.gameObject.AddComponent<
+                    LayoutElement
+                >();
+        }
+
+        float height =
+            Mathf.Max(
+                1f,
+                missionButtonPreferredHeight
+            );
+
+        layout.minHeight = height;
+        layout.preferredHeight = height;
+    }
+
+    private void ForceRebuildMissionListLayout()
+    {
+        RectTransform rect =
+            missionListContent as RectTransform;
+
+        if (rect == null)
+        {
+            return;
+        }
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(
+            rect
+        );
+    }
+
+    // ---------------------------------------------------------------------
+    // 出撃時のミッション自動受注
+    // ---------------------------------------------------------------------
+
+    private void AcceptCurrentStageMissions()
+    {
+        if (selectedStageData == null ||
+            currentStageMissions.Count <= 0)
+        {
+            return;
+        }
+
+        GameSessionManager session =
+            GameSessionManager.Instance;
+
+        if (session == null)
+        {
+            session =
+                FindAnyObjectByType<GameSessionManager>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        if (session == null)
+        {
+            Debug.LogWarning(
+                "[StageExpeditionPanelController] " +
+                "GameSessionManagerが見つからないため、" +
+                "開催中ミッションを自動受注できませんでした。",
+                this
+            );
+            return;
+        }
+
+        bool trackedMissionAssigned = false;
+        int acceptedCount = 0;
+
+        IReadOnlyList<MissionDefinition2D> missions =
+            currentStageMissions;
+
+        for (int i = 0; i < missions.Count; i++)
+        {
+            MissionDefinition2D mission = missions[i];
+
+            if (mission == null)
+            {
+                continue;
+            }
+
+            bool shouldTrack =
+                trackFirstAcceptedMission &&
+                !trackedMissionAssigned;
+
+            bool accepted =
+                session.AcceptMission(
+                    mission,
+                    shouldTrack,
+                    out string resultMessage
+                );
+
+            if (accepted)
+            {
+                acceptedCount++;
+
+                if (shouldTrack)
+                {
+                    trackedMissionAssigned = true;
+                }
+
+                if (showMissionDebugLogs)
+                {
+                    Debug.Log(
+                        "[StageExpeditionPanelController] " +
+                        resultMessage,
+                        this
+                    );
+                }
+            }
+            else if (showMissionDebugLogs)
+            {
+                // 達成済みなどはGameSessionManager側が受注を拒否します。
+                // 出撃自体は止めず、そのミッションだけスキップします。
+                Debug.Log(
+                    "[StageExpeditionPanelController] " +
+                    $"自動受注スキップ：{resultMessage}",
+                    this
+                );
+            }
+        }
+
+        if (showMissionDebugLogs)
+        {
+            Debug.Log(
+                "[StageExpeditionPanelController] " +
+                $"出撃時ミッション同期完了：" +
+                $"{acceptedCount}件を受注状態にしました。" +
+                $" Stage={selectedStageData.StageName}",
+                this
+            );
+        }
+    }
+
     private static string BuildStars(int value)
     {
         const int maxStars = 5;
@@ -668,5 +1372,24 @@ public class StageExpeditionPanelController : MonoBehaviour
         departSoundVolume = Mathf.Clamp01(departSoundVolume);
         departureDelaySeconds = Mathf.Max(0f, departureDelaySeconds);
         departureFadeDuration = Mathf.Max(0.01f, departureFadeDuration);
+
+        missionButtonPreferredHeight =
+            Mathf.Max(1f, missionButtonPreferredHeight);
+
+        missionButtonSpacing =
+            Mathf.Max(0f, missionButtonSpacing);
+
+        missionListPadding =
+            Mathf.Max(0f, missionListPadding);
+
+        if (string.IsNullOrWhiteSpace(noMissionTitle))
+        {
+            noMissionTitle = "開催中ミッションなし";
+        }
+
+        if (noMissionDescription == null)
+        {
+            noMissionDescription = string.Empty;
+        }
     }
 }

@@ -15,7 +15,10 @@ MonoBehaviour:
   missionId: Misson_002
   displayName: Enemy2
   description: Enemy Destroy
+  missionImage: {fileID: 6218016037910126416, guid: f86b2b107c634e04eae8068f18432ad3, type: 3}
   objectiveType: 1
   requiredItem: {fileID: 0}
   requiredAmount: 1
   countItemsAlreadyHeldWhenMissionStarts: 0
+  skillCardRewards: []
+  skillSlotUnlockAmount: 1

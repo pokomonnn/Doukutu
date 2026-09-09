@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 337886fda036cda4aab2605704fdbb31, type: 3}
+  m_Name: "\u7B2C\uFF11\u30B9\u30C6\u30FC\u30B8"
+  m_EditorClassIdentifier: Assembly-CSharp::StageExpeditionData
+  stageId: stage_01
+  stageName: "\u7B2C\uFF11\u6D1E\u7A9F"
+  combatDanger: 2
+  caveDanger: 1
+  requiredSupplies: 1
+  missionPool:
+  - {fileID: 11400000, guid: e4c4c9e4b9a85514086ba143d21ce4f4, type: 2}
+  - {fileID: 11400000, guid: 82eb2ac90f640a846b366dcb88491b0a, type: 2}
+  - {fileID: 11400000, guid: 8c9f8aa24470aed408cee3bddd91af10, type: 2}
+  - {fileID: 11400000, guid: c4ea86f6399d336479c1f7f15f13c35b, type: 2}
+  - {fileID: 11400000, guid: 25e45a7ed7fce5e4e8be432db0793e5c, type: 2}
+  - {fileID: 11400000, guid: 6f7265726346dbe45afd75eab7468437, type: 2}
+  - {fileID: 11400000, guid: 5796af3c4a042f64ca0ec06bd2e132cc, type: 2}
+  randomMissionCount: 4

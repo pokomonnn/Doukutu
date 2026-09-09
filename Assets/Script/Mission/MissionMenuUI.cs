@@ -1,3 +1,4 @@
+﻿using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -7,9 +8,11 @@ using UnityEngine.UI;
 /// <summary>
 /// Mキーなどで開くミッションメニューです。
 /// 
-/// ・一覧からミッションを選択して詳細を表示します。
-/// ・未開始ミッションは「受注する」、進行中ミッションは「追跡する」を押せます。
-/// ・Contentの縦レイアウト・ボタン参照・クリックを妨げるDetailPanel背景を自動補助します。
+/// ・洞窟探索中に、受注済みミッションだけを一覧表示します。
+/// ・一覧からミッションを選択すると、イラスト・説明・進捗を右側へ表示します。
+/// ・パネルを開いた時は、表示中の一番上のミッションを自動選択できます。
+/// ・進行中ミッションは「追跡する」でコンパス対象を切り替えられます。
+/// ・説明欄はScrollRect対応です。ミッション切替時に一番上へ戻します。
 /// </summary>
 [DisallowMultipleComponent]
 public class MissionMenuUI : MonoBehaviour
@@ -30,10 +33,17 @@ public class MissionMenuUI : MonoBehaviour
     [Tooltip("一覧を選ぶまでは非表示にするDetailPanel本体を設定します")]
     [SerializeField] private GameObject detailPanel;
 
+    [SerializeField] private Image missionImage;
     [SerializeField] private TMP_Text missionTitleText;
     [SerializeField] private TMP_Text missionDescriptionText;
     [SerializeField] private TMP_Text missionProgressText;
     [SerializeField] private TMP_Text missionStatusText;
+
+    [Tooltip("説明Textを入れたScroll Viewです。ミッション切替時に一番上へ戻します")]
+    [SerializeField] private ScrollRect missionDescriptionScrollRect;
+
+    [Tooltip("Mission Imageが未設定のミッションで表示する任意の画像です。空欄ならImage自体を隠します")]
+    [SerializeField] private Sprite fallbackMissionImage;
 
     [SerializeField] private Button trackButton;
     [SerializeField] private TMP_Text trackButtonText;
@@ -46,15 +56,45 @@ public class MissionMenuUI : MonoBehaviour
     [Tooltip("メニューを開き直した時、前回の一覧選択を残すかどうか")]
     [SerializeField] private bool keepSelectionWhenReopening;
 
+    [Header("洞窟内の表示対象")]
+    [Tooltip("ONなら未受注(Inactive)ミッションを一覧へ出しません。出撃時に受注したミッションだけ見せたい場合はON推奨です")]
+    [SerializeField] private bool showOnlyAcceptedMissions = true;
+
+    [Tooltip("進行中ミッションを表示します。通常はONです")]
+    [SerializeField] private bool showInProgressMissions = true;
+
+    [Tooltip("探索中に達成したミッションも一覧へ残します")]
+    [SerializeField] private bool showCompletedMissions = true;
+
+    [Tooltip("パネルを開いた時、選択が無ければ一覧の一番上を自動選択します")]
+    [SerializeField] private bool selectFirstMissionOnOpen = true;
+
     [Header("受注・追跡")]
-    [Tooltip("未開始ミッションを、DetailPanelのボタンから受注できるようにします")]
-    [SerializeField] private bool acceptInactiveMissionsFromMenu = true;
+    [Tooltip("互換用です。洞窟確認パネルでは通常OFFのまま使います")]
+    [SerializeField] private bool acceptInactiveMissionsFromMenu = false;
 
     [SerializeField] private string acceptLabel = "受注する";
     [SerializeField] private string trackLabel = "追跡する";
     [SerializeField] private string trackingLabel = "追跡中";
     [SerializeField] private string completedActionLabel = "達成済み";
     [SerializeField] private string cannotTrackLabel = "追跡不可";
+
+    [Header("パネルを開く演出")]
+    [Tooltip("未設定ならMission Menu Panelを拡大表示します")]
+    [SerializeField] private RectTransform popupAnimationRoot;
+
+    [SerializeField] private bool useOpenAnimation = true;
+    [SerializeField, Min(0.01f)] private float openAnimationDuration = 0.22f;
+    [SerializeField, Range(0.1f, 1f)] private float openStartScale = 0.75f;
+    [SerializeField, Range(0f, 3f)] private float openOvershoot = 1.25f;
+
+    [Header("パネルSE")]
+    [Tooltip("未設定ならこのGameObjectまたはMission Menu Panelから探します")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip openSound;
+    [SerializeField, Range(0f, 1f)] private float openSoundVolume = 1f;
+    [SerializeField] private AudioClip closeSound;
+    [SerializeField, Range(0f, 1f)] private float closeSoundVolume = 1f;
 
     [Header("一覧レイアウトの自動補助")]
     [Tooltip("ContentにVertical Layout GroupとContent Size Fitterが無い時、実行中に自動追加します")]
@@ -118,12 +158,23 @@ public class MissionMenuUI : MonoBehaviour
     private CanvasGroup selfPanelCanvasGroup;
     private int lastLoggedMissionCount = -1;
     private int lastLoggedValidMissionCount = -1;
+    private int lastDetailMissionIndex = -999;
+    private Coroutine openAnimationCoroutine;
+    private Vector3 popupBaseScale = Vector3.one;
 
     private void Awake()
     {
         FindReferences();
         SetupButtons();
         ConfigureDetailPanelRaycasts();
+        ResolvePopupAnimationRoot();
+        FindAudioSource();
+
+        if (popupAnimationRoot != null)
+        {
+            popupBaseScale = popupAnimationRoot.localScale;
+        }
+
         SetPanelVisible(false);
         SetDetailPanelVisible(false);
     }
@@ -172,6 +223,7 @@ public class MissionMenuUI : MonoBehaviour
     private void OnDisable()
     {
         UnsubscribeEvents();
+        StopOpenAnimationAndRestoreScale();
         RestorePlayerControls();
         RestoreCursorState();
         isOpen = false;
@@ -221,6 +273,8 @@ public class MissionMenuUI : MonoBehaviour
         LockPlayerControls();
         LogMenuDiagnostics();
         RefreshUI();
+        PlayOpenSound();
+        PlayOpenAnimation();
 
         Log("ミッションメニューを開きました。");
     }
@@ -237,6 +291,8 @@ public class MissionMenuUI : MonoBehaviour
         }
 
         isOpen = false;
+        StopOpenAnimationAndRestoreScale();
+        PlayCloseSound();
         SetPanelVisible(false);
         SetDetailPanelVisible(false);
         RestorePlayerControls();
@@ -250,6 +306,11 @@ public class MissionMenuUI : MonoBehaviour
         {
             LogWarning($"一覧選択に失敗しました。Mission Index={missionIndex}");
             return;
+        }
+
+        if (selectedMissionIndex != missionIndex)
+        {
+            lastDetailMissionIndex = -999;
         }
 
         selectedMissionIndex = missionIndex;
@@ -353,6 +414,7 @@ public class MissionMenuUI : MonoBehaviour
         FindReferences();
         ClearSelectionIfInvalid();
         RefreshMissionList();
+        SelectFirstVisibleMissionIfNeeded();
         RefreshDetailPanel();
     }
 
@@ -404,6 +466,11 @@ public class MissionMenuUI : MonoBehaviour
             if (mission == null)
             {
                 invalidMissionCount++;
+                continue;
+            }
+
+            if (!ShouldShowMissionIndex(i))
+            {
                 continue;
             }
 
@@ -561,10 +628,17 @@ public class MissionMenuUI : MonoBehaviour
 
         bool isTracked = missionManager.IsTrackedMission(selectedMissionIndex);
 
+        RefreshMissionImage(mission);
         SetText(missionTitleText, mission.DisplayName);
         SetText(missionDescriptionText, mission.Description);
         SetText(missionProgressText, BuildProgressText(mission, progress, required));
         SetText(missionStatusText, BuildStatusText(state));
+
+        if (lastDetailMissionIndex != selectedMissionIndex)
+        {
+            lastDetailMissionIndex = selectedMissionIndex;
+            ResetDescriptionScrollToTop();
+        }
 
         bool canUseActionButton;
         string actionLabel;
@@ -597,6 +671,97 @@ public class MissionMenuUI : MonoBehaviour
         }
 
         SetText(trackButtonText, actionLabel);
+    }
+
+    private bool ShouldShowMissionIndex(int missionIndex)
+    {
+        if (missionManager == null || missionIndex < 0)
+        {
+            return false;
+        }
+
+        MissionDefinition2D mission =
+            missionManager.GetMissionDefinition(missionIndex);
+
+        if (mission == null)
+        {
+            return false;
+        }
+
+        MissionProgressState2D state =
+            missionManager.GetMissionState(missionIndex);
+
+        if (!showOnlyAcceptedMissions)
+        {
+            return true;
+        }
+
+        switch (state)
+        {
+            case MissionProgressState2D.InProgress:
+                return showInProgressMissions;
+
+            case MissionProgressState2D.Completed:
+                return showCompletedMissions;
+
+            default:
+                return false;
+        }
+    }
+
+    private void SelectFirstVisibleMissionIfNeeded()
+    {
+        if (!selectFirstMissionOnOpen || selectedMissionIndex >= 0)
+        {
+            return;
+        }
+
+        if (listItemMissionIndices.Count <= 0)
+        {
+            return;
+        }
+
+        selectedMissionIndex = listItemMissionIndices[0];
+        lastDetailMissionIndex = -999;
+
+        for (int i = 0; i < listItems.Count; i++)
+        {
+            MissionListItemUI item = listItems[i];
+            if (item != null)
+            {
+                item.SetSelected(item.MissionIndex == selectedMissionIndex);
+            }
+        }
+
+        Log($"先頭ミッションを自動選択しました。Mission Index={selectedMissionIndex}");
+    }
+
+    private void RefreshMissionImage(MissionDefinition2D mission)
+    {
+        if (missionImage == null)
+        {
+            return;
+        }
+
+        Sprite sprite = mission != null && mission.MissionImage != null
+            ? mission.MissionImage
+            : fallbackMissionImage;
+
+        missionImage.sprite = sprite;
+        missionImage.preserveAspect = true;
+        missionImage.enabled = sprite != null;
+    }
+
+    private void ResetDescriptionScrollToTop()
+    {
+        if (missionDescriptionScrollRect == null)
+        {
+            return;
+        }
+
+        Canvas.ForceUpdateCanvases();
+        missionDescriptionScrollRect.StopMovement();
+        missionDescriptionScrollRect.verticalNormalizedPosition = 1f;
     }
 
     private string BuildProgressText(
@@ -667,9 +832,11 @@ public class MissionMenuUI : MonoBehaviour
         }
 
         if (missionManager == null ||
-            missionManager.GetMissionDefinition(selectedMissionIndex) == null)
+            missionManager.GetMissionDefinition(selectedMissionIndex) == null ||
+            !ShouldShowMissionIndex(selectedMissionIndex))
         {
             selectedMissionIndex = -1;
+            lastDetailMissionIndex = -999;
         }
     }
 
@@ -987,6 +1154,32 @@ public class MissionMenuUI : MonoBehaviour
 
         Transform detailTransformRoot = detailPanel.transform;
 
+        if (missionImage == null)
+        {
+            Transform imageTransform = FindChildRecursive(
+                detailTransformRoot,
+                "MissionImage"
+            );
+
+            if (imageTransform != null)
+            {
+                missionImage = imageTransform.GetComponent<Image>();
+            }
+        }
+
+        if (missionDescriptionScrollRect == null)
+        {
+            Transform scrollTransform = FindChildRecursive(
+                detailTransformRoot,
+                "DescriptionScrollView"
+            );
+
+            if (scrollTransform != null)
+            {
+                missionDescriptionScrollRect = scrollTransform.GetComponent<ScrollRect>();
+            }
+        }
+
         if (trackButton == null)
         {
             Transform trackTransform = FindChildRecursive(
@@ -1019,6 +1212,12 @@ public class MissionMenuUI : MonoBehaviour
                 detailTransformRoot,
                 "DescriptionText"
             );
+        }
+
+        if (missionDescriptionScrollRect == null && missionDescriptionText != null)
+        {
+            missionDescriptionScrollRect =
+                missionDescriptionText.GetComponentInParent<ScrollRect>(true);
         }
 
         if (missionProgressText == null)
@@ -1148,10 +1347,172 @@ public class MissionMenuUI : MonoBehaviour
                 continue;
             }
 
+            // ScrollView配下はマウスホイール・ドラッグを受け取れるように残す。
+            if (graphic.GetComponentInParent<ScrollRect>(true) != null)
+            {
+                continue;
+            }
+
             // DetailPanelの背景やTextが、CloseButton・一覧のクリックを
             // 横取りしないようにする。
             graphic.raycastTarget = false;
         }
+    }
+
+    private void ResolvePopupAnimationRoot()
+    {
+        if (popupAnimationRoot != null)
+        {
+            return;
+        }
+
+        if (missionMenuPanel != null)
+        {
+            popupAnimationRoot = missionMenuPanel.transform as RectTransform;
+        }
+    }
+
+    private void PlayOpenAnimation()
+    {
+        ResolvePopupAnimationRoot();
+
+        if (popupAnimationRoot == null)
+        {
+            return;
+        }
+
+        if (openAnimationCoroutine != null)
+        {
+            StopCoroutine(openAnimationCoroutine);
+            openAnimationCoroutine = null;
+        }
+
+        if (!useOpenAnimation || openAnimationDuration <= 0.001f)
+        {
+            popupAnimationRoot.localScale = popupBaseScale;
+            return;
+        }
+
+        openAnimationCoroutine = StartCoroutine(OpenAnimationRoutine());
+    }
+
+    private IEnumerator OpenAnimationRoutine()
+    {
+        ResolvePopupAnimationRoot();
+
+        if (popupAnimationRoot == null)
+        {
+            yield break;
+        }
+
+        Vector3 startScale =
+            popupBaseScale * Mathf.Clamp(openStartScale, 0.1f, 1f);
+
+        popupAnimationRoot.localScale = startScale;
+
+        float elapsed = 0f;
+        float duration = Mathf.Max(0.01f, openAnimationDuration);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+
+            float t = Mathf.Clamp01(elapsed / duration);
+            float easedT = EaseOutBack(t, openOvershoot);
+
+            popupAnimationRoot.localScale =
+                Vector3.LerpUnclamped(startScale, popupBaseScale, easedT);
+
+            yield return null;
+        }
+
+        popupAnimationRoot.localScale = popupBaseScale;
+        openAnimationCoroutine = null;
+    }
+
+    private static float EaseOutBack(float t, float overshoot)
+    {
+        float c1 = Mathf.Max(0f, overshoot);
+        float c3 = c1 + 1f;
+        float x = t - 1f;
+
+        return 1f +
+               c3 * x * x * x +
+               c1 * x * x;
+    }
+
+    private void StopOpenAnimationAndRestoreScale()
+    {
+        if (openAnimationCoroutine != null)
+        {
+            StopCoroutine(openAnimationCoroutine);
+            openAnimationCoroutine = null;
+        }
+
+        ResolvePopupAnimationRoot();
+
+        if (popupAnimationRoot != null)
+        {
+            popupAnimationRoot.localScale = popupBaseScale;
+        }
+    }
+
+    private void FindAudioSource()
+    {
+        if (audioSource != null)
+        {
+            return;
+        }
+
+        audioSource = GetComponent<AudioSource>();
+
+        if (audioSource == null && missionMenuPanel != null)
+        {
+            audioSource = missionMenuPanel.GetComponent<AudioSource>();
+        }
+    }
+
+    private void PlayOpenSound()
+    {
+        PlayUiSound(openSound, openSoundVolume, false);
+    }
+
+    private void PlayCloseSound()
+    {
+        PlayUiSound(closeSound, closeSoundVolume, true);
+    }
+
+    private void PlayUiSound(AudioClip clip, float volume, bool survivePanelDisable)
+    {
+        if (clip == null)
+        {
+            return;
+        }
+
+        FindAudioSource();
+
+        bool sourceWillBeDisabled =
+            survivePanelDisable &&
+            audioSource != null &&
+            missionMenuPanel != null &&
+            (audioSource.gameObject == missionMenuPanel ||
+             audioSource.transform.IsChildOf(missionMenuPanel.transform));
+
+        if (audioSource != null && !sourceWillBeDisabled)
+        {
+            audioSource.PlayOneShot(clip, Mathf.Clamp01(volume));
+            return;
+        }
+
+        GameObject temp = new GameObject("TemporaryMissionMenuSound");
+        AudioSource source = temp.AddComponent<AudioSource>();
+        source.playOnAwake = false;
+        source.loop = false;
+        source.spatialBlend = 0f;
+        source.volume = Mathf.Clamp01(volume);
+        source.clip = clip;
+        source.Play();
+        Destroy(temp, Mathf.Max(0.1f, clip.length + 0.1f));
     }
 
     private void LogMenuDiagnostics()
@@ -1370,5 +1731,10 @@ public class MissionMenuUI : MonoBehaviour
         listItemPreferredHeight = Mathf.Max(1f, listItemPreferredHeight);
         listItemSpacing = Mathf.Max(0f, listItemSpacing);
         listPadding = Mathf.Max(0f, listPadding);
+        openAnimationDuration = Mathf.Max(0.01f, openAnimationDuration);
+        openStartScale = Mathf.Clamp(openStartScale, 0.1f, 1f);
+        openOvershoot = Mathf.Clamp(openOvershoot, 0f, 3f);
+        openSoundVolume = Mathf.Clamp01(openSoundVolume);
+        closeSoundVolume = Mathf.Clamp01(closeSoundVolume);
     }
 }

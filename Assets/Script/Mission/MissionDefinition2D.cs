@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public enum MissionObjectiveType2D
@@ -30,6 +30,10 @@ public class MissionDefinition2D : ScriptableObject
     [SerializeField, TextArea(2, 4)]
     private string description;
 
+    [Tooltip("町の出撃パネルなど、ミッション詳細表示に使用するイラストです。")]
+    [SerializeField]
+    private Sprite missionImage;
+
     [Header("目的")]
     [SerializeField]
     private MissionObjectiveType2D objectiveType =
@@ -60,6 +64,7 @@ public class MissionDefinition2D : ScriptableObject
         ? name
         : displayName;
     public string Description => description ?? string.Empty;
+    public Sprite MissionImage => missionImage;
 
     public MissionObjectiveType2D ObjectiveType => objectiveType;
 

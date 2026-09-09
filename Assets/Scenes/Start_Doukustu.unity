@@ -12441,9 +12441,6 @@ Tilemap:
   - serializedVersion: 2
     m_RefCount: 1062
     m_Data: {fileID: -3077338362222238373, guid: f8351cd1234650b489a40c40b8c0802f, type: 3}
-  - serializedVersion: 2
-    m_RefCount: 0
-    m_Data: {fileID: 1026043486}
   m_TileMatrixArray:
   - serializedVersion: 2
     m_RefCount: 1065
@@ -49325,6 +49322,18 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1007710025}
+    - target: {fileID: 479419071631992185, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 479419071631992185, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 479419071631992185, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 827578475652593367, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -49445,6 +49454,14 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1304462606162899935, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0.00018567074
+      objectReference: {fileID: 0}
+    - target: {fileID: 1304462606162899935, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -0.00096742646
+      objectReference: {fileID: 0}
     - target: {fileID: 1342293329355848927, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: missionManager
       value: 
@@ -49473,14 +49490,46 @@ PrefabInstance:
       propertyPath: rewardInventoryController
       value: 
       objectReference: {fileID: 1298597451}
+    - target: {fileID: 2591360992767731751, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0.0009332071
+      objectReference: {fileID: 0}
+    - target: {fileID: 2591360992767731751, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0.00037777927
+      objectReference: {fileID: 0}
     - target: {fileID: 2718732990293257258, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: equipmentController
       value: 
       objectReference: {fileID: 901321304}
+    - target: {fileID: 2746277253002269405, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2746277253002269405, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2746277253002269405, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2755820869163113735, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: survivalController
       value: 
       objectReference: {fileID: 76742662}
+    - target: {fileID: 2780399497671846111, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2780399497671846111, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2780399497671846111, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2898199301167995377, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: playerItemDropper
       value: 
@@ -49509,6 +49558,18 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3804766482200393754, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3804766482200393754, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3804766482200393754, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3809077820158977673, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: targetHealth
       value: 
@@ -49521,10 +49582,26 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4551502007418731122, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0.000055168246
+      objectReference: {fileID: 0}
     - target: {fileID: 4722617127843068240, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: survivalController
       value: 
       objectReference: {fileID: 76742662}
+    - target: {fileID: 5565673303652943409, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5565673303652943409, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5565673303652943409, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5876738313046801244, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: equipmentController
       value: 
@@ -49537,6 +49614,14 @@ PrefabInstance:
       propertyPath: playerWeightController
       value: 
       objectReference: {fileID: 76742658}
+    - target: {fileID: 6431165407783532887, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6431165407783532887, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6460014259878576848, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: gameSessionManager
       value: 
@@ -49589,9 +49674,25 @@ PrefabInstance:
       propertyPath: missionManager
       value: 
       objectReference: {fileID: 677998124}
+    - target: {fileID: 7344336177054565645, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: missionListItemPrefab
+      value: 
+      objectReference: {fileID: 8783248251844881027, guid: 1b40ebe4999ef6e469052bd78a56cb1d, type: 3}
     - target: {fileID: 7640605869922933690, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: m_Name
       value: Canvas
+      objectReference: {fileID: 0}
+    - target: {fileID: 7770278855947054122, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7770278855947054122, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7770278855947054122, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7878823324513967888, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: equipmentController
@@ -49605,6 +49706,18 @@ PrefabInstance:
       propertyPath: inventoryController
       value: 
       objectReference: {fileID: 1298597451}
+    - target: {fileID: 8662723710086712637, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8662723710086712637, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8662723710086712637, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8695788015721253673, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0

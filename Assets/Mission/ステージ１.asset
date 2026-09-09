@@ -10,10 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 337886fda036cda4aab2605704fdbb31, type: 3}
-  m_Name: "\u7B2C\uFF11\u30B9\u30C6\u30FC\u30B8"
+  m_Name: "\u30B9\u30C6\u30FC\u30B8\uFF11"
   m_EditorClassIdentifier: Assembly-CSharp::StageExpeditionData
   stageId: stage_01
-  stageName: "\u7B2C\uFF11\u6D1E\u7A9F"
-  combatDanger: 2
+  stageName: "\u7B2C\u4E00\u6D1E\u7A9F"
+  combatDanger: 1
   caveDanger: 1
   requiredSupplies: 1
+  activeMissions: []

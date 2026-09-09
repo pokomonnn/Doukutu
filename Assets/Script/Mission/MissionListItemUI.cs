@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,6 +23,15 @@ public class MissionListItemUI : MonoBehaviour
 
     [Tooltip("コンパス追跡中の時だけ表示する任意のマークです")]
     [SerializeField] private GameObject trackedMarker;
+
+    [Header("洞窟確認パネル向け表示")]
+    [Tooltip("図のようにミッション名だけのButtonにしたい場合はOFFです")]
+    [SerializeField] private bool showProgressTextOnButton = false;
+
+    [Tooltip("図のようにミッション名だけのButtonにしたい場合はOFFです")]
+    [SerializeField] private bool showStatusTextOnButton = false;
+
+    [SerializeField] private bool showTrackedMarker = true;
 
     [Header("文言")]
     [SerializeField] private string collectFormat = "{0}  {1} / {2}";
@@ -104,16 +113,26 @@ public class MissionListItemUI : MonoBehaviour
 
         if (progressText != null)
         {
-            progressText.text = BuildProgressText(
-                mission,
-                progress,
-                requiredAmount
-            );
+            progressText.gameObject.SetActive(showProgressTextOnButton);
+
+            if (showProgressTextOnButton)
+            {
+                progressText.text = BuildProgressText(
+                    mission,
+                    progress,
+                    requiredAmount
+                );
+            }
         }
 
         if (statusText != null)
         {
-            statusText.text = BuildStatusText(missionState);
+            statusText.gameObject.SetActive(showStatusTextOnButton);
+
+            if (showStatusTextOnButton)
+            {
+                statusText.text = BuildStatusText(missionState);
+            }
         }
 
         if (selectedMarker != null)
@@ -123,7 +142,7 @@ public class MissionListItemUI : MonoBehaviour
 
         if (trackedMarker != null)
         {
-            trackedMarker.SetActive(tracked);
+            trackedMarker.SetActive(showTrackedMarker && tracked);
         }
 
         ApplyBackgroundColor();
