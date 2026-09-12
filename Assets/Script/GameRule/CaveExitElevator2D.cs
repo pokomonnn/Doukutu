@@ -271,10 +271,120 @@ public class CaveExitElevator2D : MonoBehaviour
             return;
         }
 
+        CaptureSessionBeforeResult();
         CollectExpeditionResult();
 
         Log($"リザルトSceneへ移動します: {resultSceneName}");
         SceneManager.LoadScene(resultSceneName);
+    }
+
+    /// <summary>
+    /// Result Sceneへ移動する直前に、現在のInventoryとMission進捗を
+    /// GameSessionManagerへ明示的に保存します。
+    /// OnDisable任せにせず先に保存することで、最後の瞬間のMission ClearもResultへ反映します。
+    /// </summary>
+    private void CaptureSessionBeforeResult()
+    {
+        GameSessionManager session =
+            GameSessionManager.Instance;
+
+        if (session == null)
+        {
+            session =
+                FindAnyObjectByType<GameSessionManager>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        if (session == null)
+        {
+            Debug.LogWarning(
+                "[CaveExitElevator2D] GameSessionManagerが見つからないため、" +
+                "Result移動前のInventory / Mission保存を実行できません。",
+                this
+            );
+            return;
+        }
+
+        // Inventory
+        GameObject playerObject =
+            currentPlayerMove != null
+                ? currentPlayerMove.gameObject
+                : null;
+
+        if (playerObject != null)
+        {
+            InventoryController inventoryController =
+                playerObject.GetComponent<InventoryController>();
+
+            if (inventoryController == null)
+            {
+                inventoryController =
+                    playerObject.GetComponentInChildren<
+                        InventoryController
+                    >(true);
+            }
+
+            EquipmentController equipmentController =
+                playerObject.GetComponent<EquipmentController>();
+
+            if (equipmentController == null)
+            {
+                equipmentController =
+                    playerObject.GetComponentInChildren<
+                        EquipmentController
+                    >(true);
+            }
+
+            if (inventoryController != null)
+            {
+                bool inventoryCaptured =
+                    session.CapturePlayerInventory(
+                        inventoryController,
+                        equipmentController
+                    );
+
+                Log(
+                    "Result移動前Inventory保存=" +
+                    (inventoryCaptured ? "成功" : "失敗")
+                );
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[CaveExitElevator2D] PlayerのInventoryControllerが見つかりません。" +
+                    " Result移動前Inventory保存をスキップします。",
+                    this
+                );
+            }
+        }
+
+        // Mission
+        MissionManager2D missionManager =
+            FindAnyObjectByType<MissionManager2D>(
+                FindObjectsInactive.Include
+            );
+
+        if (missionManager != null)
+        {
+            bool missionCaptured =
+                session.CaptureMissionsFromManager(
+                    missionManager
+                );
+
+            Log(
+                "Result移動前Mission保存=" +
+                (missionCaptured ? "成功" : "失敗")
+            );
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[CaveExitElevator2D] MissionManager2Dが見つかりません。" +
+                " Result移動前Mission保存をスキップします。",
+                this
+            );
+        }
     }
 
     private void CollectExpeditionResult()

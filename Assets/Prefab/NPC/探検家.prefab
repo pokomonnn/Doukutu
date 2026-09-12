@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 2761404752860740789}
   - component: {fileID: 2904673517321432195}
   - component: {fileID: 24528342207108349}
+  - component: {fileID: 8669522015117036822}
   m_Layer: 16
   m_Name: "\u63A2\u691C\u5BB6"
   m_TagString: Untagged
@@ -92,7 +93,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.8679245, g: 0.82489824, b: 0.63456744, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -224,7 +225,7 @@ MonoBehaviour:
   corpseInventory: {fileID: 3237697584749487376}
   corpseLootTrigger: {fileID: 2732694290689812810}
   lootInitializer: {fileID: 7627219915217461813}
-  corpseLootTable: {fileID: 11400000, guid: 152c0b24b8b98e54e8fa2ff0874bf1a7, type: 2}
+  corpseLootTable: {fileID: 11400000, guid: 7229d92045d1afc489d916726f4edafc, type: 2}
   rollLootOnDeath: 1
   behavioursToDisableOnDeath: []
   objectsToDisableOnDeath: []
@@ -309,6 +310,21 @@ MonoBehaviour:
   promptLocalPosition: {x: 0, y: 1.1, z: 0}
   showDebugLogs: 0
   showDetailedDiagnostics: 0
+--- !u!114 &8669522015117036822
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 862909085402662033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcd3fba977c09bb42bfb75fb20c766a3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MissionTargetIdentity2D
+  targetType: 2
+  targetId: npc_doctor_01
+  displayName: "\u533B\u5E2B"
 --- !u!1 &1133281558187549016
 GameObject:
   m_ObjectHideFlags: 0
@@ -575,6 +591,8 @@ MonoBehaviour:
   lootTable: {fileID: 11400000, guid: 152c0b24b8b98e54e8fa2ff0874bf1a7, type: 2}
   rollAutomaticallyOnStart: 0
   clearExistingContentsBeforeRoll: 1
+  allowSkillCardLootBonus: 1
+  excludeRescueNpcCorpseLoot: 1
   showDebugLogs: 0
 --- !u!1 &5649011673124818250
 GameObject:

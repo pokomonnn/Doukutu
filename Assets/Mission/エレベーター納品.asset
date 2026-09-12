@@ -12,10 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e40ccca5d0d395b44b7cd41360470e57, type: 3}
   m_Name: "\u30A8\u30EC\u30D9\u30FC\u30BF\u30FC\u7D0D\u54C1"
   m_EditorClassIdentifier: Assembly-CSharp::MissionDefinition2D
-  missionId: mission_005
-  displayName: "\u65B0\u3057\u3044\u30DF\u30C3\u30B7\u30E7\u30F3"
-  description: 
+  missionId: mission_007
+  displayName: "\u9271\u5C71\u5DE5\u5177\u306E\u56DE\u53CE"
+  description: "\u5DE5\u5177Item\u30922\u500B\u56DE\u53CE"
+  missionImage: {fileID: 0}
   objectiveType: 2
   requiredItem: {fileID: 11400000, guid: 3205782f1c2790e40ae9c3c4bbd8c445, type: 2}
-  requiredAmount: 1
+  requiredAmount: 2
   countItemsAlreadyHeldWhenMissionStarts: 1
+  consumeCollectedItemsOnResult: 0
+  targetRescueNpcId: 
+  expeditionMoneyReward: 500
+  expeditionItemRewards: []
+  skillCardRewards: []
+  skillSlotUnlockAmount: 0

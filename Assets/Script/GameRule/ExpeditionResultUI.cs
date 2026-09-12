@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
+using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -6,6 +7,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Result SceneのUIへExpeditionResultSessionの内容を表示します。
+/// 救出報酬に加えて、出撃パネルから受注したMissionの報酬も処理します。
 /// </summary>
 [DisallowMultipleComponent]
 public class ExpeditionResultUI : MonoBehaviour
@@ -31,6 +33,63 @@ public class ExpeditionResultUI : MonoBehaviour
 
     [Tooltip("救出報酬の表示形式です。{0}=合計報酬")]
     [SerializeField] private string rescueRewardFormat = "{0:N0} G";
+
+    [Header("出撃ミッション報酬")]
+    [Tooltip(
+        "今回、出撃パネルから受注したMissionの達成状況を表示するTextです。" +
+        "未設定でも報酬処理は行えます。"
+    )]
+    [SerializeField] private TMP_Text expeditionMissionListText;
+
+    [Tooltip("達成した出撃MissionのMoney報酬合計を表示します。")]
+    [SerializeField] private TMP_Text expeditionMissionRewardText;
+
+    [Tooltip("Result Sceneを開いた時に、達成済みの出撃Mission報酬を自動受取します。")]
+    [SerializeField] private bool grantExpeditionMissionRewardsOnStart = true;
+
+    [Tooltip("出撃MissionのMoney報酬合計表示です。{0}=合計")]
+    [SerializeField]
+    private string expeditionMissionRewardFormat =
+        "{0:N0} G";
+
+    [Header("合計報酬")]
+    [Tooltip(
+        "救出報酬 + 達成した出撃MissionのMoney報酬を表示するTextです。" +
+        "未設定でも集計自体は行われます。"
+    )]
+    [SerializeField] private TMP_Text totalRewardText;
+
+    [Tooltip("合計報酬の表示形式です。{0}=救出報酬とMission報酬を足した合計")]
+    [SerializeField]
+    private string totalRewardFormat = "{0:N0} G";
+
+    [Tooltip("今回の出撃Missionが1件も無い時の表示です。")]
+    [SerializeField]
+    private string noExpeditionMissionMessage =
+        "出撃ミッションなし";
+
+    [Tooltip("Mission達成時の先頭記号です。")]
+    [SerializeField] private string missionCompletedMark = "✓";
+
+    [Tooltip("Mission未達成時の先頭記号です。")]
+    [SerializeField] private string missionFailedMark = "✗";
+
+    [Tooltip("報酬受取済みの表示です。")]
+    [SerializeField] private string missionRewardClaimedLabel = "報酬受取済み";
+
+    [Tooltip("達成したが報酬をまだ受け取れていない時の表示です。")]
+    [SerializeField] private string missionRewardPendingLabel = "報酬未受取";
+
+    [Tooltip("未達成Missionの表示です。")]
+    [SerializeField] private string missionIncompleteLabel = "未達成";
+
+    [Tooltip(
+        "Collect ItemミッションでResult時に回収品を消費した場合の表示です。" +
+        "{0}=Item名、{1}=消費数"
+    )]
+    [SerializeField]
+    private string collectedItemSubmittedFormat =
+        "回収品提出: {0} × {1}";
 
     [Header("表示形式")]
     [SerializeField] private string rescuedNpcFormat = "{0} 人";
@@ -66,11 +125,16 @@ public class ExpeditionResultUI : MonoBehaviour
     [SerializeField] private bool showDebugLogs = true;
 
     // 同じExpeditionResultDataを使ってResult Sceneを再読込した場合に、
-    // 報酬が二重加算されるのを防ぎます。
+    // 救出報酬が二重加算されるのを防ぎます。
     private static ExpeditionResultData lastRewardedResult;
 
     public int CurrentRescueReward { get; private set; }
+    public int CurrentExpeditionMissionMoneyReward { get; private set; }
+    public int CurrentTotalReward { get; private set; }
+    public int GrantedExpeditionMissionMoneyReward { get; private set; }
+
     public bool RescueRewardGranted { get; private set; }
+    public bool ExpeditionMissionRewardsProcessed { get; private set; }
     public bool DeadNpcCountRecordedToGraveyard { get; private set; }
 
     private bool returnToTownStarted;
@@ -82,12 +146,17 @@ public class ExpeditionResultUI : MonoBehaviour
 
     private void Start()
     {
-        RefreshUI();
-
         if (grantRescueRewardOnStart)
         {
             TryGrantRescueReward();
         }
+
+        if (grantExpeditionMissionRewardsOnStart)
+        {
+            TryGrantExpeditionMissionRewards();
+        }
+
+        RefreshUI();
     }
 
     private void OnDestroy()
@@ -144,6 +213,35 @@ public class ExpeditionResultUI : MonoBehaviour
             )
         );
 
+        CurrentExpeditionMissionMoneyReward =
+            CalculateExpeditionMissionMoneyReward();
+
+        SetText(
+            expeditionMissionRewardText,
+            string.Format(
+                expeditionMissionRewardFormat,
+                CurrentExpeditionMissionMoneyReward
+            )
+        );
+
+        CurrentTotalReward = CalculateTotalReward(
+            CurrentRescueReward,
+            CurrentExpeditionMissionMoneyReward
+        );
+
+        SetText(
+            totalRewardText,
+            string.Format(
+                totalRewardFormat,
+                CurrentTotalReward
+            )
+        );
+
+        SetText(
+            expeditionMissionListText,
+            BuildExpeditionMissionResultText()
+        );
+
         if (showDebugLogs)
         {
             Debug.Log(
@@ -152,7 +250,9 @@ public class ExpeditionResultUI : MonoBehaviour
                 $"死亡={result.DeadNpcCount}, " +
                 $"ItemBox={result.RecoveredItemBoxCount}, " +
                 $"Treasure={result.TreasureItems?.Count ?? 0}, " +
-                $"救出報酬={CurrentRescueReward:N0}G",
+                $"救出報酬={CurrentRescueReward:N0}G, " +
+                $"出撃MissionMoney={CurrentExpeditionMissionMoneyReward:N0}G, " +
+                $"合計報酬={CurrentTotalReward:N0}G",
                 this
             );
         }
@@ -184,9 +284,27 @@ public class ExpeditionResultUI : MonoBehaviour
             : (int)total;
     }
 
+
+    /// <summary>
+    /// Result画面に表示するMoney報酬の総合計です。
+    /// 救出報酬 + 達成した出撃MissionのMoney報酬を合算します。
+    /// この値は表示用で、所持金へ再加算はしません。
+    /// </summary>
+    public int CalculateTotalReward(
+        int rescueReward,
+        int expeditionMissionMoneyReward)
+    {
+        long total =
+            (long)Mathf.Max(0, rescueReward) +
+            Mathf.Max(0, expeditionMissionMoneyReward);
+
+        return total > int.MaxValue
+            ? int.MaxValue
+            : (int)total;
+    }
+
     /// <summary>
     /// 救出報酬をGameSessionManagerの所持金へ1回だけ加算します。
-    /// RefreshUI()を何度呼んでも追加加算はされません。
     /// </summary>
     public bool TryGrantRescueReward()
     {
@@ -215,7 +333,7 @@ public class ExpeditionResultUI : MonoBehaviour
             return true;
         }
 
-        GameSessionManager session = GameSessionManager.Instance;
+        GameSessionManager session = FindSessionManager();
 
         if (session == null)
         {
@@ -249,6 +367,270 @@ public class ExpeditionResultUI : MonoBehaviour
     }
 
     /// <summary>
+    /// 今回の出撃で達成したExpedition Missionだけ報酬を受け取ります。
+    /// RewardClaimedで二重受取を防止します。
+    /// </summary>
+    [ContextMenu("Grant Expedition Mission Rewards")]
+    public bool TryGrantExpeditionMissionRewards()
+    {
+        GameSessionManager session = FindSessionManager();
+
+        if (session == null)
+        {
+            LogWarning(
+                "GameSessionManagerが見つからないため、出撃Mission報酬を処理できません。"
+            );
+            return false;
+        }
+
+        IReadOnlyList<string> missionIds =
+            session.CurrentExpeditionMissionIds;
+
+        GrantedExpeditionMissionMoneyReward = 0;
+
+        if (missionIds == null || missionIds.Count == 0)
+        {
+            ExpeditionMissionRewardsProcessed = true;
+            Log("今回の出撃Missionはありません。");
+            return true;
+        }
+
+        bool allProcessableRewardsGranted = true;
+
+        // 処理中にSessionイベントが発火しても列挙が崩れないようIDをコピーします。
+        List<string> ids =
+            new List<string>(missionIds);
+
+        foreach (string missionId in ids)
+        {
+            if (!session.TryGetMissionSession(
+                    missionId,
+                    out MissionSessionData data) ||
+                data == null)
+            {
+                LogWarning(
+                    $"Result対象MissionのSessionDataが見つかりません: {missionId}"
+                );
+                continue;
+            }
+
+            if (data.AcceptSource != MissionAcceptSource.Expedition)
+            {
+                // 会話受注MissionはResult報酬の対象外です。
+                continue;
+            }
+
+            bool completed =
+                data.State == MissionSessionState.Completed ||
+                data.Progress >= Mathf.Max(1, data.RequiredAmount);
+
+            if (!completed || data.RewardClaimed)
+            {
+                continue;
+            }
+
+            MissionDefinition2D mission = data.Mission;
+
+            if (mission == null)
+            {
+                allProcessableRewardsGranted = false;
+                LogWarning(
+                    $"MissionDefinition2D参照が無いため報酬を付与できません: {data.DisplayName}"
+                );
+                continue;
+            }
+
+            if (session.TryClaimExpeditionMissionReward(
+                    mission,
+                    out int grantedMoney,
+                    out string resultMessage))
+            {
+                GrantedExpeditionMissionMoneyReward +=
+                    Mathf.Max(0, grantedMoney);
+
+                Log(resultMessage);
+            }
+            else
+            {
+                allProcessableRewardsGranted = false;
+                LogWarning(resultMessage);
+            }
+        }
+
+        ExpeditionMissionRewardsProcessed = true;
+        RefreshUI();
+
+        return allProcessableRewardsGranted;
+    }
+
+    public int CalculateExpeditionMissionMoneyReward()
+    {
+        GameSessionManager session = FindSessionManager();
+
+        if (session == null ||
+            session.CurrentExpeditionMissionIds == null)
+        {
+            return 0;
+        }
+
+        long total = 0;
+
+        foreach (string missionId in
+                 session.CurrentExpeditionMissionIds)
+        {
+            if (!session.TryGetMissionSession(
+                    missionId,
+                    out MissionSessionData data) ||
+                data == null ||
+                data.AcceptSource != MissionAcceptSource.Expedition)
+            {
+                continue;
+            }
+
+            bool completed =
+                data.State == MissionSessionState.Completed ||
+                data.Progress >= Mathf.Max(1, data.RequiredAmount);
+
+            if (!completed || data.Mission == null)
+            {
+                continue;
+            }
+
+            total += Mathf.Max(
+                0,
+                data.Mission.ExpeditionMoneyReward
+            );
+
+            if (total >= int.MaxValue)
+            {
+                return int.MaxValue;
+            }
+        }
+
+        return (int)total;
+    }
+
+    private string BuildExpeditionMissionResultText()
+    {
+        GameSessionManager session = FindSessionManager();
+
+        if (session == null ||
+            session.CurrentExpeditionMissionIds == null ||
+            session.CurrentExpeditionMissionIds.Count == 0)
+        {
+            return noExpeditionMissionMessage;
+        }
+
+        StringBuilder builder = new StringBuilder();
+
+        foreach (string missionId in
+                 session.CurrentExpeditionMissionIds)
+        {
+            if (!session.TryGetMissionSession(
+                    missionId,
+                    out MissionSessionData data) ||
+                data == null)
+            {
+                continue;
+            }
+
+            if (builder.Length > 0)
+            {
+                builder.AppendLine();
+            }
+
+            bool completed =
+                data.State == MissionSessionState.Completed ||
+                data.Progress >= Mathf.Max(1, data.RequiredAmount);
+
+            string mark = completed
+                ? missionCompletedMark
+                : missionFailedMark;
+
+            string missionName =
+                !string.IsNullOrWhiteSpace(data.DisplayName)
+                    ? data.DisplayName
+                    : missionId;
+
+            builder.Append(mark);
+            builder.Append(' ');
+            builder.Append(missionName);
+            builder.Append("  ");
+
+            if (!completed)
+            {
+                builder.Append(missionIncompleteLabel);
+                continue;
+            }
+
+            builder.Append(
+                data.RewardClaimed
+                    ? missionRewardClaimedLabel
+                    : missionRewardPendingLabel
+            );
+
+            MissionDefinition2D mission = data.Mission;
+
+            if (mission == null)
+            {
+                continue;
+            }
+
+            List<string> rewardTexts =
+                new List<string>();
+
+            if (data.RewardClaimed &&
+                mission.ObjectiveType == MissionObjectiveType2D.CollectItem &&
+                mission.ConsumeCollectedItemsOnResult &&
+                mission.RequiredItem != null)
+            {
+                rewardTexts.Add(
+                    string.Format(
+                        collectedItemSubmittedFormat,
+                        mission.RequiredItem.DisplayName,
+                        mission.RequiredAmount
+                    )
+                );
+            }
+
+            if (mission.ExpeditionMoneyReward > 0)
+            {
+                rewardTexts.Add(
+                    $"+{mission.ExpeditionMoneyReward:N0}G"
+                );
+            }
+
+            if (mission.ExpeditionItemRewards != null)
+            {
+                foreach (MissionRewardItem reward in
+                         mission.ExpeditionItemRewards)
+                {
+                    if (reward == null ||
+                        reward.ItemData == null ||
+                        reward.Amount <= 0)
+                    {
+                        continue;
+                    }
+
+                    rewardTexts.Add(
+                        $"{reward.ItemData.DisplayName}×{reward.Amount}"
+                    );
+                }
+            }
+
+            if (rewardTexts.Count > 0)
+            {
+                builder.Append(" / ");
+                builder.Append(string.Join(" / ", rewardTexts));
+            }
+        }
+
+        return builder.Length > 0
+            ? builder.ToString()
+            : noExpeditionMissionMessage;
+    }
+
+    /// <summary>
     /// 今回の探索で死亡状態のまま回収されたNPC数を、
     /// GameSessionManagerの墓場累計へ1回だけ加算します。
     /// </summary>
@@ -278,7 +660,7 @@ public class ExpeditionResultUI : MonoBehaviour
             return true;
         }
 
-        GameSessionManager session = GameSessionManager.Instance;
+        GameSessionManager session = FindSessionManager();
 
         if (session == null)
         {
@@ -327,14 +709,19 @@ public class ExpeditionResultUI : MonoBehaviour
         if (recordDeadNpcCountWhenReturningTown &&
             !TryRecordDeadNpcCountToGraveyard())
         {
-            // 0人の場合や既に記録済みの場合も安全にTownへ戻れるよう、
-            // 実際に未記録で失敗した時だけ警告を出し、遷移自体は止めません。
             LogWarning(
                 "墓場への死亡NPC記録が完了していない可能性がありますが、Town_Mainへの移動は続行します。"
             );
         }
 
         returnToTownStarted = true;
+
+        GameSessionManager session = FindSessionManager();
+
+        if (session != null)
+        {
+            session.EndCurrentExpedition();
+        }
 
         if (clearResultWhenReturningTown)
         {
@@ -394,6 +781,22 @@ public class ExpeditionResultUI : MonoBehaviour
         returnTownButton.onClick.AddListener(ReturnToTown);
     }
 
+    private static GameSessionManager FindSessionManager()
+    {
+        GameSessionManager session =
+            GameSessionManager.Instance;
+
+        if (session == null)
+        {
+            session =
+                FindAnyObjectByType<GameSessionManager>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        return session;
+    }
+
     private void Log(string message)
     {
         if (showDebugLogs)
@@ -414,15 +817,29 @@ public class ExpeditionResultUI : MonoBehaviour
             text.text = value ?? string.Empty;
         }
     }
+
     private void OnValidate()
     {
-        aliveRescueRewardPerPerson = Mathf.Max(0, aliveRescueRewardPerPerson);
-        deadRescueRewardPerPerson = Mathf.Max(0, deadRescueRewardPerPerson);
+        aliveRescueRewardPerPerson =
+            Mathf.Max(0, aliveRescueRewardPerPerson);
+
+        deadRescueRewardPerPerson =
+            Mathf.Max(0, deadRescueRewardPerPerson);
 
         if (string.IsNullOrWhiteSpace(rescueRewardFormat))
         {
             rescueRewardFormat = "{0:N0} G";
         }
-    }
 
+        if (string.IsNullOrWhiteSpace(
+                expeditionMissionRewardFormat))
+        {
+            expeditionMissionRewardFormat = "{0:N0} G";
+        }
+
+        if (string.IsNullOrWhiteSpace(totalRewardFormat))
+        {
+            totalRewardFormat = "{0:N0} G";
+        }
+    }
 }

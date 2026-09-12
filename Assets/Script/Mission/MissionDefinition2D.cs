@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum MissionObjectiveType2D
@@ -6,13 +7,28 @@ public enum MissionObjectiveType2D
     // 既存Assetのシリアライズ値を壊さないため数値を固定します。
     CollectItem = 0,
     DefeatTargetEnemy = 1,
-    DeliverItem = 2
+    DeliverItem = 2,
+    RescueTargetNpc = 3
+}
+
+/// <summary>
+/// 出撃ミッション用のアイテム報酬1件分です。
+/// NPC会話ミッションでは従来どおりTownConversationData側の報酬を使用できます。
+/// </summary>
+[Serializable]
+public class MissionRewardItem
+{
+    [SerializeField] private ItemData itemData;
+    [SerializeField, Min(1)] private int amount = 1;
+
+    public ItemData ItemData => itemData;
+    public int Amount => Mathf.Max(1, amount);
 }
 
 /// <summary>
 /// ミッションの基本データです。
-/// 収集ミッション、NPCなどへの納品ミッション、特定の敵を倒すミッションに対応します。
-/// 実際のコンパスの行き先や対象敵は、MissionManager2D側でシーンごとに設定します。
+/// 収集・納品・指定敵討伐・指定NPC救出ミッションに対応します。
+/// Enemy / Rescue NPCはMissionTargetIdentity2DのTarget Idで種類や個体を識別できます。
 /// </summary>
 [CreateAssetMenu(
     fileName = "NewMissionDefinition",
@@ -39,15 +55,59 @@ public class MissionDefinition2D : ScriptableObject
     private MissionObjectiveType2D objectiveType =
         MissionObjectiveType2D.CollectItem;
 
+    [Header("必要数")]
+    [Tooltip(
+        "ミッション達成に必要な数です。\n" +
+        "Collect Item / Deliver Item = 必要Item数\n" +
+        "Defeat Target Enemy = 討伐数\n" +
+        "Rescue Target Npc = 救出数"
+    )]
+    [SerializeField, Min(1)] private int requiredAmount = 1;
+
     [Header("アイテム回収・納品ミッション")]
     [Tooltip("Collect Item / Deliver Item の時に必要なItemDataです")]
     [SerializeField] private ItemData requiredItem;
 
-    [Tooltip("必要な個数です")]
-    [SerializeField, Min(1)] private int requiredAmount = 1;
-
     [Tooltip("Collect Item専用です。オンならミッション開始時にすでに持っている必要アイテムも進捗に数えます。Deliver Itemでは使用しません")]
     [SerializeField] private bool countItemsAlreadyHeldWhenMissionStarts;
+
+    [Tooltip(
+        "Collect Item専用です。ONにすると、出撃パネルから受注したこのミッションを達成した時、" +
+        "Result Sceneで報酬を受け取る際にRequired ItemをRequired Amount分だけ所持品から回収（削除）します。" +
+        "既存ミッションへの影響を避けるため初期値はOFFです。"
+    )]
+    [SerializeField] private bool consumeCollectedItemsOnResult;
+
+    [Header("指定敵討伐ミッション")]
+    [Tooltip(
+        "Defeat Target Enemy専用です。対象Enemy Prefabに付けるMissionTargetIdentity2Dの" +
+        "Target TypeをEnemy、Target Idをここで設定したIDと同じにしてください。" +
+        "空欄の場合はMissionManager2DのTarget Enemy直接参照を使う旧方式も利用できます。"
+    )]
+    [SerializeField] private string targetEnemyId;
+
+    [Header("指定NPC救出ミッション")]
+    [Tooltip(
+        "Rescue Target Npc専用です。対象NPC Prefabに付けるMissionTargetIdentity2Dの" +
+        "Target TypeをRescue Npc、Target Idをここで設定したIDと同じにしてください。" +
+        "旧MissionRescueTarget2Dにも互換対応します。"
+    )]
+    [SerializeField] private string targetRescueNpcId;
+
+    [Header("出撃ミッション報酬")]
+    [Tooltip(
+        "出撃パネルから受注した時に、Result Sceneで受け取る所持金報酬です。" +
+        "NPC会話ミッションのMoney Rewardは従来どおりTownConversationData側を使用してください。"
+    )]
+    [SerializeField, Min(0)] private int expeditionMoneyReward;
+
+    [Tooltip(
+        "出撃パネルから受注した時に、Result Sceneで受け取るアイテム報酬です。" +
+        "NPC会話ミッションのItem Rewardsとは別管理です。"
+    )]
+    [SerializeField]
+    private List<MissionRewardItem> expeditionItemRewards =
+        new List<MissionRewardItem>();
 
     [Header("スキル報酬")]
     [Tooltip("このミッションの報酬受取時に永久取得するスキルカードです。複数設定できます。")]
@@ -74,6 +134,21 @@ public class MissionDefinition2D : ScriptableObject
     public bool CountItemsAlreadyHeldWhenMissionStarts =>
         countItemsAlreadyHeldWhenMissionStarts;
 
+    public bool ConsumeCollectedItemsOnResult =>
+        consumeCollectedItemsOnResult;
+
+    public string TargetEnemyId =>
+        targetEnemyId?.Trim() ?? string.Empty;
+
+    public string TargetRescueNpcId =>
+        targetRescueNpcId?.Trim() ?? string.Empty;
+
+    public int ExpeditionMoneyReward =>
+        Mathf.Max(0, expeditionMoneyReward);
+
+    public IReadOnlyList<MissionRewardItem> ExpeditionItemRewards =>
+        expeditionItemRewards;
+
     public IReadOnlyList<SkillCardData> SkillCardRewards =>
         skillCardRewards;
 
@@ -85,7 +160,15 @@ public class MissionDefinition2D : ScriptableObject
         requiredAmount = Mathf.Max(1, requiredAmount);
         missionId = missionId?.Trim() ?? string.Empty;
         displayName = displayName?.Trim() ?? string.Empty;
+        targetEnemyId = targetEnemyId?.Trim() ?? string.Empty;
+        targetRescueNpcId = targetRescueNpcId?.Trim() ?? string.Empty;
+        expeditionMoneyReward = Mathf.Max(0, expeditionMoneyReward);
         skillSlotUnlockAmount = Mathf.Clamp(skillSlotUnlockAmount, 0, 4);
+
+        if (expeditionItemRewards == null)
+        {
+            expeditionItemRewards = new List<MissionRewardItem>();
+        }
 
         if (skillCardRewards == null)
         {

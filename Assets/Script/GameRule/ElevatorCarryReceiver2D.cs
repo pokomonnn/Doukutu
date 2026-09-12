@@ -1,4 +1,5 @@
-﻿using System.Collections;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -56,6 +57,17 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
     [Header("解放")]
     [Tooltip("ONならこのReceiverが無効になった時、収納中の荷物を物理状態へ戻します。通常はOFF推奨です。")]
     [SerializeField] private bool releaseCargoWhenDisabled;
+
+    [Header("指定NPC救出ミッション")]
+    [Tooltip(
+        "ONならMissionTargetIdentity2D（Target Type = Rescue Npc）を持つ生存NPCが" +
+        "Cargo Slotへ収納完了した時、一致するRescue Target Npcミッションを進行させます。" +
+        "旧MissionRescueTarget2Dにも互換対応します。"
+    )]
+    [SerializeField] private bool notifyRescueMissionOnStorageComplete = true;
+
+    [Tooltip("洞窟SceneのMissionManager2D。未設定なら自動取得します。")]
+    [SerializeField] private MissionManager2D missionManager;
 
     [Header("デバッグ")]
     [SerializeField] private bool showDebugLogs = true;
@@ -316,6 +328,7 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
         cargoRecords[target] = record;
 
         LogStorageComplete(target, record.Slot);
+        NotifyRescueMissionStored(target);
     }
 
     /// <summary>
@@ -584,6 +597,14 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
         {
             LogWarning("Receiver ColliderはIs TriggerをONにしてください。");
         }
+
+        if (missionManager == null)
+        {
+            missionManager =
+                FindAnyObjectByType<MissionManager2D>(
+                    FindObjectsInactive.Include
+                );
+        }
     }
 
     /// <summary>
@@ -656,6 +677,190 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
         }
 
         Log(message);
+    }
+
+    /// <summary>
+    /// 生存している指定NPCがエレベーターへ完全収納された時だけ、
+    /// Target Rescue Npc Idが一致する受注中ミッションを完了させます。
+    /// </summary>
+    private void NotifyRescueMissionStored(
+        CarryableObject2D target)
+    {
+        if (!notifyRescueMissionOnStorageComplete || target == null)
+        {
+            return;
+        }
+
+        // 新方式：共通MissionTargetIdentity2Dを優先します。
+        MissionTargetIdentity2D identity =
+            FindComponentOnCarryable<MissionTargetIdentity2D>(target);
+
+        string rescueTargetId = string.Empty;
+        string targetDisplayName = target.name;
+
+        if (identity != null &&
+            identity.TargetType == MissionTargetType2D.RescueNpc &&
+            !string.IsNullOrWhiteSpace(identity.TargetId))
+        {
+            rescueTargetId = identity.TargetId;
+            targetDisplayName = identity.DisplayName;
+        }
+        else
+        {
+            // 旧方式との互換：
+            // 以前追加したMissionRescueTarget2Dが残っているPrefabもそのまま動かします。
+            MissionRescueTarget2D legacyTarget =
+                FindComponentOnCarryable<MissionRescueTarget2D>(target);
+
+            if (legacyTarget != null &&
+                !string.IsNullOrWhiteSpace(
+                    legacyTarget.RescueTargetId))
+            {
+                rescueTargetId = legacyTarget.RescueTargetId;
+                targetDisplayName = legacyTarget.TargetDisplayName;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(rescueTargetId))
+        {
+            return;
+        }
+
+        // 既存Result集計と同じ扱いで、CharacterHealthがありIsDeadなら死亡扱い。
+        // 死亡した指定NPCを持ち帰っても「救出成功」にはしません。
+        CharacterHealth health =
+            FindComponentOnCarryable<CharacterHealth>(target);
+
+        if (health != null && health.IsDead)
+        {
+            Log(
+                $"指定NPC救出Mission判定: {targetDisplayName} " +
+                $"(ID={rescueTargetId}) は死亡しているため達成しません。"
+            );
+            return;
+        }
+
+        if (missionManager == null)
+        {
+            missionManager =
+                FindAnyObjectByType<MissionManager2D>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        if (missionManager == null)
+        {
+            LogWarning(
+                "指定NPC救出Missionを更新できません。MissionManager2Dが見つかりません。"
+            );
+            return;
+        }
+
+        GameSessionManager session =
+            GameSessionManager.Instance;
+
+        if (session == null)
+        {
+            session =
+                FindAnyObjectByType<GameSessionManager>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        int updatedCount = 0;
+
+        for (int i = 0; i < missionManager.MissionCount; i++)
+        {
+            MissionDefinition2D mission =
+                missionManager.GetMissionDefinition(i);
+
+            if (mission == null ||
+                mission.ObjectiveType !=
+                    MissionObjectiveType2D.RescueTargetNpc)
+            {
+                continue;
+            }
+
+            if (!string.Equals(
+                    mission.TargetRescueNpcId,
+                    rescueTargetId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            MissionProgressState2D state =
+                missionManager.GetMissionState(i);
+
+            if (state != MissionProgressState2D.InProgress)
+            {
+                continue;
+            }
+
+            // GameSessionManagerに受注元情報がある場合は、
+            // 出撃パネル由来のMissionだけをこの処理の対象にします。
+            if (session != null &&
+                session.TryGetMissionSession(
+                    mission.MissionId,
+                    out MissionSessionData sessionData) &&
+                sessionData != null &&
+                sessionData.AcceptSource != MissionAcceptSource.Expedition)
+            {
+                continue;
+            }
+
+            bool progressed =
+                missionManager.ReportRescueTarget(
+                    i,
+                    rescueTargetId
+                );
+
+            if (!progressed)
+            {
+                continue;
+            }
+
+            updatedCount++;
+
+            Log(
+                $"指定NPC救出Mission更新: {mission.DisplayName} / " +
+                $"Target={targetDisplayName} / TargetId={rescueTargetId} / " +
+                $"進捗={missionManager.GetMissionProgress(i)}/" +
+                $"{missionManager.GetMissionRequiredAmount(i)}"
+            );
+        }
+
+        // Result Sceneへ移動する前にSession側にも即時反映します。
+        if (updatedCount > 0 && session != null)
+        {
+            session.CaptureMissionsFromManager(missionManager);
+        }
+    }
+
+    private static T FindComponentOnCarryable<T>(
+        CarryableObject2D target)
+        where T : Component
+    {
+        if (target == null)
+        {
+            return null;
+        }
+
+        T component = target.GetComponent<T>();
+
+        if (component != null)
+        {
+            return component;
+        }
+
+        component = target.GetComponentInChildren<T>(true);
+
+        if (component != null)
+        {
+            return component;
+        }
+
+        return target.GetComponentInParent<T>();
     }
 
     private static string GetCargoTypeLabel(

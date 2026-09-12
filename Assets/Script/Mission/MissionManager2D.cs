@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -18,7 +18,7 @@ public class MissionEntry2D
     [SerializeField] private Transform compassTarget;
 
     [Header("指定敵の討伐ミッション")]
-    [Tooltip("Defeat Target Enemyの時に設定する、MissionEnemyTarget2D付きのEnemyです")]
+    [Tooltip("旧互換/コンパス用の直接参照です。ID方式では未設定でも討伐数をカウントできます。固定対象へコンパスを向けたい場合は設定できます。")]
     [SerializeField] private MissionEnemyTarget2D targetEnemy;
 
     public MissionDefinition2D Mission => mission;
@@ -175,12 +175,9 @@ public class MissionManager2D : MonoBehaviour
         missionRuntimeData =
             new Dictionary<int, MissionRuntimeData>();
 
-    private readonly HashSet<MissionEnemyTarget2D>
-        subscribedEnemyTargets =
-            new HashSet<MissionEnemyTarget2D>();
-
     private int trackedMissionIndex = -1;
     private bool inventorySubscribed;
+    private bool enemyTargetGlobalSubscribed;
 
     private void Awake()
     {
@@ -1121,10 +1118,9 @@ public class MissionManager2D : MonoBehaviour
             return 0;
         }
 
-        return mission.ObjectiveType == MissionObjectiveType2D.CollectItem ||
-            mission.ObjectiveType == MissionObjectiveType2D.DeliverItem
-            ? mission.RequiredAmount
-            : 1;
+        // Required Amountは全Objectiveで共通利用します。
+        // Collect/Deliver = Item数、Defeat = 討伐数、Rescue = 救出数。
+        return mission.RequiredAmount;
     }
 
     public Transform GetMissionCompassTarget(int missionIndex)
@@ -1213,13 +1209,25 @@ public class MissionManager2D : MonoBehaviour
                 break;
 
             case MissionObjectiveType2D.DefeatTargetEnemy:
+                // ID方式では「このMissionを開始してから倒した数」を数えるため0開始。
+                // 旧Target Enemy直接参照方式だけ、開始時点ですでに死亡していれば1として扱います。
                 MissionEntry2D entry = GetMissionEntry(missionIndex);
 
-                data.Progress = entry != null &&
+                if (string.IsNullOrWhiteSpace(mission.TargetEnemyId) &&
+                    entry != null &&
                     entry.TargetEnemy != null &&
-                    entry.TargetEnemy.IsDefeated
-                    ? 1
-                    : 0;
+                    entry.TargetEnemy.IsDefeated)
+                {
+                    data.Progress = 1;
+                }
+                else
+                {
+                    data.Progress = 0;
+                }
+                break;
+
+            case MissionObjectiveType2D.RescueTargetNpc:
+                data.Progress = 0;
                 break;
         }
     }
@@ -1331,6 +1339,11 @@ public class MissionManager2D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Scene内のMissionEnemyTarget2Dが倒された時に呼ばれます。
+    /// Target Enemy Idが設定されているMissionはID一致で判定します。
+    /// Target Enemy Idが空欄なら、旧Target Enemy直接参照方式で判定します。
+    /// </summary>
     private void HandleTargetEnemyDefeated(
         MissionEnemyTarget2D defeatedEnemy)
     {
@@ -1351,8 +1364,23 @@ public class MissionManager2D : MonoBehaviour
             if (mission == null ||
                 entry == null ||
                 mission.ObjectiveType !=
-                MissionObjectiveType2D.DefeatTargetEnemy ||
-                entry.TargetEnemy != defeatedEnemy)
+                    MissionObjectiveType2D.DefeatTargetEnemy)
+            {
+                continue;
+            }
+
+            bool idMode =
+                !string.IsNullOrWhiteSpace(mission.TargetEnemyId);
+
+            bool matches = idMode
+                ? string.Equals(
+                    mission.TargetEnemyId,
+                    defeatedEnemy.TargetId,
+                    StringComparison.OrdinalIgnoreCase
+                )
+                : entry.TargetEnemy == defeatedEnemy;
+
+            if (!matches)
             {
                 continue;
             }
@@ -1361,19 +1389,122 @@ public class MissionManager2D : MonoBehaviour
                 missionIndex
             );
 
-            if (data.Progress < 1)
+            int required = GetMissionRequiredAmount(missionIndex);
+            int previous = data.Progress;
+
+            data.Progress = Mathf.Min(
+                required,
+                data.Progress + 1
+            );
+
+            if (previous != data.Progress)
             {
-                data.Progress = 1;
                 NotifyMissionProgress(missionIndex);
+
+                Log(
+                    $"討伐Mission進行: {mission.DisplayName} / " +
+                    $"TargetId={(idMode ? mission.TargetEnemyId : "旧直接参照")} / " +
+                    $"{data.Progress}/{required}"
+                );
             }
 
-            completionCandidates.Add(missionIndex);
+            if (IsMissionComplete(missionIndex))
+            {
+                completionCandidates.Add(missionIndex);
+            }
         }
 
         foreach (int missionIndex in completionCandidates)
         {
             CompleteMission(missionIndex);
         }
+    }
+
+    /// <summary>
+    /// 指定NPCが救出されたことを1件のMissionへ報告します。
+    /// Target Rescue Npc Idが一致し、Missionが進行中の時だけ進捗を+1します。
+    /// CompleteMissionを通すため、MissionCompletedイベント（MISSION CLEAR通知）も通常通り発火します。
+    /// </summary>
+    public bool ReportRescueTarget(
+        int missionIndex,
+        string rescueTargetId)
+    {
+        if (string.IsNullOrWhiteSpace(rescueTargetId) ||
+            !TryGetValidEntry(missionIndex, out MissionEntry2D entry))
+        {
+            return false;
+        }
+
+        MissionDefinition2D mission = entry.Mission;
+
+        if (mission.ObjectiveType != MissionObjectiveType2D.RescueTargetNpc ||
+            GetMissionState(missionIndex) != MissionProgressState2D.InProgress ||
+            string.IsNullOrWhiteSpace(mission.TargetRescueNpcId) ||
+            !string.Equals(
+                mission.TargetRescueNpcId,
+                rescueTargetId.Trim(),
+                StringComparison.OrdinalIgnoreCase
+            ))
+        {
+            return false;
+        }
+
+        MissionRuntimeData data = GetOrCreateRuntimeData(missionIndex);
+        int required = GetMissionRequiredAmount(missionIndex);
+        int previous = data.Progress;
+
+        data.Progress = Mathf.Min(
+            required,
+            data.Progress + 1
+        );
+
+        if (previous == data.Progress)
+        {
+            return false;
+        }
+
+        NotifyMissionProgress(missionIndex);
+
+        Log(
+            $"救出Mission進行: {mission.DisplayName} / " +
+            $"TargetId={mission.TargetRescueNpcId} / " +
+            $"{data.Progress}/{required}"
+        );
+
+        if (IsMissionComplete(missionIndex))
+        {
+            CompleteMission(missionIndex);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 同じTarget Rescue Npc Idを持つ進行中Missionすべてへ救出を報告します。
+    /// </summary>
+    public int ReportRescueTarget(string rescueTargetId)
+    {
+        if (string.IsNullOrWhiteSpace(rescueTargetId))
+        {
+            return 0;
+        }
+
+        List<int> activeIndices =
+            new List<int>(inProgressMissionIndices);
+
+        int updatedCount = 0;
+
+        foreach (int missionIndex in activeIndices)
+        {
+            if (ReportRescueTarget(
+                    missionIndex,
+                    rescueTargetId))
+            {
+                updatedCount++;
+            }
+        }
+
+        return updatedCount;
     }
 
     private bool IsMissionComplete(int missionIndex)
@@ -1548,33 +1679,30 @@ public class MissionManager2D : MonoBehaviour
 
     private void SubscribeEnemyTargets()
     {
-        foreach (MissionEntry2D entry in missions)
+        if (enemyTargetGlobalSubscribed)
         {
-            if (entry == null ||
-                entry.TargetEnemy == null ||
-                !subscribedEnemyTargets.Add(entry.TargetEnemy))
-            {
-                continue;
-            }
-
-            entry.TargetEnemy.Defeated +=
-                HandleTargetEnemyDefeated;
+            return;
         }
+
+        // Prefabから後で生成されたEnemyも拾えるよう、
+        // 特定インスタンスではなく共通イベントを購読します。
+        MissionEnemyTarget2D.AnyDefeated +=
+            HandleTargetEnemyDefeated;
+
+        enemyTargetGlobalSubscribed = true;
     }
 
     private void UnsubscribeEnemyTargets()
     {
-        foreach (MissionEnemyTarget2D targetEnemy
-                 in subscribedEnemyTargets)
+        if (!enemyTargetGlobalSubscribed)
         {
-            if (targetEnemy != null)
-            {
-                targetEnemy.Defeated -=
-                    HandleTargetEnemyDefeated;
-            }
+            return;
         }
 
-        subscribedEnemyTargets.Clear();
+        MissionEnemyTarget2D.AnyDefeated -=
+            HandleTargetEnemyDefeated;
+
+        enemyTargetGlobalSubscribed = false;
     }
 
     private void FindInventoryController()

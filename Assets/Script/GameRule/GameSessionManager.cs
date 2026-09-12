@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -67,6 +67,14 @@ public class GameSessionManager : MonoBehaviour
     /// <summary>追跡中にしたいミッションIDです。空なら追跡なしです。</summary>
     public string TrackedMissionId => trackedMissionId;
 
+    /// <summary>現在の出撃でResult判定対象になるミッションID一覧です。</summary>
+    public IReadOnlyList<string> CurrentExpeditionMissionIds =>
+        currentExpeditionMissionIds;
+
+    /// <summary>現在出撃中のStage Idです。出撃していない時は空です。</summary>
+    public string CurrentExpeditionStageId =>
+        currentExpeditionStageId;
+
     /// <summary>現在解放されているスキルカード装備枠数です。</summary>
     public int UnlockedSkillSlotCount
     {
@@ -107,6 +115,11 @@ public class GameSessionManager : MonoBehaviour
         new List<TownFacilitySessionData>();
 
     private string trackedMissionId = string.Empty;
+
+    private readonly List<string> currentExpeditionMissionIds =
+        new List<string>();
+
+    private string currentExpeditionStageId = string.Empty;
 
     private SkillCardSessionData skillCardSessionData =
         new SkillCardSessionData();
@@ -667,6 +680,8 @@ public class GameSessionManager : MonoBehaviour
         missionSessionData.Clear();
         facilitySessionData.Clear();
         trackedMissionId = string.Empty;
+        currentExpeditionMissionIds.Clear();
+        currentExpeditionStageId = string.Empty;
         skillCardSessionData = new SkillCardSessionData();
         EnsureSkillSessionData();
 
@@ -961,9 +976,30 @@ public class GameSessionManager : MonoBehaviour
     /// 町の会話などからミッションを受注状態にします。
     /// 探索シーンへ戻った時、MissionSessionBridgeがMissionManager2Dへ反映します。
     /// </summary>
+    /// <summary>
+    /// 互換用。従来の呼び出しはNPC会話からの受注として扱います。
+    /// </summary>
     public bool AcceptMission(
         MissionDefinition2D mission,
         bool trackAfterAccepting,
+        out string resultMessage)
+    {
+        return AcceptMission(
+            mission,
+            trackAfterAccepting,
+            MissionAcceptSource.Conversation,
+            out resultMessage
+        );
+    }
+
+    /// <summary>
+    /// 受注元を記録してミッションを受注します。
+    /// ConversationはNPC会話報酬、ExpeditionはResult報酬として使用します。
+    /// </summary>
+    public bool AcceptMission(
+        MissionDefinition2D mission,
+        bool trackAfterAccepting,
+        MissionAcceptSource acceptSource,
         out string resultMessage)
     {
         resultMessage = string.Empty;
@@ -997,6 +1033,17 @@ public class GameSessionManager : MonoBehaviour
         bool wasAlreadyInProgress =
             data.State == MissionSessionState.InProgress;
 
+        if (wasAlreadyInProgress &&
+            data.AcceptSource != MissionAcceptSource.Unknown &&
+            acceptSource != MissionAcceptSource.Unknown &&
+            data.AcceptSource != acceptSource)
+        {
+            resultMessage =
+                $"{mission.DisplayName} はすでに別の受注元({data.AcceptSource})で受注済みです。";
+            LogMissionWarning(resultMessage);
+            return false;
+        }
+
         data.Mission = mission;
         data.MissionId = missionId;
         data.DisplayName = mission.DisplayName;
@@ -1007,6 +1054,12 @@ public class GameSessionManager : MonoBehaviour
             0,
             data.RequiredAmount
         );
+
+        if (data.AcceptSource == MissionAcceptSource.Unknown &&
+            acceptSource != MissionAcceptSource.Unknown)
+        {
+            data.AcceptSource = acceptSource;
+        }
 
         if (trackAfterAccepting)
         {
@@ -1019,8 +1072,65 @@ public class GameSessionManager : MonoBehaviour
             ? $"{mission.DisplayName} はすでに受注済みです。"
             : $"{mission.DisplayName} を受注しました。";
 
+        resultMessage += $" 受注元={data.AcceptSource}";
+
         LogMission(resultMessage);
         return true;
+    }
+
+    /// <summary>
+    /// 新しい出撃を開始します。前回の「今回の出撃ミッション」一覧をリセットします。
+    /// </summary>
+    public void BeginCurrentExpedition(string stageId)
+    {
+        currentExpeditionStageId = stageId?.Trim() ?? string.Empty;
+        currentExpeditionMissionIds.Clear();
+        MissionSessionChanged?.Invoke();
+
+        LogMission(
+            $"出撃開始: Stage={currentExpeditionStageId} / Result対象ミッションを初期化"
+        );
+    }
+
+    /// <summary>
+    /// 今回の出撃でResult判定するミッションを登録します。
+    /// </summary>
+    public bool RegisterCurrentExpeditionMission(
+        MissionDefinition2D mission)
+    {
+        string missionId = GetMissionId(mission);
+
+        if (string.IsNullOrWhiteSpace(missionId))
+        {
+            return false;
+        }
+
+        foreach (string registeredId in currentExpeditionMissionIds)
+        {
+            if (string.Equals(
+                    registeredId,
+                    missionId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        currentExpeditionMissionIds.Add(missionId);
+        MissionSessionChanged?.Invoke();
+        return true;
+    }
+
+    /// <summary>
+    /// Resultから町へ戻る時などに、今回の出撃情報だけを破棄します。
+    /// ミッション履歴そのものは残します。
+    /// </summary>
+    public void EndCurrentExpedition()
+    {
+        currentExpeditionMissionIds.Clear();
+        currentExpeditionStageId = string.Empty;
+        MissionSessionChanged?.Invoke();
+        LogMission("今回の出撃情報を終了しました。");
     }
 
     /// <summary>
@@ -1213,6 +1323,25 @@ public class GameSessionManager : MonoBehaviour
         bool requireObjectiveCompleted,
         out string resultMessage)
     {
+        return CanClaimMissionReward(
+            mission,
+            requireObjectiveCompleted,
+            MissionAcceptSource.Unknown,
+            out resultMessage
+        );
+    }
+
+    /// <summary>
+    /// 指定した受注元でのみ報酬受取を許可します。
+    /// expectedSource=Unknownなら従来どおり受注元を問いません。
+    /// 古いセーブデータ由来のUnknownは、Conversation要求時のみ互換のため許可します。
+    /// </summary>
+    public bool CanClaimMissionReward(
+        MissionDefinition2D mission,
+        bool requireObjectiveCompleted,
+        MissionAcceptSource expectedSource,
+        out string resultMessage)
+    {
         resultMessage = string.Empty;
 
         if (mission == null)
@@ -1241,6 +1370,31 @@ public class GameSessionManager : MonoBehaviour
             return false;
         }
 
+        if (expectedSource != MissionAcceptSource.Unknown)
+        {
+            bool sourceMatches = data.AcceptSource == expectedSource;
+
+            // 旧Saveには受注元が無いため、Unknownは会話ミッションとしてのみ互換扱い。
+            if (!sourceMatches &&
+                data.AcceptSource == MissionAcceptSource.Unknown &&
+                expectedSource == MissionAcceptSource.Conversation)
+            {
+                data.AcceptSource = MissionAcceptSource.Conversation;
+                sourceMatches = true;
+            }
+
+            if (!sourceMatches)
+            {
+                resultMessage =
+                    expectedSource == MissionAcceptSource.Conversation
+                        ? $"{mission.DisplayName} は出撃パネルから受注したミッションのため、NPC会話では報酬を受け取れません。"
+                        : $"{mission.DisplayName} はNPC会話から受注したミッションのため、リザルト画面では報酬を受け取れません。";
+
+                LogMissionWarning(resultMessage);
+                return false;
+            }
+        }
+
         if (data.RewardClaimed)
         {
             resultMessage = $"{mission.DisplayName} の報酬はすでに受け取り済みです。";
@@ -1260,12 +1414,23 @@ public class GameSessionManager : MonoBehaviour
         return true;
     }
 
+    public bool MarkMissionRewardClaimed(
+        MissionDefinition2D mission,
+        out string resultMessage)
+    {
+        return MarkMissionRewardClaimed(
+            mission,
+            MissionAcceptSource.Unknown,
+            out resultMessage
+        );
+    }
+
     /// <summary>
-    /// ミッション報酬を受け取った状態として保存します。
-    /// 報酬の実際の付与はTownMissionRewardController側で行います。
+    /// 指定受注元のミッションだけを報酬受取済みにします。
     /// </summary>
     public bool MarkMissionRewardClaimed(
         MissionDefinition2D mission,
+        MissionAcceptSource expectedSource,
         out string resultMessage)
     {
         resultMessage = string.Empty;
@@ -1296,6 +1461,27 @@ public class GameSessionManager : MonoBehaviour
             return false;
         }
 
+        if (expectedSource != MissionAcceptSource.Unknown)
+        {
+            bool sourceMatches = data.AcceptSource == expectedSource;
+
+            if (!sourceMatches &&
+                data.AcceptSource == MissionAcceptSource.Unknown &&
+                expectedSource == MissionAcceptSource.Conversation)
+            {
+                data.AcceptSource = MissionAcceptSource.Conversation;
+                sourceMatches = true;
+            }
+
+            if (!sourceMatches)
+            {
+                resultMessage =
+                    $"{mission.DisplayName} の受注元が一致しないため、報酬受取済みにできません。";
+                LogMissionWarning(resultMessage);
+                return false;
+            }
+        }
+
         if (data.RewardClaimed)
         {
             resultMessage = $"{mission.DisplayName} の報酬はすでに受け取り済みです。";
@@ -1322,8 +1508,124 @@ public class GameSessionManager : MonoBehaviour
         GrantMissionSkillRewards(mission);
         MissionSessionChanged?.Invoke();
 
-        resultMessage = $"{mission.DisplayName} を報告済み・報酬受け取り済みにしました。";
+        resultMessage = $"{mission.DisplayName} を報酬受け取り済みにしました。";
         LogMission(resultMessage);
+        return true;
+    }
+
+    /// <summary>
+    /// Result Scene専用。出撃ミッションのMoney / Item / Skill報酬を1回だけ付与します。
+    /// Item報酬はシーン間引き継ぎ用Inventoryへ追加されるため、Result SceneにInventory UIは不要です。
+    /// </summary>
+    public bool TryClaimExpeditionMissionReward(
+        MissionDefinition2D mission,
+        out int grantedMoney,
+        out string resultMessage)
+    {
+        grantedMoney = 0;
+        resultMessage = string.Empty;
+
+        if (!CanClaimMissionReward(
+                mission,
+                true,
+                MissionAcceptSource.Expedition,
+                out resultMessage))
+        {
+            return false;
+        }
+
+        PlayerInventorySessionData nextInventory =
+            CloneInventorySessionData(
+                inventorySessionData ?? new PlayerInventorySessionData()
+            );
+
+        if (nextInventory.InventoryItems == null)
+        {
+            nextInventory.InventoryItems =
+                new List<SessionInventoryItemData>();
+        }
+
+        // 出撃パネル由来のCollect Itemミッションだけ、設定がONなら
+        // Resultで報酬を受け取るタイミングに必要数を回収品として消費します。
+        // Clone側から先に減らすため、その後の報酬Item配置に失敗しても
+        // 実際のSession Inventoryは変更されません。
+        if (mission.ObjectiveType == MissionObjectiveType2D.CollectItem &&
+            mission.ConsumeCollectedItemsOnResult)
+        {
+            if (mission.RequiredItem == null)
+            {
+                resultMessage =
+                    $"{mission.DisplayName} のRequired Itemが設定されていないため、回収品を処理できません。";
+                LogMissionWarning(resultMessage);
+                return false;
+            }
+
+            if (!TryConsumeItemFromSessionInventory(
+                    nextInventory,
+                    mission.RequiredItem,
+                    mission.RequiredAmount,
+                    out int consumedAmount))
+            {
+                resultMessage =
+                    $"回収品『{mission.RequiredItem.DisplayName}』が不足しています。" +
+                    $" 必要={mission.RequiredAmount} / 消費可能={consumedAmount}。";
+                LogMissionWarning(resultMessage);
+                return false;
+            }
+        }
+
+        if (mission.ExpeditionItemRewards != null)
+        {
+            foreach (MissionRewardItem reward in mission.ExpeditionItemRewards)
+            {
+                if (reward == null ||
+                    reward.ItemData == null ||
+                    reward.Amount <= 0)
+                {
+                    continue;
+                }
+
+                if (!TryAddRewardItemToSessionInventory(
+                        nextInventory,
+                        reward.ItemData,
+                        reward.Amount))
+                {
+                    resultMessage =
+                        $"報酬アイテム『{reward.ItemData.DisplayName}』を入れる空きがありません。" +
+                        " インベントリを整理してから再度報酬を受け取ってください。";
+                    LogMissionWarning(resultMessage);
+                    return false;
+                }
+            }
+        }
+
+        // ここまででItem報酬をすべて配置できることを確認済みです。
+        // 先にRewardClaimedを確定し、その後に失敗しないMoney / Inventory反映を行います。
+        // これにより報酬の一部だけが付与される状態を避けます。
+        if (!MarkMissionRewardClaimed(
+                mission,
+                MissionAcceptSource.Expedition,
+                out string markMessage))
+        {
+            resultMessage = markMessage;
+            return false;
+        }
+
+        inventorySessionData = nextInventory;
+        hasInventorySessionData = true;
+        InventorySessionChanged?.Invoke();
+
+        int moneyReward = Mathf.Max(0, mission.ExpeditionMoneyReward);
+
+        if (moneyReward > 0)
+        {
+            AddMoney(moneyReward);
+            grantedMoney = moneyReward;
+        }
+
+        resultMessage =
+            $"{mission.DisplayName} の出撃ミッション報酬を受け取りました。";
+
         return true;
     }
 
@@ -1365,6 +1667,8 @@ public class GameSessionManager : MonoBehaviour
     {
         missionSessionData.Clear();
         trackedMissionId = string.Empty;
+        currentExpeditionMissionIds.Clear();
+        currentExpeditionStageId = string.Empty;
         MissionSessionChanged?.Invoke();
         LogMission("ミッション引き継ぎデータを消去しました。");
     }
@@ -1387,7 +1691,8 @@ public class GameSessionManager : MonoBehaviour
 
             lines.Add(
                 $"{data.DisplayName}(ID={data.MissionId}, 状態={data.State}, " +
-                $"進捗={data.Progress}/{data.RequiredAmount}, 報酬={(data.RewardClaimed ? "受取済み" : "未受取")})"
+                $"進捗={data.Progress}/{data.RequiredAmount}, 受注元={data.AcceptSource}, " +
+                $"報酬={(data.RewardClaimed ? "受取済み" : "未受取")})"
             );
         }
 
@@ -1967,6 +2272,373 @@ public class GameSessionManager : MonoBehaviour
         };
     }
 
+    private static PlayerInventorySessionData CloneInventorySessionData(
+        PlayerInventorySessionData source)
+    {
+        PlayerInventorySessionData clone =
+            new PlayerInventorySessionData
+            {
+                GridWidth = source != null
+                    ? Mathf.Max(1, source.GridWidth)
+                    : 7,
+                GridHeight = source != null
+                    ? Mathf.Max(1, source.GridHeight)
+                    : 10,
+                PrimaryWeaponItem = CloneSessionInventoryItem(
+                    source != null ? source.PrimaryWeaponItem : null
+                ),
+                HelmetItem = CloneSessionInventoryItem(
+                    source != null ? source.HelmetItem : null
+                )
+            };
+
+        if (source != null && source.InventoryItems != null)
+        {
+            foreach (SessionInventoryItemData item in source.InventoryItems)
+            {
+                SessionInventoryItemData copy =
+                    CloneSessionInventoryItem(item);
+
+                if (copy != null)
+                {
+                    clone.InventoryItems.Add(copy);
+                }
+            }
+        }
+
+        return clone;
+    }
+
+    private static SessionInventoryItemData CloneSessionInventoryItem(
+        SessionInventoryItemData source)
+    {
+        if (source == null)
+        {
+            return null;
+        }
+
+        return new SessionInventoryItemData
+        {
+            ItemData = source.ItemData,
+            GridX = source.GridX,
+            GridY = source.GridY,
+            IsRotated = source.IsRotated,
+            Amount = source.Amount,
+            HasStoredMagazineAmmo = source.HasStoredMagazineAmmo,
+            StoredMagazineAmmo = source.StoredMagazineAmmo,
+            StoredMagazineAmmoType = source.StoredMagazineAmmoType,
+            HasStoredWeaponDurability = source.HasStoredWeaponDurability,
+            StoredWeaponDurability = source.StoredWeaponDurability,
+            StoredWeaponJammed = source.StoredWeaponJammed
+        };
+    }
+
+    /// <summary>
+    /// Result SceneでCollect Itemミッションの回収品を、
+    /// シーン間引き継ぎ用Inventoryから必要数だけ消費します。
+    /// 事前に総数を確認しているため、不足時は一切変更しません。
+    /// </summary>
+    private static bool TryConsumeItemFromSessionInventory(
+        PlayerInventorySessionData target,
+        ItemData itemData,
+        int amount,
+        out int consumedAmount)
+    {
+        consumedAmount = 0;
+
+        if (target == null ||
+            itemData == null ||
+            amount <= 0 ||
+            target.InventoryItems == null)
+        {
+            return false;
+        }
+
+        int available = 0;
+
+        foreach (SessionInventoryItemData existing in
+                 target.InventoryItems)
+        {
+            if (existing == null ||
+                existing.ItemData == null ||
+                existing.Amount <= 0 ||
+                !IsSameItemData(existing.ItemData, itemData))
+            {
+                continue;
+            }
+
+            available += Mathf.Max(0, existing.Amount);
+
+            if (available >= amount)
+            {
+                break;
+            }
+        }
+
+        if (available < amount)
+        {
+            // 呼び出し側の診断用に、実際に存在した最大数を返します。
+            consumedAmount = available;
+            return false;
+        }
+
+        int remaining = amount;
+
+        // 後ろから消費するとRemoveAtしても未処理Indexがずれません。
+        for (int i = target.InventoryItems.Count - 1;
+             i >= 0 && remaining > 0;
+             i--)
+        {
+            SessionInventoryItemData existing =
+                target.InventoryItems[i];
+
+            if (existing == null ||
+                existing.ItemData == null ||
+                existing.Amount <= 0 ||
+                !IsSameItemData(existing.ItemData, itemData))
+            {
+                continue;
+            }
+
+            int take = Mathf.Min(existing.Amount, remaining);
+            existing.Amount -= take;
+            remaining -= take;
+            consumedAmount += take;
+
+            if (existing.Amount <= 0)
+            {
+                target.InventoryItems.RemoveAt(i);
+            }
+        }
+
+        return remaining <= 0;
+    }
+
+    private static bool TryAddRewardItemToSessionInventory(
+        PlayerInventorySessionData target,
+        ItemData itemData,
+        int amount)
+    {
+        if (target == null || itemData == null || amount <= 0)
+        {
+            return false;
+        }
+
+        if (target.InventoryItems == null)
+        {
+            target.InventoryItems =
+                new List<SessionInventoryItemData>();
+        }
+
+        int remaining = amount;
+        int maxStack = Mathf.Max(1, itemData.MaxStack);
+
+        if (itemData.CanStack)
+        {
+            foreach (SessionInventoryItemData existing in target.InventoryItems)
+            {
+                if (existing == null ||
+                    existing.ItemData == null ||
+                    !IsSameItemData(existing.ItemData, itemData))
+                {
+                    continue;
+                }
+
+                int free = Mathf.Max(
+                    0,
+                    maxStack - Mathf.Max(0, existing.Amount)
+                );
+
+                if (free <= 0)
+                {
+                    continue;
+                }
+
+                int add = Mathf.Min(free, remaining);
+                existing.Amount += add;
+                remaining -= add;
+
+                if (remaining <= 0)
+                {
+                    return true;
+                }
+            }
+        }
+
+        while (remaining > 0)
+        {
+            int stackAmount = itemData.CanStack
+                ? Mathf.Min(maxStack, remaining)
+                : 1;
+
+            if (!TryFindFreeSessionGridPosition(
+                    target,
+                    itemData,
+                    out int gridX,
+                    out int gridY,
+                    out bool rotated))
+            {
+                return false;
+            }
+
+            target.InventoryItems.Add(
+                new SessionInventoryItemData
+                {
+                    ItemData = itemData,
+                    GridX = gridX,
+                    GridY = gridY,
+                    IsRotated = rotated,
+                    Amount = stackAmount
+                }
+            );
+
+            remaining -= stackAmount;
+        }
+
+        return true;
+    }
+
+    private static bool TryFindFreeSessionGridPosition(
+        PlayerInventorySessionData target,
+        ItemData itemData,
+        out int gridX,
+        out int gridY,
+        out bool rotated)
+    {
+        gridX = 0;
+        gridY = 0;
+        rotated = false;
+
+        int width = Mathf.Max(1, target.GridWidth);
+        int height = Mathf.Max(1, target.GridHeight);
+        bool[,] occupied = new bool[width, height];
+
+        foreach (SessionInventoryItemData item in target.InventoryItems)
+        {
+            if (item == null || item.ItemData == null)
+            {
+                continue;
+            }
+
+            Vector2Int size =
+                item.ItemData.GetSize(item.IsRotated);
+
+            for (int y = 0; y < size.y; y++)
+            {
+                for (int x = 0; x < size.x; x++)
+                {
+                    int px = item.GridX + x;
+                    int py = item.GridY + y;
+
+                    if (px >= 0 && px < width &&
+                        py >= 0 && py < height)
+                    {
+                        occupied[px, py] = true;
+                    }
+                }
+            }
+        }
+
+        if (TryFindFreeArea(
+                occupied,
+                width,
+                height,
+                itemData.GetSize(false),
+                out gridX,
+                out gridY))
+        {
+            rotated = false;
+            return true;
+        }
+
+        if (itemData.CanRotate &&
+            TryFindFreeArea(
+                occupied,
+                width,
+                height,
+                itemData.GetSize(true),
+                out gridX,
+                out gridY))
+        {
+            rotated = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryFindFreeArea(
+        bool[,] occupied,
+        int width,
+        int height,
+        Vector2Int size,
+        out int gridX,
+        out int gridY)
+    {
+        gridX = 0;
+        gridY = 0;
+
+        if (size.x <= 0 || size.y <= 0 ||
+            size.x > width || size.y > height)
+        {
+            return false;
+        }
+
+        for (int y = 0; y <= height - size.y; y++)
+        {
+            for (int x = 0; x <= width - size.x; x++)
+            {
+                bool free = true;
+
+                for (int sy = 0; sy < size.y && free; sy++)
+                {
+                    for (int sx = 0; sx < size.x; sx++)
+                    {
+                        if (occupied[x + sx, y + sy])
+                        {
+                            free = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (free)
+                {
+                    gridX = x;
+                    gridY = y;
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsSameItemData(
+        ItemData a,
+        ItemData b)
+    {
+        if (a == b)
+        {
+            return true;
+        }
+
+        if (a == null || b == null)
+        {
+            return false;
+        }
+
+        string aId = a.ItemId?.Trim() ?? string.Empty;
+        string bId = b.ItemId?.Trim() ?? string.Empty;
+
+        return !string.IsNullOrWhiteSpace(aId) &&
+            string.Equals(
+                aId,
+                bId,
+                StringComparison.OrdinalIgnoreCase
+            );
+    }
+
     private MissionSessionData GetOrCreateMissionSessionData(
         MissionDefinition2D mission)
     {
@@ -1985,7 +2657,8 @@ public class GameSessionManager : MonoBehaviour
             DisplayName = mission != null ? mission.DisplayName : missionId,
             RequiredAmount = mission != null ? mission.RequiredAmount : 1,
             Progress = 0,
-            State = MissionSessionState.Inactive
+            State = MissionSessionState.Inactive,
+            AcceptSource = MissionAcceptSource.Unknown
         };
 
         missionSessionData.Add(created);
@@ -2568,6 +3241,16 @@ public enum MissionSessionState
 }
 
 /// <summary>
+/// ミッションをどこから受注したかを表します。
+/// </summary>
+public enum MissionAcceptSource
+{
+    Unknown = 0,
+    Conversation = 1,
+    Expedition = 2
+}
+
+/// <summary>
 /// シーン間で保持するミッション1件分の状態です。
 /// MissionDefinition2Dへの参照も残しますが、探索シーンではMissionIdを優先してMissionManager2D内の登録を探します。
 /// </summary>
@@ -2581,6 +3264,7 @@ public class MissionSessionData
     public int Progress;
     public int RequiredAmount = 1;
     public bool RewardClaimed;
+    public MissionAcceptSource AcceptSource = MissionAcceptSource.Unknown;
 }
 
 /// <summary>

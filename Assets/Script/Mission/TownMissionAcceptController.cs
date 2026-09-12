@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 
 /// <summary>
@@ -54,6 +54,7 @@ public class TownMissionAcceptController : MonoBehaviour
         bool accepted = gameSessionManager.AcceptMission(
             mission,
             trackMission,
+            MissionAcceptSource.Conversation,
             out resultMessage
         );
 

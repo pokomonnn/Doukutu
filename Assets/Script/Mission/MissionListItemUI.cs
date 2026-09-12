@@ -41,6 +41,25 @@ public class MissionListItemUI : MonoBehaviour
     [SerializeField] private string inProgressLabel = "進行中";
     [SerializeField] private string completedLabel = "達成済み";
 
+    [Header("文字表示")]
+    [Tooltip("ONならMissionListItemUI側からタイトル文字色を状態ごとに変更します。OFFならTMP側で設定した色をそのまま使います")]
+    [SerializeField] private bool tintTitleText = true;
+
+    [SerializeField] private Color normalTitleColor = Color.white;
+    [SerializeField] private Color selectedTitleColor = Color.white;
+    [SerializeField] private Color completedTitleColor = Color.white;
+
+    [Tooltip("0より大きい値ならTitle TextのFont SizeをInspectorから上書きします。0ならTMP側の設定を使います")]
+    [SerializeField, Min(0f)] private float titleFontSize = 0f;
+
+    [Tooltip("ONならProgress Textの色もMissionListItemUI側で設定します")]
+    [SerializeField] private bool tintProgressText = false;
+    [SerializeField] private Color progressTextColor = Color.white;
+
+    [Tooltip("ONならStatus Textの色もMissionListItemUI側で設定します")]
+    [SerializeField] private bool tintStatusText = false;
+    [SerializeField] private Color statusTextColor = Color.white;
+
     [Header("背景色")]
     [SerializeField] private bool tintBackground = true;
     [SerializeField]
@@ -145,7 +164,7 @@ public class MissionListItemUI : MonoBehaviour
             trackedMarker.SetActive(showTrackedMarker && tracked);
         }
 
-        ApplyBackgroundColor();
+        ApplyVisualStyle();
     }
 
     public void SetSelected(bool selected)
@@ -157,7 +176,7 @@ public class MissionListItemUI : MonoBehaviour
             selectedMarker.SetActive(selected);
         }
 
-        ApplyBackgroundColor();
+        ApplyVisualStyle();
     }
 
     private string BuildProgressText(
@@ -225,6 +244,12 @@ public class MissionListItemUI : MonoBehaviour
         }
     }
 
+    private void ApplyVisualStyle()
+    {
+        ApplyBackgroundColor();
+        ApplyTextStyle();
+    }
+
     private void ApplyBackgroundColor()
     {
         if (!tintBackground || backgroundImage == null)
@@ -241,6 +266,43 @@ public class MissionListItemUI : MonoBehaviour
         backgroundImage.color = isSelected
             ? selectedBackgroundColor
             : normalBackgroundColor;
+    }
+
+    private void ApplyTextStyle()
+    {
+        if (titleText != null)
+        {
+            // 未選択時に文字が透明になっていても、InspectorのNormal Title Colorで
+            // 明示的に表示色を設定できるようにします。
+            if (tintTitleText)
+            {
+                if (state == MissionProgressState2D.Completed)
+                {
+                    titleText.color = completedTitleColor;
+                }
+                else
+                {
+                    titleText.color = isSelected
+                        ? selectedTitleColor
+                        : normalTitleColor;
+                }
+            }
+
+            if (titleFontSize > 0f)
+            {
+                titleText.fontSize = titleFontSize;
+            }
+        }
+
+        if (progressText != null && tintProgressText)
+        {
+            progressText.color = progressTextColor;
+        }
+
+        if (statusText != null && tintStatusText)
+        {
+            statusText.color = statusTextColor;
+        }
     }
 
     private void HandleClicked()
@@ -290,4 +352,13 @@ public class MissionListItemUI : MonoBehaviour
             graphic.raycastTarget = false;
         }
     }
+    private void OnValidate()
+    {
+        titleFontSize = Mathf.Max(0f, titleFontSize);
+
+        // Prefab/Scene上でもInspector変更をすぐ確認できる範囲で反映します。
+        FindReferences();
+        ApplyVisualStyle();
+    }
+
 }

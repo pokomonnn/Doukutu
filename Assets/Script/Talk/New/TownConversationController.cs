@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -1084,6 +1084,7 @@ public class TownConversationController : MonoBehaviour
         if (!gameSessionManager.CanClaimMissionReward(
                 mission,
                 currentConversation.RequireObjectiveCompleted,
+                MissionAcceptSource.Conversation,
                 out resultMessage))
         {
             return false;
@@ -1112,6 +1113,7 @@ public class TownConversationController : MonoBehaviour
 
         if (!gameSessionManager.MarkMissionRewardClaimed(
                 mission,
+                MissionAcceptSource.Conversation,
                 out string claimMessage))
         {
             resultMessage = claimMessage;

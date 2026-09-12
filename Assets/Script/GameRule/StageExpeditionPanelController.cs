@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -1249,8 +1249,13 @@ public class StageExpeditionPanelController : MonoBehaviour
             return;
         }
 
+        session.BeginCurrentExpedition(
+            selectedStageData.StageId
+        );
+
         bool trackedMissionAssigned = false;
         int acceptedCount = 0;
+        int registeredForResultCount = 0;
 
         IReadOnlyList<MissionDefinition2D> missions =
             currentStageMissions;
@@ -1272,6 +1277,7 @@ public class StageExpeditionPanelController : MonoBehaviour
                 session.AcceptMission(
                     mission,
                     shouldTrack,
+                    MissionAcceptSource.Expedition,
                     out string resultMessage
                 );
 
@@ -1282,6 +1288,11 @@ public class StageExpeditionPanelController : MonoBehaviour
                 if (shouldTrack)
                 {
                     trackedMissionAssigned = true;
+                }
+
+                if (session.RegisterCurrentExpeditionMission(mission))
+                {
+                    registeredForResultCount++;
                 }
 
                 if (showMissionDebugLogs)
@@ -1311,6 +1322,7 @@ public class StageExpeditionPanelController : MonoBehaviour
                 "[StageExpeditionPanelController] " +
                 $"出撃時ミッション同期完了：" +
                 $"{acceptedCount}件を受注状態にしました。" +
+                $" Result対象={registeredForResultCount}件。" +
                 $" Stage={selectedStageData.StageName}",
                 this
             );
