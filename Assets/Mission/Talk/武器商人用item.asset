@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8db1281e025442a4480693497d8ea673, type: 3}
+  m_Name: "\u6B66\u5668\u5546\u4EBA\u7528item"
+  m_EditorClassIdentifier: Assembly-CSharp::MerchantShopData
+  facilityId: weapon_shop
+  facilityName: "\u6B66\u5668\u5C4B"
+  startingLevel: 1
+  upgradeLevels:
+  - targetLevel: 2
+    requiredMission: {fileID: 11400000, guid: 82eb2ac90f640a846b366dcb88491b0a, type: 2}
+    requireMissionRewardClaimed: 0
+    missionLockedMessage: 
+    requiredItems: []
+    unlockedShopItems:
+    - itemData: {fileID: 11400000, guid: 2b60fd6427fa5ab4ab064bb948ca1ea0, type: 2}
+      amount: 1
+    - itemData: {fileID: 11400000, guid: fb52aa05e33bca54e9a1f901280855d0, type: 2}
+      amount: 200
+    - itemData: {fileID: 11400000, guid: 2a46d0e95fe6b714bb4a0aa5501c2f04, type: 2}
+      amount: 1
+    - itemData: {fileID: 11400000, guid: 3884bf05f57149748a1cc1ca2a6a945d, type: 2}
+      amount: 120
+  - targetLevel: 3
+    requiredMission: {fileID: 11400000, guid: 46486d1572fa0904aa56f58f7884b651, type: 2}
+    requireMissionRewardClaimed: 0
+    missionLockedMessage: 
+    requiredItems: []
+    unlockedShopItems:
+    - itemData: {fileID: 11400000, guid: ccde0f142166058448dfb80aebbbe3fb, type: 2}
+      amount: 1
+    - itemData: {fileID: 11400000, guid: 97f438417413bb74e962bb12158e0d0f, type: 2}
+      amount: 200
+    - itemData: {fileID: 11400000, guid: ddc79e12a7a292944a7a9d903bb74f5e, type: 2}
+      amount: 1
+    - itemData: {fileID: 11400000, guid: 93515cc4ad9d7b94fb7ab404c2bbe1eb, type: 2}
+      amount: 200
+  items:
+  - itemData: {fileID: 11400000, guid: fb52aa05e33bca54e9a1f901280855d0, type: 2}
+    quantityPerPurchase: 120
+    unitPriceOverride: 0
+    initialStock: 120
+  - itemData: {fileID: 11400000, guid: a3b808ca916280a46816c5033eac419a, type: 2}
+    quantityPerPurchase: 120
+    unitPriceOverride: 0
+    initialStock: 120
+  - itemData: {fileID: 11400000, guid: 2b60fd6427fa5ab4ab064bb948ca1ea0, type: 2}
+    quantityPerPurchase: 1
+    unitPriceOverride: 0
+    initialStock: 0
+  - itemData: {fileID: 11400000, guid: 4974250721c6f0d4aa1c29deab957555, type: 2}
+    quantityPerPurchase: 1
+    unitPriceOverride: 0
+    initialStock: 0
+  resetStockEachOpen: 0
+  maxPurchaseAmount: 999
+  allowAllSellItemTypes: 1
+  acceptedSellItemTypes: 
+  acceptedSpecificItems: []
+  rejectedSpecificItems: []
+  rejectedItemMessageFormat: "{0}\u3067\u306F\u300C{1}\u300D\u3092\u8CB7\u3044\u53D6\u308A\u307E\u305B\u3093\u3002"
+  purchasePriceMultiplier: 1

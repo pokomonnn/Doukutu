@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -1061,7 +1061,23 @@ public class ItemBoxUIController : MonoBehaviour
                 playerWeightController.GetComponent<InventoryController>();
         }
 
-        // 最後の補完。通常は上記Player参照で見つかる想定です。
+        // Town_MainではPlayer本体を置かず、TownPlayerInventoryControllerが
+        // プレイヤー所持品を保持しているため、汎用検索より先にこちらを優先します。
+        if (playerInventoryController == null)
+        {
+            TownPlayerInventoryController townInventory =
+                FindAnyObjectByType<TownPlayerInventoryController>(
+                    FindObjectsInactive.Include
+                );
+
+            if (townInventory != null)
+            {
+                playerInventoryController =
+                    townInventory.InventoryController;
+            }
+        }
+
+        // 最後の補完。探索シーンなど既存構成との互換用です。
         if (playerInventoryController == null)
         {
             playerInventoryController =

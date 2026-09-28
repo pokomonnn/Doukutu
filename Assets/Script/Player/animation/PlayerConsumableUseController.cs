@@ -27,6 +27,12 @@ public class PlayerConsumableUseController : MonoBehaviour
     [Tooltip("PlayerのInventoryController。未設定なら自動取得します。")]
     [SerializeField] private InventoryController inventoryController;
 
+    [Tooltip(
+        "松明ショートカット使用時のSE再生に使います。" +
+        "未設定ならScene内のInventorySoundPlayerを自動取得します。"
+    )]
+    [SerializeField] private InventorySoundPlayer inventorySoundPlayer;
+
     [Header("松明ショートカット：デバッグ")]
     [SerializeField] private bool showTorchShortcutLogs;
 
@@ -65,12 +71,17 @@ public class PlayerConsumableUseController : MonoBehaviour
             return;
         }
 
+        // TryUseFirstTorch()成功時にItemが0個になって消える場合があるため、
+        // 使用前に松明ItemのUse Soundを確保しておきます。
+        AudioClip torchUseClip = FindFirstTorchUseSound();
+
         bool used = inventoryController.TryUseFirstTorch(
             out ItemUseResult result
         );
 
         if (used)
         {
+            PlayTorchShortcutUseSound(torchUseClip);
             LogTorchShortcut("1キーで松明を自動使用しました。");
             return;
         }
@@ -227,6 +238,84 @@ public class PlayerConsumableUseController : MonoBehaviour
             inventoryController =
                 FindAnyObjectByType<InventoryController>();
         }
+
+        if (inventorySoundPlayer == null)
+        {
+            inventorySoundPlayer =
+                GetComponent<InventorySoundPlayer>();
+        }
+
+        if (inventorySoundPlayer == null)
+        {
+            inventorySoundPlayer =
+                GetComponentInParent<InventorySoundPlayer>();
+        }
+
+        if (inventorySoundPlayer == null)
+        {
+            inventorySoundPlayer =
+                FindAnyObjectByType<InventorySoundPlayer>(
+                    FindObjectsInactive.Include
+                );
+        }
+    }
+
+    /// <summary>
+    /// 所持中の松明回復Itemから、使用時SEを取得します。
+    /// 使用成功後にItemが消えてもSEを再生できるよう、
+    /// TryUseFirstTorch()より前に呼びます。
+    /// </summary>
+    private AudioClip FindFirstTorchUseSound()
+    {
+        if (inventoryController == null ||
+            inventoryController.Grid == null)
+        {
+            return null;
+        }
+
+        foreach (InventoryItem item in inventoryController.Grid.Items)
+        {
+            if (item == null ||
+                item.ItemData == null ||
+                item.Amount <= 0)
+            {
+                continue;
+            }
+
+            if (item.ItemData is ConsumableItemData consumableData &&
+                consumableData.CanRestoreTorch)
+            {
+                return consumableData.UseSound;
+            }
+        }
+
+        return null;
+    }
+
+    private void PlayTorchShortcutUseSound(AudioClip useClip)
+    {
+        if (useClip == null)
+        {
+            LogTorchShortcut(
+                "松明ItemのUse Soundが未設定のためSEは再生しません。"
+            );
+            return;
+        }
+
+        if (inventorySoundPlayer == null)
+        {
+            FindReferences();
+        }
+
+        if (inventorySoundPlayer == null)
+        {
+            LogTorchShortcutWarning(
+                "InventorySoundPlayerが見つからないため、松明の使用音を再生できません。"
+            );
+            return;
+        }
+
+        inventorySoundPlayer.PlayUseSound(useClip);
     }
 
     private bool WasTorchShortcutPressed()

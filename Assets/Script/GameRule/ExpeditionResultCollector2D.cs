@@ -1,40 +1,35 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
 /// 洞窟を出る直前に今回の探索結果を集計します。
-///
-/// 集計内容：
-/// ・エレベーターへ積んだ生存救出NPC数
-/// ・エレベーターへ積んだ死亡NPC数
-/// ・エレベーターへ積んだItemBox数
-/// ・Player Inventoryと回収ItemBox内のTreasure Item
+/// ・生存救出NPC数
+/// ・死亡NPC数
+/// ・回収ItemBox数
+/// ・Treasure
+/// ・累計救出人数／特殊NPC解放
 /// </summary>
 [DisallowMultipleComponent]
 public class ExpeditionResultCollector2D : MonoBehaviour
 {
     [Header("参照")]
     [Tooltip("現在のエレベーター荷物を管理しているReceiverです。")]
-    [SerializeField]
-    private ElevatorCarryReceiver2D elevatorCarryReceiver;
+    [SerializeField] private ElevatorCarryReceiver2D elevatorCarryReceiver;
 
     [Tooltip("PlayerのInventoryController。未設定なら自動取得します。")]
-    [SerializeField]
-    private InventoryController playerInventory;
+    [SerializeField] private InventoryController playerInventory;
+
+    [Header("救出進捗")]
+    [InspectorName("救出進捗Manager")]
+    [SerializeField] private RescueProgressManager2D rescueProgressManager;
+
+    [InspectorName("救出進捗を記録する")]
+    [SerializeField] private bool recordRescueProgress = true;
 
     [Header("お宝集計")]
-    [Tooltip("Playerが直接持っているTreasureをResultへ加えます。")]
-    [SerializeField]
-    private bool includePlayerInventoryTreasure = true;
+    [SerializeField] private bool includePlayerInventoryTreasure = true;
+    [SerializeField] private bool includeRecoveredItemBoxTreasure = true;
 
-    [Tooltip("エレベーターへ回収したItemBox内のTreasureをResultへ加えます。")]
-    [SerializeField]
-    private bool includeRecoveredItemBoxTreasure = true;
-
-    [Tooltip(
-        "ItemTypeがTreasureではない既存ItemDataを、" +
-        "リザルト上だけお宝扱いしたい場合に登録します。"
-    )]
     [SerializeField]
     private List<ItemData> additionalTreasureItems =
         new List<ItemData>();
@@ -47,18 +42,18 @@ public class ExpeditionResultCollector2D : MonoBehaviour
     private readonly Dictionary<ItemData, int> treasureTotals =
         new Dictionary<ItemData, int>();
 
-    /// <summary>
-    /// 現在の探索結果を集計し、ExpeditionResultSessionへ保存します。
-    /// </summary>
+    private bool rescueProgressRecorded;
+
     [ContextMenu("Collect Expedition Result")]
     public ExpeditionResultData CollectAndStoreResult()
     {
         FindReferences();
 
-        ExpeditionResultData result =
-            new ExpeditionResultData();
-
+        ExpeditionResultData result = new ExpeditionResultData();
         treasureTotals.Clear();
+
+        List<CarryableObject2D> aliveRescueTargets =
+            new List<CarryableObject2D>();
 
         if (elevatorCarryReceiver == null)
         {
@@ -74,27 +69,17 @@ public class ExpeditionResultCollector2D : MonoBehaviour
 
             foreach (CarryableObject2D target in cargo)
             {
-                if (target == null)
-                {
-                    continue;
-                }
+                if (target == null) continue;
 
-                // RescuePersonTarget2Dを持つCarryableはNPCとして先に判定します。
-                // 死体用の子ItemBoxInventoryを「回収ItemBox」に誤算入しないためです。
                 RescuePersonTarget2D rescueTarget =
-                    FindComponentOnCarryable<RescuePersonTarget2D>(
-                        target
-                    );
+                    FindComponentOnCarryable<RescuePersonTarget2D>(target);
 
                 if (rescueTarget != null)
                 {
                     CharacterHealth health =
-                        FindComponentOnCarryable<CharacterHealth>(
-                            target
-                        );
+                        FindComponentOnCarryable<CharacterHealth>(target);
 
-                    bool isDead =
-                        health != null && health.IsDead;
+                    bool isDead = health != null && health.IsDead;
 
                     if (isDead)
                     {
@@ -103,20 +88,20 @@ public class ExpeditionResultCollector2D : MonoBehaviour
                     else
                     {
                         result.RescuedNpcCount++;
+
+                        if (!aliveRescueTargets.Contains(target))
+                        {
+                            aliveRescueTargets.Add(target);
+                        }
                     }
 
                     continue;
                 }
 
                 ItemBoxInventory itemBox =
-                    FindComponentOnCarryable<ItemBoxInventory>(
-                        target
-                    );
+                    FindComponentOnCarryable<ItemBoxInventory>(target);
 
-                if (itemBox == null)
-                {
-                    continue;
-                }
+                if (itemBox == null) continue;
 
                 result.RecoveredItemBoxCount++;
 
@@ -127,18 +112,14 @@ public class ExpeditionResultCollector2D : MonoBehaviour
             }
         }
 
-        if (includePlayerInventoryTreasure &&
-            playerInventory != null)
+        if (includePlayerInventoryTreasure && playerInventory != null)
         {
             AddTreasureFromGrid(playerInventory.Grid);
         }
 
         foreach (KeyValuePair<ItemData, int> pair in treasureTotals)
         {
-            if (pair.Key == null || pair.Value <= 0)
-            {
-                continue;
-            }
+            if (pair.Key == null || pair.Value <= 0) continue;
 
             result.TreasureItems.Add(
                 new ExpeditionTreasureResult
@@ -157,12 +138,13 @@ public class ExpeditionResultCollector2D : MonoBehaviour
             )
         );
 
+        RecordRescueProgressOnce(aliveRescueTargets);
+
         LastCollectedResult = result;
         ExpeditionResultSession.SetResult(result);
 
         Log(
-            $"探索結果集計完了: " +
-            $"救出NPC={result.RescuedNpcCount} / " +
+            $"探索結果集計完了: 救出NPC={result.RescuedNpcCount} / " +
             $"死亡NPC={result.DeadNpcCount} / " +
             $"ItemBox={result.RecoveredItemBoxCount} / " +
             $"お宝種類={result.TreasureItems.Count}"
@@ -171,12 +153,36 @@ public class ExpeditionResultCollector2D : MonoBehaviour
         return result;
     }
 
-    private void AddTreasureFromGrid(InventoryGrid grid)
+    private void RecordRescueProgressOnce(List<CarryableObject2D> aliveTargets)
     {
-        if (grid == null || grid.Items == null)
+        if (!recordRescueProgress || rescueProgressRecorded)
         {
             return;
         }
+
+        rescueProgressRecorded = true;
+
+        if (aliveTargets == null || aliveTargets.Count == 0)
+        {
+            Log("今回の生存救出NPCは0人です。");
+            return;
+        }
+
+        if (rescueProgressManager == null)
+        {
+            LogWarning(
+                "RescueProgressManager2Dが見つかりません。" +
+                "累計救出人数・特殊NPC解放は記録されません。"
+            );
+            return;
+        }
+
+        rescueProgressManager.RecordRescuedPeople(aliveTargets);
+    }
+
+    private void AddTreasureFromGrid(InventoryGrid grid)
+    {
+        if (grid == null || grid.Items == null) return;
 
         foreach (InventoryItem item in grid.Items)
         {
@@ -188,24 +194,18 @@ public class ExpeditionResultCollector2D : MonoBehaviour
                 continue;
             }
 
-            if (!treasureTotals.TryGetValue(
-                    item.ItemData,
-                    out int currentAmount))
+            if (!treasureTotals.TryGetValue(item.ItemData, out int current))
             {
-                currentAmount = 0;
+                current = 0;
             }
 
-            treasureTotals[item.ItemData] =
-                currentAmount + item.Amount;
+            treasureTotals[item.ItemData] = current + item.Amount;
         }
     }
 
     private bool IsTreasure(ItemData itemData)
     {
-        if (itemData == null)
-        {
-            return false;
-        }
+        if (itemData == null) return false;
 
         if (itemData.ItemType == InventoryItemType.Treasure)
         {
@@ -213,31 +213,19 @@ public class ExpeditionResultCollector2D : MonoBehaviour
         }
 
         return additionalTreasureItems != null &&
-            additionalTreasureItems.Contains(itemData);
+               additionalTreasureItems.Contains(itemData);
     }
 
-    private static T FindComponentOnCarryable<T>(
-        CarryableObject2D target)
+    private static T FindComponentOnCarryable<T>(CarryableObject2D target)
         where T : Component
     {
-        if (target == null)
-        {
-            return null;
-        }
+        if (target == null) return null;
 
         T component = target.GetComponent<T>();
-
-        if (component != null)
-        {
-            return component;
-        }
+        if (component != null) return component;
 
         component = target.GetComponentInChildren<T>(true);
-
-        if (component != null)
-        {
-            return component;
-        }
+        if (component != null) return component;
 
         return target.GetComponentInParent<T>();
     }
@@ -259,25 +247,27 @@ public class ExpeditionResultCollector2D : MonoBehaviour
                     FindObjectsInactive.Include
                 );
         }
+
+        if (rescueProgressManager == null)
+        {
+            rescueProgressManager =
+                FindAnyObjectByType<RescueProgressManager2D>(
+                    FindObjectsInactive.Include
+                );
+        }
     }
 
     private void Log(string message)
     {
         if (showDebugLogs)
         {
-            Debug.Log(
-                $"[ExpeditionResultCollector2D] {message}",
-                this
-            );
+            Debug.Log($"[ExpeditionResultCollector2D] {message}", this);
         }
     }
 
     private void LogWarning(string message)
     {
-        Debug.LogWarning(
-            $"[ExpeditionResultCollector2D] {message}",
-            this
-        );
+        Debug.LogWarning($"[ExpeditionResultCollector2D] {message}", this);
     }
 
     private void OnValidate()

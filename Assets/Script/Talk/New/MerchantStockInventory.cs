@@ -2,67 +2,84 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// MerchantShopDataと、実際の商品在庫であるItemBoxInventoryを結び付けます。
-/// 商人ごとに1つ作り、ItemBoxInventoryと同じGameObjectへ付けてください。
+/// MerchantShopDataを読み、ItemBoxInventoryへ実際の商品在庫を構築します。
 ///
-/// v2.3では、商人ごとの買取可能カテゴリー・個別許可・個別拒否も管理します。
+/// 販売商品・施設Lv・買取条件のマスターデータはMerchantShopData側へ集約し、
+/// このComponentはScene上の実在庫との橋渡しだけを担当します。
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(ItemBoxInventory))]
 public class MerchantStockInventory : MonoBehaviour
 {
-    [Header("店舗")]
+    [Header("店舗マスターデータ")]
+    [Tooltip(
+        "この商人のMerchantShopDataです。\n" +
+        "Lv1商品・Lv2以降の商品・買取条件・施設Lv設定をすべてここから読み取ります。"
+    )]
     [SerializeField] private MerchantShopData shopData;
 
-    [Header("商品在庫")]
+    [Header("実際の商品在庫")]
     [Tooltip("同じGameObjectのItemBoxInventoryです。未設定なら自動取得します。")]
     [SerializeField] private ItemBoxInventory stockInventory;
-
-    [Header("町施設アップグレード連動")]
-    [Tooltip("この店舗が施設アップグレードと連動する場合に設定します。武器屋ならWeaponShop用Dataを設定します。")]
-    [SerializeField] private TownFacilityUpgradeData facilityUpgradeData;
 
     [Tooltip("未設定ならGameSessionManager.Instanceを使用します。")]
     [SerializeField] private GameSessionManager gameSessionManager;
 
-    [Header("プレイヤーからの買取設定")]
-    [Tooltip("オンなら、ItemData側で売却可能な全カテゴリーを買い取ります。既存店舗との互換用に初期値はオンです。")]
-    [SerializeField] private bool allowAllSellItemTypes = true;
-
-    [Tooltip("Allow All Sell Item Typesがオフの時に、この商人が買い取るカテゴリーです。")]
-    [SerializeField]
-    private List<InventoryItemType> acceptedSellItemTypes =
-        new List<InventoryItemType>();
-
-    [Tooltip("カテゴリーに関係なく、この商人が特別に買い取るItemDataです。Rejected Specific Itemsの方が優先されます。")]
-    [SerializeField]
-    private List<ItemData> acceptedSpecificItems =
-        new List<ItemData>();
-
-    [Tooltip("カテゴリーや個別許可に関係なく、この商人が買い取らないItemDataです。")]
-    [SerializeField]
-    private List<ItemData> rejectedSpecificItems =
-        new List<ItemData>();
-
-    [Tooltip("対象カテゴリー外のアイテムを拒否した時の基本文言です。{0}=店舗名、{1}=アイテム名、{2}=カテゴリー名")]
-    [SerializeField]
-    private string rejectedItemMessageFormat =
-        "{0}では「{1}」を買い取りません。";
-
     [Header("デバッグ")]
     [SerializeField] private bool showDebugLogs = true;
 
+    // ---------------------------------------------------------------------
+    // 旧Component設定を壊さないため保持します。
+    // 新しい実行処理ではMerchantShopData側の設定を優先します。
+    // Editor移行ツールでShopDataへコピーできます。
+    // ---------------------------------------------------------------------
+    [SerializeField, HideInInspector]
+    private TownFacilityUpgradeData facilityUpgradeData;
+
+    [SerializeField, HideInInspector]
+    private bool allowAllSellItemTypes = true;
+
+    [SerializeField, HideInInspector]
+    private List<InventoryItemType> acceptedSellItemTypes =
+        new List<InventoryItemType>();
+
+    [SerializeField, HideInInspector]
+    private List<ItemData> acceptedSpecificItems =
+        new List<ItemData>();
+
+    [SerializeField, HideInInspector]
+    private List<ItemData> rejectedSpecificItems =
+        new List<ItemData>();
+
+    [SerializeField, HideInInspector]
+    private string rejectedItemMessageFormat =
+        "{0}では「{1}」を買い取りません。";
+
     public MerchantShopData ShopData => shopData;
     public ItemBoxInventory StockInventory => stockInventory;
-    public TownFacilityUpgradeData FacilityUpgradeData => facilityUpgradeData;
 
-    public bool AllowAllSellItemTypes => allowAllSellItemTypes;
+    // 既存コード互換。統合後はShopData自身がTownFacilityUpgradeDataです。
+    public TownFacilityUpgradeData FacilityUpgradeData =>
+        shopData != null ? shopData : facilityUpgradeData;
+
+    public bool AllowAllSellItemTypes => shopData != null
+        ? shopData.AllowAllSellItemTypes
+        : allowAllSellItemTypes;
+
     public IReadOnlyList<InventoryItemType> AcceptedSellItemTypes =>
-        acceptedSellItemTypes;
+        shopData != null
+            ? shopData.AcceptedSellItemTypes
+            : acceptedSellItemTypes;
+
     public IReadOnlyList<ItemData> AcceptedSpecificItems =>
-        acceptedSpecificItems;
+        shopData != null
+            ? shopData.AcceptedSpecificItems
+            : acceptedSpecificItems;
+
     public IReadOnlyList<ItemData> RejectedSpecificItems =>
-        rejectedSpecificItems;
+        shopData != null
+            ? shopData.RejectedSpecificItems
+            : rejectedSpecificItems;
 
     public string ShopId => shopData != null
         ? shopData.ShopId
@@ -88,6 +105,7 @@ public class MerchantStockInventory : MonoBehaviour
         stockInventory != null &&
         stockInventory.Grid != null;
 
+    private bool hasPreparedStock;
     private int lastAppliedFacilityLevel = -1;
 
     private void Awake()
@@ -97,8 +115,8 @@ public class MerchantStockInventory : MonoBehaviour
     }
 
     /// <summary>
-    /// 店を開く直前の在庫準備です。
-    /// Reset Stock Each OpenがオンならStarting Itemsへ戻します。
+    /// 店を開く直前に呼びます。
+    /// 初回は必ずMerchantShopDataから商品棚を作り直します。
     /// </summary>
     public void PrepareForOpen()
     {
@@ -110,71 +128,40 @@ public class MerchantStockInventory : MonoBehaviour
             return;
         }
 
-        bool resetEachOpen =
-            shopData != null && shopData.ResetStockEachOpen;
-
-        if (resetEachOpen)
+        if (shopData == null)
         {
-            stockInventory.ResetInventory();
-            Log("店を開いたため在庫をStarting Itemsへ戻しました。");
-        }
-        else
-        {
-            stockInventory.InitializeInventory();
-        }
-
-        ApplyFacilityUnlockedStock(resetEachOpen);
-    }
-
-    private void ApplyFacilityUnlockedStock(bool stockWasReset)
-    {
-        if (stockInventory == null || facilityUpgradeData == null)
-        {
+            LogWarning("MerchantShopDataが設定されていません。");
             return;
         }
 
-        FindReferences();
+        int currentLevel = GetCurrentFacilityLevel();
 
-        int currentLevel = gameSessionManager != null
-            ? gameSessionManager.GetFacilityLevel(facilityUpgradeData)
-            : facilityUpgradeData.StartingLevel;
-
-        currentLevel = Mathf.Clamp(
-            currentLevel,
-            facilityUpgradeData.StartingLevel,
-            facilityUpgradeData.MaxLevel
-        );
-
-        // Reset Stock Each OpenならStarting Itemsへ戻った直後なので、
-        // 到達済みレベルの商品をすべて再追加します。
-        if (stockWasReset)
+        // 最初に店を開いた時は、ItemBoxInventoryのStarting Itemsではなく
+        // MerchantShopDataを正として商品棚を構築します。
+        if (!hasPreparedStock)
         {
-            AddUnlockedItemsInRange(
-                facilityUpgradeData.StartingLevel + 1,
-                currentLevel
-            );
-
+            RebuildStockFromShopData(currentLevel);
+            hasPreparedStock = true;
             lastAppliedFacilityLevel = currentLevel;
             return;
         }
 
-        // 初回準備時は現在レベルまでの解禁商品を追加します。
-        if (lastAppliedFacilityLevel < 0)
+        // 店を開くたび補充する設定。
+        if (shopData.ResetStockEachOpen)
         {
-            AddUnlockedItemsInRange(
-                facilityUpgradeData.StartingLevel + 1,
-                currentLevel
-            );
-
+            RebuildStockFromShopData(currentLevel);
             lastAppliedFacilityLevel = currentLevel;
             return;
         }
 
-        // 同一Scene中に施設Lvが上がった場合は、新しく到達したLv分だけ追加します。
+        // 施設Lvが上がった場合は、新しく解禁されたLvの商品だけ補充します。
         if (currentLevel > lastAppliedFacilityLevel)
         {
             AddUnlockedItemsInRange(
-                lastAppliedFacilityLevel + 1,
+                Mathf.Max(
+                    shopData.StartingLevel + 1,
+                    lastAppliedFacilityLevel + 1
+                ),
                 currentLevel
             );
 
@@ -182,34 +169,96 @@ public class MerchantStockInventory : MonoBehaviour
             return;
         }
 
-        // 同じSceneで古いセーブをロードして施設Lvが下がった場合は、
-        // 高Lv商品が残らないようStarting Itemsから組み直します。
+        // 古いセーブをロードするなどしてLvが下がった時は、
+        // 高Lv商品が残らないよう現在Lvの構成へ作り直します。
         if (currentLevel < lastAppliedFacilityLevel)
         {
-            stockInventory.ResetInventory();
-
-            AddUnlockedItemsInRange(
-                facilityUpgradeData.StartingLevel + 1,
-                currentLevel
-            );
-
+            RebuildStockFromShopData(currentLevel);
             lastAppliedFacilityLevel = currentLevel;
+        }
+    }
+
+    /// <summary>
+    /// MerchantShopDataのLv1商品 + 現在Lvまでの解禁商品だけで商品棚を再構築します。
+    /// ItemBoxInventory側のStarting Itemsは使用しません。
+    /// </summary>
+    public void RebuildStockFromShopData()
+    {
+        FindReferences();
+
+        if (stockInventory == null || shopData == null)
+        {
+            return;
+        }
+
+        int currentLevel = GetCurrentFacilityLevel();
+        RebuildStockFromShopData(currentLevel);
+
+        hasPreparedStock = true;
+        lastAppliedFacilityLevel = currentLevel;
+    }
+
+    private void RebuildStockFromShopData(int currentLevel)
+    {
+        stockInventory.ResetInventoryEmpty();
+
+        AddLevel1Items();
+        AddUnlockedItemsInRange(
+            shopData.StartingLevel + 1,
+            currentLevel
+        );
+
+        Log(
+            $"MerchantShopDataから商品棚を構築しました。" +
+            $" 店舗={shopData.ShopName} / Lv={currentLevel} / " +
+            $"商品枠={stockInventory.Grid.Items.Count}"
+        );
+    }
+
+    private void AddLevel1Items()
+    {
+        IReadOnlyList<MerchantShopItemEntry> level1Items =
+            shopData != null ? shopData.Items : null;
+
+        if (level1Items == null)
+        {
+            return;
+        }
+
+        foreach (MerchantShopItemEntry entry in level1Items)
+        {
+            if (entry == null || entry.ItemData == null)
+            {
+                continue;
+            }
+
+            EnsureTargetStock(
+                entry.ItemData,
+                entry.StockAmount,
+                "Lv1商品"
+            );
         }
     }
 
     private void AddUnlockedItemsInRange(int fromLevel, int toLevel)
     {
-        if (facilityUpgradeData == null ||
+        if (shopData == null ||
             stockInventory == null ||
             toLevel < fromLevel)
         {
             return;
         }
 
-        for (int level = fromLevel; level <= toLevel; level++)
+        int safeFrom = Mathf.Max(
+            shopData.StartingLevel + 1,
+            fromLevel
+        );
+        int safeTo = Mathf.Min(shopData.MaxLevel, toLevel);
+
+        for (int level = safeFrom; level <= safeTo; level++)
         {
             foreach (TownFacilityShopUnlockItem unlockItem in
-                     facilityUpgradeData.GetShopUnlockItemsForLevel(level))
+                     shopData.GetShopUnlockItemsForLevel(level))
             {
                 if (unlockItem == null ||
                     unlockItem.ItemData == null ||
@@ -218,41 +267,80 @@ public class MerchantStockInventory : MonoBehaviour
                     continue;
                 }
 
-                int existingAmount = stockInventory.GetTotalAmount(
-                    unlockItem.ItemData
-                );
-
-                int amountToAdd = Mathf.Max(
-                    0,
-                    unlockItem.Amount - existingAmount
-                );
-
-                if (amountToAdd <= 0)
-                {
-                    continue;
-                }
-
-                bool addedAll = stockInventory.TryAddItem(
+                EnsureTargetStock(
                     unlockItem.ItemData,
-                    amountToAdd,
-                    out int remainingAmount
-                );
-
-                if (!addedAll || remainingAmount > 0)
-                {
-                    LogWarning(
-                        $"Lv{level}解禁商品 {unlockItem.ItemData.DisplayName} を " +
-                        $"{remainingAmount}個、商品棚へ追加できませんでした。"
-                    );
-                    continue;
-                }
-
-                Log(
-                    $"施設Lv{level}の商品を解禁: " +
-                    $"{unlockItem.ItemData.DisplayName} ×{amountToAdd}"
+                    unlockItem.Amount,
+                    $"Lv{level}解禁商品"
                 );
             }
         }
+    }
+
+    /// <summary>
+    /// 商品棚にtargetAmount以上ある状態へ補充します。
+    /// 同一ItemDataをLv1と高Lvの両方に設定しても重複スタックを無駄に増やしません。
+    /// </summary>
+    private void EnsureTargetStock(
+        ItemData itemData,
+        int targetAmount,
+        string sourceLabel)
+    {
+        if (itemData == null || stockInventory == null)
+        {
+            return;
+        }
+
+        int safeTargetAmount = Mathf.Max(1, targetAmount);
+        int existingAmount = stockInventory.GetTotalAmount(itemData);
+        int amountToAdd = Mathf.Max(
+            0,
+            safeTargetAmount - existingAmount
+        );
+
+        if (amountToAdd <= 0)
+        {
+            return;
+        }
+
+        bool addedAll = stockInventory.TryAddItem(
+            itemData,
+            amountToAdd,
+            out int remainingAmount
+        );
+
+        if (!addedAll || remainingAmount > 0)
+        {
+            LogWarning(
+                $"{sourceLabel} {itemData.DisplayName} を " +
+                $"{remainingAmount}個、商品棚へ追加できませんでした。" +
+                " ItemBoxInventoryのGridサイズを確認してください。"
+            );
+            return;
+        }
+
+        Log(
+            $"{sourceLabel}: {itemData.DisplayName} ×{amountToAdd} を商品棚へ反映"
+        );
+    }
+
+    private int GetCurrentFacilityLevel()
+    {
+        FindReferences();
+
+        if (shopData == null)
+        {
+            return 1;
+        }
+
+        int currentLevel = gameSessionManager != null
+            ? gameSessionManager.GetFacilityLevel(shopData)
+            : shopData.StartingLevel;
+
+        return Mathf.Clamp(
+            currentLevel,
+            shopData.StartingLevel,
+            shopData.MaxLevel
+        );
     }
 
     public int GetUnitBuyPrice(ItemData itemData)
@@ -265,10 +353,29 @@ public class MerchantStockInventory : MonoBehaviour
     }
 
     /// <summary>
-    /// この商人がプレイヤーから指定ItemDataを買い取るか判定します。
-    /// ItemData共通のCanSellToShop、Quest、売却価格判定はSellCartInventory側で行います。
+    /// プレイヤーから買い取れるか判定します。
+    /// 新方式ではMerchantShopData内の買取設定を使用します。
     /// </summary>
     public bool CanBuyFromPlayer(
+        ItemData itemData,
+        out string rejectionReason)
+    {
+        if (shopData != null)
+        {
+            return shopData.CanBuyFromPlayer(
+                itemData,
+                out rejectionReason
+            );
+        }
+
+        // MerchantShopData未設定時だけ旧Component設定へフォールバック。
+        return CanBuyFromPlayerLegacy(
+            itemData,
+            out rejectionReason
+        );
+    }
+
+    private bool CanBuyFromPlayerLegacy(
         ItemData itemData,
         out string rejectionReason)
     {
@@ -282,7 +389,7 @@ public class MerchantStockInventory : MonoBehaviour
 
         if (ContainsItem(rejectedSpecificItems, itemData))
         {
-            rejectionReason = BuildRejectionMessage(itemData);
+            rejectionReason = BuildLegacyRejectionMessage(itemData);
             return false;
         }
 
@@ -302,11 +409,11 @@ public class MerchantStockInventory : MonoBehaviour
             return true;
         }
 
-        rejectionReason = BuildRejectionMessage(itemData);
+        rejectionReason = BuildLegacyRejectionMessage(itemData);
         return false;
     }
 
-    private string BuildRejectionMessage(ItemData itemData)
+    private string BuildLegacyRejectionMessage(ItemData itemData)
     {
         string itemName = itemData != null
             ? itemData.DisplayName
@@ -381,7 +488,10 @@ public class MerchantStockInventory : MonoBehaviour
     {
         if (showDebugLogs)
         {
-            Debug.Log($"[MerchantStockInventory: {name}] {message}", this);
+            Debug.Log(
+                $"[MerchantStockInventory: {name}] {message}",
+                this
+            );
         }
     }
 
@@ -412,8 +522,6 @@ public class MerchantStockInventory : MonoBehaviour
             rejectedSpecificItems = new List<ItemData>();
         }
 
-        
-
         if (stockInventory != null &&
             stockInventory.BoxKind != ItemBoxKind.Shop)
         {
@@ -423,6 +531,15 @@ public class MerchantStockInventory : MonoBehaviour
                 this
             );
         }
-    }
 
+        if (shopData == null && facilityUpgradeData != null)
+        {
+            Debug.LogWarning(
+                $"[MerchantStockInventory: {name}] " +
+                "旧Facility Upgrade Dataが残っています。" +
+                "新方式ではMerchantShopDataへ統合してください。",
+                this
+            );
+        }
+    }
 }

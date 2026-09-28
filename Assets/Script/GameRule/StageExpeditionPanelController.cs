@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 /// <summary>
@@ -40,6 +41,41 @@ public class StageExpeditionPanelController : MonoBehaviour
 
     [SerializeField]
     private TMP_Text requiredSuppliesText;
+
+    [Header("出撃地点選択")]
+    [Tooltip("出撃地点選択UI全体です。出撃地点が未設定のステージでは自動で非表示にできます。")]
+    [InspectorName("出撃地点選択エリア")]
+    [SerializeField]
+    private GameObject entryPointSelectionRoot;
+
+    [Tooltip("選択中の出撃地点に設定されたプレビュー画像を表示します。")]
+    [InspectorName("出撃地点プレビュー画像")]
+    [SerializeField]
+    private Image entryPointPreviewImage;
+
+    [Tooltip("選択中の出撃地点名を表示します。不要なら未設定でOKです。")]
+    [InspectorName("選択中の出撃地点名")]
+    [SerializeField]
+    private TMP_Text entryPointNameText;
+
+    [Tooltip(
+        "出撃地点を選択するButtonを順番に登録します。" +
+        "Stage1で4か所ならSize=4にしてButton1～4を設定してください。"
+    )]
+    [InspectorName("出撃地点ボタン")]
+    [SerializeField]
+    private List<Button> entryPointButtons =
+        new List<Button>();
+
+    [Tooltip("オンならButton内のTextMeshProへ出撃地点の表示名を自動反映します。")]
+    [InspectorName("ボタン名を自動反映")]
+    [SerializeField]
+    private bool autoApplyEntryPointNamesToButtons = true;
+
+    [Tooltip("出撃地点の選択・出撃時保存をConsoleへ表示します。")]
+    [InspectorName("出撃地点ログを表示")]
+    [SerializeField]
+    private bool showEntryPointDebugLogs = true;
 
     [Header("開催中ミッション一覧")]
     [Tooltip("MissionButtonを自動生成する親です。Scroll View > Viewport > Content を設定してください。")]
@@ -162,6 +198,11 @@ public class StageExpeditionPanelController : MonoBehaviour
     private Vector3 panelBaseScale = Vector3.one;
     private bool isDeparting;
 
+    private int selectedEntryPointIndex = -1;
+
+    private readonly List<UnityAction> entryPointButtonCallbacks =
+        new List<UnityAction>();
+
     private readonly List<StageExpeditionMissionButtonUI> missionButtons =
         new List<StageExpeditionMissionButtonUI>();
 
@@ -182,6 +223,14 @@ public class StageExpeditionPanelController : MonoBehaviour
     /// </summary>
     public StageExpeditionData CurrentStageData =>
         selectedStageData;
+
+    public int SelectedEntryPointIndex =>
+        selectedEntryPointIndex;
+
+    public StageExpeditionEntryPointData SelectedEntryPoint =>
+        selectedStageData != null
+            ? selectedStageData.GetEntryPoint(selectedEntryPointIndex)
+            : null;
 
     public int SelectedMissionIndex =>
         selectedMissionIndex;
@@ -253,6 +302,7 @@ public class StageExpeditionPanelController : MonoBehaviour
             closeButton.onClick.RemoveListener(Close);
         }
 
+        RemoveEntryPointButtonListeners();
         ClearMissionButtons();
     }
 
@@ -286,6 +336,9 @@ public class StageExpeditionPanelController : MonoBehaviour
         selectedStageData = stageData;
         selectedTransitionButton = transitionButton;
 
+        // 前回出撃時の選択が残っていても、新しい出撃パネルを開いた時点で破棄します。
+        ExpeditionEntrySelectionSession.Clear();
+
         RefreshDisplay();
 
         if (panelRoot != null)
@@ -293,6 +346,7 @@ public class StageExpeditionPanelController : MonoBehaviour
             panelRoot.SetActive(true);
         }
 
+        RefreshEntryPointSection();
         RefreshMissionSection();
 
         isDeparting = false;
@@ -337,6 +391,18 @@ public class StageExpeditionPanelController : MonoBehaviour
             return;
         }
 
+        if (selectedStageData.EntryPointCount > 0 &&
+            !HasValidSelectedEntryPoint())
+        {
+            Debug.LogWarning(
+                "[StageExpeditionPanelController] " +
+                "出撃地点が設定されていますが、有効な出撃地点が選択されていません。" +
+                "StageExpeditionDataの出撃地点IDとButton設定を確認してください。",
+                this
+            );
+            return;
+        }
+
         departureCoroutine = StartCoroutine(DepartureRoutine());
     }
 
@@ -349,7 +415,10 @@ public class StageExpeditionPanelController : MonoBehaviour
 
         selectedStageData = null;
         selectedTransitionButton = null;
+        selectedEntryPointIndex = -1;
         selectedMissionIndex = -1;
+        ResetEntryPointPreview();
+        ExpeditionEntrySelectionSession.Clear();
         ClearMissionButtons();
         currentStageMissions.Clear();
 
@@ -364,7 +433,10 @@ public class StageExpeditionPanelController : MonoBehaviour
 
         selectedStageData = null;
         selectedTransitionButton = null;
+        selectedEntryPointIndex = -1;
         selectedMissionIndex = -1;
+        ResetEntryPointPreview();
+        ExpeditionEntrySelectionSession.Clear();
         ClearMissionButtons();
         currentStageMissions.Clear();
 
@@ -378,6 +450,8 @@ public class StageExpeditionPanelController : MonoBehaviour
     {
         isDeparting = true;
 
+        PrepareEntryPointSelectionForDeparture();
+
         if (autoAcceptStageMissionsOnDepart)
         {
             AcceptCurrentStageMissions();
@@ -385,6 +459,7 @@ public class StageExpeditionPanelController : MonoBehaviour
 
         if (departButton != null) departButton.interactable = false;
         if (closeButton != null) closeButton.interactable = false;
+        SetEntryPointButtonsInteractable(false);
         SetMissionButtonsInteractable(false);
 
         PlayDepartSound();
@@ -430,6 +505,7 @@ public class StageExpeditionPanelController : MonoBehaviour
             isDeparting = false;
             if (departButton != null) departButton.interactable = true;
             if (closeButton != null) closeButton.interactable = true;
+            SetEntryPointButtonsInteractable(true);
             SetMissionButtonsInteractable(true);
             ResetDepartureFade();
         }
@@ -720,6 +796,330 @@ public class StageExpeditionPanelController : MonoBehaviour
         }
     }
 
+
+    // ---------------------------------------------------------------------
+    // 出撃地点選択
+    // ---------------------------------------------------------------------
+
+    private void RefreshEntryPointSection()
+    {
+        selectedEntryPointIndex = -1;
+
+        int entryCount =
+            selectedStageData != null
+                ? selectedStageData.EntryPointCount
+                : 0;
+
+        bool hasAnyEntryPoint = false;
+
+        for (int i = 0; i < entryPointButtons.Count; i++)
+        {
+            Button button = entryPointButtons[i];
+
+            if (button == null)
+            {
+                continue;
+            }
+
+            StageExpeditionEntryPointData entry =
+                selectedStageData != null
+                    ? selectedStageData.GetEntryPoint(i)
+                    : null;
+
+            bool valid =
+                entry != null &&
+                !string.IsNullOrWhiteSpace(entry.EntryPointId);
+
+            button.gameObject.SetActive(valid);
+            button.interactable = valid && !isDeparting;
+
+            if (valid)
+            {
+                hasAnyEntryPoint = true;
+
+                if (autoApplyEntryPointNamesToButtons)
+                {
+                    TMP_Text label =
+                        button.GetComponentInChildren<TMP_Text>(true);
+
+                    if (label != null)
+                    {
+                        label.text =
+                            string.IsNullOrWhiteSpace(entry.DisplayName)
+                                ? $"出撃地点{i + 1}"
+                                : entry.DisplayName;
+                    }
+                }
+            }
+        }
+
+        // Data側にButton数より多く設定されていても、
+        // 少なくとも有効地点があるかはData全体から確認します。
+        if (!hasAnyEntryPoint && selectedStageData != null)
+        {
+            for (int i = 0; i < selectedStageData.EntryPointCount; i++)
+            {
+                StageExpeditionEntryPointData entry =
+                    selectedStageData.GetEntryPoint(i);
+
+                if (entry != null &&
+                    !string.IsNullOrWhiteSpace(entry.EntryPointId))
+                {
+                    hasAnyEntryPoint = true;
+                    break;
+                }
+            }
+        }
+
+        if (entryPointSelectionRoot != null)
+        {
+            entryPointSelectionRoot.SetActive(hasAnyEntryPoint);
+        }
+
+        int firstIndex = FindFirstValidEntryPointIndex();
+
+        if (firstIndex >= 0)
+        {
+            SelectEntryPoint(firstIndex);
+        }
+        else
+        {
+            ResetEntryPointPreview();
+        }
+    }
+
+    public void SelectEntryPoint(int entryPointIndex)
+    {
+        if (isDeparting ||
+            selectedStageData == null)
+        {
+            return;
+        }
+
+        StageExpeditionEntryPointData entry =
+            selectedStageData.GetEntryPoint(entryPointIndex);
+
+        if (entry == null ||
+            string.IsNullOrWhiteSpace(entry.EntryPointId))
+        {
+            return;
+        }
+
+        selectedEntryPointIndex = entryPointIndex;
+        RefreshEntryPointPreview(entry);
+
+        if (showEntryPointDebugLogs)
+        {
+            Debug.Log(
+                "[StageExpeditionPanelController] " +
+                $"出撃地点を選択しました：" +
+                $"Stage={selectedStageData.StageId} / " +
+                $"Index={entryPointIndex} / " +
+                $"EntryId={entry.EntryPointId} / " +
+                $"Name={entry.DisplayName}",
+                this
+            );
+        }
+    }
+
+    // InspectorのButton OnClickから直接呼びたい場合にも使えます。
+    public void SelectEntryPoint1() => SelectEntryPoint(0);
+    public void SelectEntryPoint2() => SelectEntryPoint(1);
+    public void SelectEntryPoint3() => SelectEntryPoint(2);
+    public void SelectEntryPoint4() => SelectEntryPoint(3);
+
+    private void HandleEntryPointButtonClicked(int entryPointIndex)
+    {
+        SelectEntryPoint(entryPointIndex);
+    }
+
+    private void RefreshEntryPointPreview(
+        StageExpeditionEntryPointData entry)
+    {
+        if (entryPointPreviewImage != null)
+        {
+            Sprite preview = entry != null
+                ? entry.PreviewImage
+                : null;
+
+            entryPointPreviewImage.sprite = preview;
+            entryPointPreviewImage.enabled = preview != null;
+            entryPointPreviewImage.preserveAspect = true;
+        }
+
+        if (entryPointNameText != null)
+        {
+            entryPointNameText.text =
+                entry != null
+                    ? entry.DisplayName
+                    : string.Empty;
+        }
+    }
+
+    private void ResetEntryPointPreview()
+    {
+        if (entryPointPreviewImage != null)
+        {
+            entryPointPreviewImage.sprite = null;
+            entryPointPreviewImage.enabled = false;
+        }
+
+        if (entryPointNameText != null)
+        {
+            entryPointNameText.text = string.Empty;
+        }
+    }
+
+    private int FindFirstValidEntryPointIndex()
+    {
+        if (selectedStageData == null)
+        {
+            return -1;
+        }
+
+        int usableCount = Mathf.Min(
+            selectedStageData.EntryPointCount,
+            entryPointButtons != null
+                ? entryPointButtons.Count
+                : 0
+        );
+
+        for (int i = 0; i < usableCount; i++)
+        {
+            StageExpeditionEntryPointData entry =
+                selectedStageData.GetEntryPoint(i);
+
+            if (entry != null &&
+                !string.IsNullOrWhiteSpace(entry.EntryPointId) &&
+                entryPointButtons[i] != null)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private bool HasValidSelectedEntryPoint()
+    {
+        StageExpeditionEntryPointData entry =
+            SelectedEntryPoint;
+
+        return
+            entry != null &&
+            !string.IsNullOrWhiteSpace(entry.EntryPointId);
+    }
+
+    private void PrepareEntryPointSelectionForDeparture()
+    {
+        ExpeditionEntrySelectionSession.Clear();
+
+        StageExpeditionEntryPointData entry =
+            SelectedEntryPoint;
+
+        if (selectedStageData == null ||
+            entry == null ||
+            string.IsNullOrWhiteSpace(entry.EntryPointId))
+        {
+            return;
+        }
+
+        // 新しい出撃を開始するので、前回同じStageで到達したCheckpointが
+        // Staticに残っていても選択した出撃地点より優先されないように破棄します。
+        GameManager.ApplyCheckpointSaveData(null);
+
+        ExpeditionEntrySelectionSession.SetSelection(
+            selectedStageData.StageId,
+            entry.EntryPointId,
+            entry.DisplayName
+        );
+
+        if (showEntryPointDebugLogs)
+        {
+            Debug.Log(
+                "[StageExpeditionPanelController] " +
+                $"出撃地点をScene移動用に保存しました：" +
+                $"Stage={selectedStageData.StageId} / " +
+                $"EntryId={entry.EntryPointId} / " +
+                $"Name={entry.DisplayName}",
+                this
+            );
+        }
+    }
+
+    private void SetEntryPointButtonsInteractable(bool interactable)
+    {
+        for (int i = 0; i < entryPointButtons.Count; i++)
+        {
+            Button button = entryPointButtons[i];
+
+            if (button == null ||
+                !button.gameObject.activeSelf)
+            {
+                continue;
+            }
+
+            button.interactable = interactable;
+        }
+    }
+
+    private void RegisterEntryPointButtonListeners()
+    {
+        RemoveEntryPointButtonListeners();
+
+        if (entryPointButtons == null)
+        {
+            entryPointButtons = new List<Button>();
+            return;
+        }
+
+        for (int i = 0; i < entryPointButtons.Count; i++)
+        {
+            Button button = entryPointButtons[i];
+
+            if (button == null)
+            {
+                entryPointButtonCallbacks.Add(null);
+                continue;
+            }
+
+            int capturedIndex = i;
+
+            UnityAction callback =
+                () => HandleEntryPointButtonClicked(capturedIndex);
+
+            entryPointButtonCallbacks.Add(callback);
+            button.onClick.AddListener(callback);
+        }
+    }
+
+    private void RemoveEntryPointButtonListeners()
+    {
+        if (entryPointButtons == null)
+        {
+            entryPointButtonCallbacks.Clear();
+            return;
+        }
+
+        int count = Mathf.Min(
+            entryPointButtons.Count,
+            entryPointButtonCallbacks.Count
+        );
+
+        for (int i = 0; i < count; i++)
+        {
+            Button button = entryPointButtons[i];
+            UnityAction callback =
+                entryPointButtonCallbacks[i];
+
+            if (button != null && callback != null)
+            {
+                button.onClick.RemoveListener(callback);
+            }
+        }
+
+        entryPointButtonCallbacks.Clear();
+    }
 
     // ---------------------------------------------------------------------
     // 出撃パネル内の開催中ミッション表示
@@ -1362,6 +1762,8 @@ public class StageExpeditionPanelController : MonoBehaviour
         {
             closeButton.onClick.AddListener(Close);
         }
+
+        RegisterEntryPointButtonListeners();
 
         initialized = true;
     }

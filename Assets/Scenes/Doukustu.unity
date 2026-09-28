@@ -857,6 +857,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Option
       objectReference: {fileID: 0}
+    - target: {fileID: 8101953761112868302, guid: 758ad7a6eeac70441be6a410061e8a18, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1118,6 +1122,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 100
   invincibilityDuration: 0.1
+  enableDamageDebugLog: 1
+  includePlayerDamageInDebugLog: 0
+  logBlockedDamage: 1
   audioSource: {fileID: 1924269943}
   damageSound: {fileID: 8300000, guid: a95119ff4056bba40a7ef9b720bffef9, type: 3}
   damageSoundVolume: 0.699
@@ -1175,6 +1182,8 @@ MonoBehaviour:
   maxDamage: 13
   canCauseFracture: 1
   fractureFallDistance: 5
+  wallClimbController: {fileID: 0}
+  showWallFallDebugLogs: 0
 --- !u!114 &76742656
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1216,6 +1225,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerEquipmentVisualController
   equipmentController: {fileID: 901321304}
   weaponHolder: {fileID: 992362048}
+  leftWeaponHolder: {fileID: 0}
   inventoryPanel: {fileID: 733273632}
   helmetObject: {fileID: 660918937}
   showDebugLogs: 1
@@ -1466,6 +1476,11 @@ MonoBehaviour:
   playerWeightController: {fileID: 76742658}
   equipmentVisualController: {fileID: 76742657}
   playerAnimator: {fileID: 76742664}
+  enableTorchShortcut: 1
+  allowNumpad1: 1
+  inventoryController: {fileID: 0}
+  inventorySoundPlayer: {fileID: 0}
+  showTorchShortcutLogs: 0
 --- !u!114 &76742666
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1673,7 +1688,7 @@ MonoBehaviour:
   sanityDrainPerSecond: 0.2
   pauseDecreaseWhilePlayerIsDead: 1
   pauseDecreaseWhileCamping: 1
-  persistBetweenScenes: 1
+  persistBetweenScenes: 0
   showDebugLogs: 0
 --- !u!114 &76742674
 MonoBehaviour:
@@ -1694,7 +1709,7 @@ MonoBehaviour:
   torchController: {fileID: 76742673}
   restoreOnStart: 1
   captureOnDisable: 1
-  captureDefaultsWhenNoSession: 1
+  captureDefaultsWhenNoSession: 0
   minimumRestoredHealth: 10
   showDebugLogs: 1
 --- !u!114 &76742675
@@ -23396,6 +23411,8 @@ MonoBehaviour:
   skipOpenDelayAfterFirstOpen: 1
   openKey: 101
   playerTag: Player
+  prioritizeWorldItemPickup: 1
+  hideBoxPromptWhilePickupAvailable: 1
   openDelay: 3
   openSound: {fileID: 8300000, guid: 4be1d121a033aee43b410634bbad483a, type: 3}
   openSoundVolume: 0.9
@@ -23437,6 +23454,7 @@ MonoBehaviour:
   boxDisplayName: "\u30A2\u30A4\u30C6\u30E0\u30DC\u30C3\u30AF\u30B9"
   boxKind: 0
   allowDirectItemTransfer: 1
+  allowDirectEquipToEquipmentSlot: 0
   gridWidth: 4
   gridHeight: 4
   addStartingItemsOnAwake: 1
@@ -24010,6 +24028,8 @@ MonoBehaviour:
   enemyChaser: {fileID: 0}
   hitReaction: {fileID: 0}
   dropTable: {fileID: 0}
+  rangedAttack: {fileID: 0}
+  sanityAura: {fileID: 0}
   additionalBehavioursToDisable: []
   deathTriggerName: 
   enableDeathSlide: 1
@@ -24129,6 +24149,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 100
   invincibilityDuration: 0.5
+  enableDamageDebugLog: 1
+  includePlayerDamageInDebugLog: 0
+  logBlockedDamage: 1
   audioSource: {fileID: 0}
   damageSound: {fileID: 0}
   damageSoundVolume: 0.8
@@ -44799,6 +44822,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MissionEnemyTarget2D
   characterHealth: {fileID: 742504652}
+  targetIdentity: {fileID: 0}
   compassAnchor: {fileID: 0}
   showDebugLogs: 0
 --- !u!114 &742504652
@@ -44815,6 +44839,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 20
   invincibilityDuration: 0.5
+  enableDamageDebugLog: 1
+  includePlayerDamageInDebugLog: 0
+  logBlockedDamage: 1
   audioSource: {fileID: 0}
   damageSound: {fileID: 0}
   damageSoundVolume: 0.8
@@ -44871,11 +44898,15 @@ MonoBehaviour:
   health: {fileID: 742504652}
   enemyRigidbody: {fileID: 742504661}
   enemyChaser: {fileID: 742504659}
+  rangedAttack: {fileID: 0}
+  sanityAura: {fileID: 0}
   isMovingBoolName: IsMoving
   hasTargetBoolName: HasTarget
   moveSpeedFloatName: MoveSpeed
   movingSpeedThreshold: 0.03
   attackTriggerName: Attack
+  rangedAttackTriggerName: RangedAttack
+  specialAttackTriggerName: SpecialAttack
   hitTriggerName: Hit
   deathTriggerName: Die
   resetMovementBoolsOnDeath: 1
@@ -44926,6 +44957,8 @@ MonoBehaviour:
   knockbackSpeed: 4.5
   upwardKnockbackSpeed: 0.35
   hitStunDuration: 0.14
+  knockbackResistance: 0
+  hitStunResistance: 0
   enableHitFlash: 1
   flashDuration: 0.14
   flashCount: 2
@@ -44951,6 +44984,8 @@ MonoBehaviour:
   enemyChaser: {fileID: 742504659}
   hitReaction: {fileID: 742504657}
   dropTable: {fileID: 742504656}
+  rangedAttack: {fileID: 0}
+  sanityAura: {fileID: 0}
   additionalBehavioursToDisable: []
   deathTriggerName: 
   enableDeathSlide: 1
@@ -45014,6 +45049,9 @@ MonoBehaviour:
     m_Bits: 64
   moveSpeed: 2.2
   stopDistance: 0.55
+  combatMovementStyle: 0
+  keepDistanceMinimum: 3
+  keepDistanceMaximum: 6
   avoidDeepCliffs: 1
   cliffCheckLayers:
     serializedVersion: 2
@@ -45044,6 +45082,7 @@ MonoBehaviour:
   successfulJumpForwardDistance: 0.35
   giveUpAfterFailedJumps: 1
   maxFailedJumpAttemptsBeforeGivingUp: 2
+  enableBuiltInMeleeAttack: 1
   attackDistance: 0.8
   attackDamage: 10
   attackInterval: 1
@@ -46422,6 +46461,11 @@ MonoBehaviour:
     amount: 0
     hasStoredMagazineAmmo: 0
     storedMagazineAmmo: 0
+    hasStoredMagazineAmmoType: 0
+    storedMagazineAmmoType: {fileID: 0}
+    hasStoredWeaponDurability: 0
+    storedWeaponDurability: 0
+    storedWeaponJammed: 0
   helmetItem:
     itemData: {fileID: 0}
     gridX: 0
@@ -46430,6 +46474,11 @@ MonoBehaviour:
     amount: 0
     hasStoredMagazineAmmo: 0
     storedMagazineAmmo: 0
+    hasStoredMagazineAmmoType: 0
+    storedMagazineAmmoType: {fileID: 0}
+    hasStoredWeaponDurability: 0
+    storedWeaponDurability: 0
+    storedWeaponJammed: 0
 --- !u!1 &907492766
 GameObject:
   m_ObjectHideFlags: 0
@@ -48725,22 +48774,39 @@ MonoBehaviour:
   missionListContent: {fileID: 1807331149}
   missionListItemPrefab: {fileID: 8783248251844881027, guid: 1b40ebe4999ef6e469052bd78a56cb1d, type: 3}
   detailPanel: {fileID: 278234220}
+  missionImage: {fileID: 0}
   missionTitleText: {fileID: 10498479}
   missionDescriptionText: {fileID: 1709920671}
   missionProgressText: {fileID: 1280982128}
   missionStatusText: {fileID: 770160711}
+  missionDescriptionScrollRect: {fileID: 0}
+  fallbackMissionImage: {fileID: 0}
   trackButton: {fileID: 620247761}
   trackButtonText: {fileID: 1870187542}
   closeButton: {fileID: 1127010086}
   toggleKey: 109
   closeWithEscape: 1
   keepSelectionWhenReopening: 0
+  showOnlyAcceptedMissions: 1
+  showInProgressMissions: 1
+  showCompletedMissions: 1
+  selectFirstMissionOnOpen: 1
   acceptInactiveMissionsFromMenu: 1
   acceptLabel: "\u53D7\u6CE8\u3059\u308B"
   trackLabel: "\u8FFD\u8DE1\u3059\u308B"
   trackingLabel: "\u8FFD\u8DE1\u4E2D"
   completedActionLabel: "\u9054\u6210\u6E08\u307F"
   cannotTrackLabel: "\u8FFD\u8DE1\u4E0D\u53EF"
+  popupAnimationRoot: {fileID: 0}
+  useOpenAnimation: 1
+  openAnimationDuration: 0.22
+  openStartScale: 0.75
+  openOvershoot: 1.25
+  audioSource: {fileID: 0}
+  openSound: {fileID: 0}
+  openSoundVolume: 1
+  closeSound: {fileID: 0}
+  closeSoundVolume: 1
   autoConfigureMissionListLayout: 1
   listItemPreferredHeight: 85
   listItemSpacing: 8
@@ -48751,6 +48817,7 @@ MonoBehaviour:
   equipmentVisualController: {fileID: 0}
   behavioursToDisableWhileOpen: []
   collectFormat: '{0}  {1} / {2}'
+  deliverFormat: "\u7D0D\u54C1 {0}  {1} / {2}"
   defeatFormat: "\u8A0E\u4F10  {0} / {1}"
   inactiveLabel: "\u672A\u958B\u59CB"
   inProgressLabel: "\u9032\u884C\u4E2D"
@@ -50193,6 +50260,11 @@ MonoBehaviour:
     m_Bits: 8
   hitOnlyOncePerTarget: 0
   destroyOnHit: 0
+  enableContinuousHitSweep: 1
+  forceContinuousCollisionDetection: 1
+  sweepRadiusScale: 0.9
+  sweepExtraDistance: 0.02
+  logSweepHits: 0
 --- !u!61 &1685977899
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -51428,7 +51500,7 @@ MonoBehaviour:
   flickerStartPercent: 0.25
   flickerIntensity: 0.12
   flickerSpeed: 7
-  controlGlobalLight: 0
+  controlGlobalLight: 1
   maximumGlobalIntensity: 0.08
   minimumGlobalIntensity: 0.01
 --- !u!114 &1761436982
@@ -51788,6 +51860,7 @@ MonoBehaviour:
   missionDescriptionText: {fileID: 1749264480}
   missionProgressText: {fileID: 1636076013}
   collectFormat: '{0} {1} / {2}'
+  deliverFormat: "\u7D0D\u54C1 {0}  {1} / {2}"
   defeatFormat: "\u8A0E\u4F10 {0} / {1}"
 --- !u!1 &1836279150
 GameObject:
@@ -63106,45 +63179,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1252a2440c10c584580bd64f0f6577a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CampModeController
-  playerMove: {fileID: 76742649}
-  playerRigidbody: {fileID: 76742647}
-  equipmentVisualController: {fileID: 76742657}
-  playerDeathHandler: {fileID: 76742654}
-  playerAnimator: {fileID: 0}
-  sanityController: {fileID: 76742666}
-  survivalController: {fileID: 76742662}
-  cinemachineCamera: {fileID: 1962956900}
-  targetCamera: {fileID: 519420031}
-  campOrthographicSize: 3
-  zoomCameraWhileCamping: 1
-  fadeCanvasGroup: {fileID: 601513543}
-  fadeDuration: 0.2
-  blackScreenHoldDuration: 1
-  campPanel: {fileID: 1925529236}
-  sleepTimeSelectorUI: {fileID: 119611442}
-  minimumSleepHours: 1
-  maximumSleepHours: 12
-  defaultSleepHours: 8
-  returnKey: 103
-  sleepKey: 113
-  sanityRestorePerGameHour: 10
-  foodDecreasePerGameHour: 1
-  waterDecreasePerGameHour: 2
-  sleepSecondsPerGameHour: 0.4
-  hideCampPanelWhileSleeping: 1
-  sleepTriggerName: 
-  wakeTriggerName: 
-  restTriggerName: 
-  returnTriggerName: 
-  soundEffectAudioSource: {fileID: 1924269943}
-  campEnterSound: {fileID: 8300000, guid: 34a617c56ab8433459327177a3778844, type: 3}
-  campEnterSoundVolume: 0.9
-  sleepStartSound: {fileID: 8300000, guid: 26197d9e72426294195c81419ccc4f26, type: 3}
-  sleepStartSoundVolume: 0.662
-  wakeSound: {fileID: 0}
-  wakeSoundVolume: 0.9
-  campExitSound: {fileID: 0}
-  campExitSoundVolume: 0.9
 --- !u!1 &2023218660
 GameObject:
   m_ObjectHideFlags: 0
@@ -63649,6 +63683,10 @@ PrefabInstance:
     - target: {fileID: 3145897622566777152, guid: abf8e2edb01967b4f80596485cc91883, type: 3}
       propertyPath: m_Name
       value: InventoryPanel
+      objectReference: {fileID: 0}
+    - target: {fileID: 3145897622566777152, guid: abf8e2edb01967b4f80596485cc91883, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3247079434010014710, guid: abf8e2edb01967b4f80596485cc91883, type: 3}
       propertyPath: equipmentController

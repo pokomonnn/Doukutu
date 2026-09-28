@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -41,6 +41,11 @@ public class TownConversationController : MonoBehaviour
     [SerializeField] private InventoryController rewardInventoryController;
 
     [SerializeField] private GameSessionManager gameSessionManager;
+
+    [Tooltip("ストーリー進行管理です。未設定ならStoryProgressManager.Instance、またはシーン内から自動取得します。")]
+    [InspectorName("ストーリー進行管理")]
+    [SerializeField] private StoryProgressManager storyProgressManager;
+
     [SerializeField] private TownConversationHistoryManager historyManager;
 
     [Tooltip("町の施設アップグレード処理です。未設定ならシーン内から自動取得します。")]
@@ -976,6 +981,31 @@ public class TownConversationController : MonoBehaviour
             return;
         }
 
+        StoryQuestDefinition linkedStory = null;
+
+        if (storyProgressManager != null &&
+            currentConversation.Mission != null)
+        {
+            bool canAcceptStoryMission =
+                storyProgressManager.CanAcceptLinkedMission(
+                    currentConversation.Mission,
+                    out linkedStory,
+                    out string storyResultMessage
+                );
+
+            if (!canAcceptStoryMission)
+            {
+                ShowStatusMessage(
+                    string.IsNullOrWhiteSpace(storyResultMessage)
+                        ? "このストーリークエストは現在受注できません。"
+                        : storyResultMessage,
+                    true
+                );
+                SetChoiceButtonsInteractable(true);
+                return;
+            }
+        }
+
         bool accepted = missionAcceptController.AcceptMission(
             currentConversation.Mission,
             currentConversation.TrackMissionAfterAccept,
@@ -988,6 +1018,25 @@ public class TownConversationController : MonoBehaviour
         {
             SetChoiceButtonsInteractable(true);
             return;
+        }
+
+        if (linkedStory != null && storyProgressManager != null)
+        {
+            bool storyStarted =
+                storyProgressManager.StartLinkedStoryForMission(
+                    currentConversation.Mission,
+                    out string storyStartMessage
+                );
+
+            if (!storyStarted)
+            {
+                // Mission受注後にStory開始だけ失敗するのは通常起きませんが、
+                // データ設定ミスを見つけやすいよう警告を残します。
+                LogWarning(
+                    "Mission受注には成功しましたがStory開始に失敗しました: " +
+                    storyStartMessage
+                );
+            }
         }
 
         string nextBlockId = !string.IsNullOrWhiteSpace(choiceNextBlockId)
@@ -2448,6 +2497,19 @@ public class TownConversationController : MonoBehaviour
     {
         FindSessionManager();
         FindHistoryManager();
+
+        if (storyProgressManager == null)
+        {
+            storyProgressManager = StoryProgressManager.Instance;
+        }
+
+        if (storyProgressManager == null)
+        {
+            storyProgressManager =
+                FindAnyObjectByType<StoryProgressManager>(
+                    FindObjectsInactive.Include
+                );
+        }
 
         if (missionAcceptController == null)
         {

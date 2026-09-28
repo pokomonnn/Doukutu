@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -87,9 +87,14 @@ public class PlayerWeightController : MonoBehaviour
     private bool isProne;
     private float proneMoveSpeedMultiplier = 1f;
 
-    // 手持ち／背負いなど、インベントリ外の運搬物による速度低下
+    // 旧仕様互換：インベントリ外の運搬物による直接の速度倍率。
+    // 新しいNPC運搬では使用せず、CarryWeightKgを総重量へ加算します。
     private bool isCarryingExternalLoad;
     private float carryLoadSpeedMultiplier = 1f;
+
+    // 手前持ち／背負い中のCarryableObject2Dを、通常の所持重量へ加算するための値。
+    private bool hasExternalCarryWeight;
+    private float externalCarryWeightKg;
 
     public float CurrentWeight => currentWeight;
 
@@ -159,7 +164,45 @@ public class PlayerWeightController : MonoBehaviour
             ? proneMoveSpeedMultiplier
             : 1f;
 
-    public bool IsCarryingExternalLoad => isCarryingExternalLoad;
+    public bool IsCarryingExternalLoad =>
+        isCarryingExternalLoad || hasExternalCarryWeight;
+
+    /// <summary>
+    /// 現在、手前持ち／背負いによって追加されている生の重量です。
+    /// </summary>
+    public float CurrentExternalCarryWeightKg =>
+        hasExternalCarryWeight
+            ? Mathf.Max(0f, externalCarryWeightKg)
+            : 0f;
+
+    /// <summary>
+    /// 実際に総重量へ加える運搬重量です。
+    /// 「救助隊員」系スキルが有効な救出NPCでは、運搬ペナルティ軽減率を
+    /// 追加重量の軽減として適用します。
+    /// </summary>
+    public float CurrentEffectiveExternalCarryWeightKg
+    {
+        get
+        {
+            float rawWeight = CurrentExternalCarryWeightKg;
+
+            if (rawWeight <= 0f ||
+                !SkillCardEffectUtility.IsCarryingRescuePerson())
+            {
+                return rawWeight;
+            }
+
+            float penaltyReduction =
+                SkillCardEffectUtility.GetClamped01Value(
+                    SkillEffectType.RescueCarryPenaltyReduction
+                );
+
+            return Mathf.Max(
+                0f,
+                rawWeight * (1f - penaltyReduction)
+            );
+        }
+    }
 
     public float CurrentCarryLoadMoveSpeedMultiplier
     {
@@ -296,16 +339,8 @@ public class PlayerWeightController : MonoBehaviour
         float previousWeight = currentWeight;
         PlayerWeightState previousState = currentState;
 
-        if (inventoryController != null)
-        {
-            currentWeight = CalculateTotalWeight();
-            currentState = GetWeightState(currentWeight);
-        }
-        else
-        {
-            currentWeight = 0f;
-            currentState = PlayerWeightState.Normal;
-        }
+        currentWeight = CalculateTotalWeight();
+        currentState = GetWeightState(currentWeight);
 
         ApplyMovementState();
 
@@ -375,6 +410,31 @@ public class PlayerWeightController : MonoBehaviour
             : 1f;
 
         ApplyMovementState();
+    }
+
+    /// <summary>
+    /// 手前持ち／背負い中のCarryableObject2Dの重量を、
+    /// Inventory・装備品と同じ「総重量」へ加算します。
+    /// 持つ／下ろす瞬間にPlayerCarryController2Dから呼びます。
+    /// </summary>
+    public void SetExternalCarryWeight(
+        bool carrying,
+        float weightKg)
+    {
+        FindReferences();
+        CacheBaseMovementValues();
+
+        hasExternalCarryWeight = carrying;
+        externalCarryWeightKg = carrying
+            ? Mathf.Max(0f, weightKg)
+            : 0f;
+
+        // 新仕様では運搬物専用の速度倍率を重ねません。
+        // 速度低下は「Inventory + 装備 + 運搬重量」の通常重量段階だけで決まります。
+        isCarryingExternalLoad = false;
+        carryLoadSpeedMultiplier = 1f;
+
+        RecalculateWeight();
     }
 
     // ConsumableItemData の Use Duration の間だけ、
@@ -454,12 +514,16 @@ public class PlayerWeightController : MonoBehaviour
         HashSet<InventoryItem> countedItems =
             new HashSet<InventoryItem>();
 
-        foreach (InventoryItem item in inventoryController.Grid.Items)
+        if (inventoryController != null &&
+            inventoryController.Grid != null)
         {
-            totalWeight += AddItemWeightOnce(
-                item,
-                countedItems
-            );
+            foreach (InventoryItem item in inventoryController.Grid.Items)
+            {
+                totalWeight += AddItemWeightOnce(
+                    item,
+                    countedItems
+                );
+            }
         }
 
         if (equipmentController != null)
@@ -474,6 +538,10 @@ public class PlayerWeightController : MonoBehaviour
                 countedItems
             );
         }
+
+        // NPCなどのCarryableObject2DはInventory外ですが、
+        // 通常の重量段階へ参加させるため最後に加算します。
+        totalWeight += CurrentEffectiveExternalCarryWeightKg;
 
         return totalWeight;
     }

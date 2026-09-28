@@ -189,6 +189,7 @@ MonoBehaviour:
   boxDisplayName: "\u30A2\u30A4\u30C6\u30E0\u30DC\u30C3\u30AF\u30B9"
   boxKind: 0
   allowDirectItemTransfer: 1
+  allowDirectEquipToEquipmentSlot: 1
   gridWidth: 4
   gridHeight: 4
   addStartingItemsOnAwake: 1
@@ -221,6 +222,8 @@ MonoBehaviour:
   skipOpenDelayAfterFirstOpen: 1
   openKey: 101
   playerTag: Player
+  prioritizeWorldItemPickup: 1
+  hideBoxPromptWhilePickupAvailable: 1
   openDelay: 3
   openSound: {fileID: 8300000, guid: 4be1d121a033aee43b410634bbad483a, type: 3}
   openSoundVolume: 0.9

@@ -1,5 +1,110 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &818551959524581986
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4876369365608220987}
+  - component: {fileID: 8275518047090519272}
+  m_Layer: 0
+  m_Name: OldManPoint_03
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4876369365608220987
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 818551959524581986}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8847689031701099965}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8275518047090519272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 818551959524581986}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd8378804ce79e4458984d4d928e584e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CaveOldManSpawnPoint2D
+  spawnPointId: f47e8e3012eb491384291273f8682cb0
+  localSpawnOffset: {x: 0, y: 0, z: 0}
+  useSpawnPointRotation: 1
+  canSpawnHere: 1
+--- !u!1 &988115486763065623
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8847689031701099965}
+  - component: {fileID: 708693417994249628}
+  m_Layer: 0
+  m_Name: OldManSpawnManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8847689031701099965
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 988115486763065623}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 4492905230362444284}
+  - {fileID: 4876369365608220987}
+  - {fileID: 8329399522972582139}
+  - {fileID: 5587311692774537368}
+  m_Father: {fileID: 6570139893068160557}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &708693417994249628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 988115486763065623}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63bff7f600a9d5349807b8f0ec5b35f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CaveOldManSpawnManager2D
+  autoFindSpawnPointsInChildren: 1
+  spawnPoints: []
+  oldManPrefab: {fileID: 862909085402662033, guid: e4bb11e8c40c26b4faabedfd9284b801, type: 3}
+  spawnChance: 1
+  spawnedOldManRoot: {fileID: 0}
+  spawnOnAwake: 1
+  useFixedSeedForDebug: 0
+  fixedSeed: 12345
+  showDebugLogs: 1
 --- !u!1 &1866080388348007004
 GameObject:
   m_ObjectHideFlags: 0
@@ -258,6 +363,7 @@ MonoBehaviour:
   gameOverPanel: {fileID: 0}
   firstSpawnPoint: {fileID: 0}
   playerTag: Player
+  showExpeditionEntrySpawnLogs: 1
   deathBgmSource: {fileID: 5702894399558586446}
   deathBgmClip: {fileID: 8300000, guid: 52f1c5cd7eba1ba47be26cd72f3f75bd, type: 3}
   deathBgmVolume: 0.8
@@ -367,6 +473,54 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!1 &3895910461504302192
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5587311692774537368}
+  - component: {fileID: 3556578052974205929}
+  m_Layer: 0
+  m_Name: OldManPoint_05
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5587311692774537368
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3895910461504302192}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8847689031701099965}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3556578052974205929
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3895910461504302192}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd8378804ce79e4458984d4d928e584e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CaveOldManSpawnPoint2D
+  spawnPointId: fae8d0acb1a54ef6be2be9a4b7302ca3
+  localSpawnOffset: {x: 0, y: 0, z: 0}
+  useSpawnPointRotation: 1
+  canSpawnHere: 1
 --- !u!1 &4634251764719555509
 GameObject:
   m_ObjectHideFlags: 0
@@ -487,6 +641,66 @@ MonoBehaviour:
   autoStartNextMissionWhenNotUsingStartAll: 0
   allowRestartCompletedMissions: 0
   showDebugLogs: 0
+--- !u!1 &4943794380563544910
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3133969968514018561}
+  - component: {fileID: 4312874173796136207}
+  m_Layer: 0
+  m_Name: RescueProgressManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3133969968514018561
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4943794380563544910}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6570139893068160557}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4312874173796136207
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4943794380563544910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e836e305bb2ddbd4bb77fe175731572e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RescueProgressManager2D
+  rescueCountStorageId: __rescue_total_count
+  firstRescueStoryFlag: rescue_first_success
+  milestones:
+  - RequiredRescueCount: 3
+    StoryFlagId: rescue_total_3
+    Note: "\u7D2F\u8A083\u4EBA"
+  - RequiredRescueCount: 6
+    StoryFlagId: rescue_total_6
+    Note: "\u7D2F\u8A086\u4EBA"
+  - RequiredRescueCount: 10
+    StoryFlagId: rescue_total_10
+    Note: "\u7D2F\u8A0810\u4EBA"
+  - RequiredRescueCount: 15
+    StoryFlagId: rescue_total_15
+    Note: "\u7D2F\u8A0815\u4EBA"
+  showDebugLogs: 1
 --- !u!1 &5150403526782969076
 GameObject:
   m_ObjectHideFlags: 0
@@ -602,6 +816,8 @@ Transform:
   - {fileID: 5148088583745948542}
   - {fileID: 6698382754196731369}
   - {fileID: 6779984358017197360}
+  - {fileID: 3133969968514018561}
+  - {fileID: 8847689031701099965}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2017512083210602989
@@ -689,6 +905,54 @@ MonoBehaviour:
   restoreOnStart: 1
   captureOnDisable: 1
   showDebugLogs: 0
+--- !u!1 &5707543947990174106
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4492905230362444284}
+  - component: {fileID: 6671112841410279829}
+  m_Layer: 0
+  m_Name: ldManPoint_02
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4492905230362444284
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5707543947990174106}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8847689031701099965}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6671112841410279829
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5707543947990174106}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd8378804ce79e4458984d4d928e584e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CaveOldManSpawnPoint2D
+  spawnPointId: 41e6bdebb3ed4080b19b3d739a972d29
+  localSpawnOffset: {x: 0, y: 0, z: 0}
+  useSpawnPointRotation: 1
+  canSpawnHere: 1
 --- !u!1 &6556770357384870550
 GameObject:
   m_ObjectHideFlags: 0
@@ -921,6 +1185,54 @@ MonoBehaviour:
     height: 10
     items: []
   playerConsumableUseController: {fileID: 0}
+--- !u!1 &7490443389481322550
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8329399522972582139}
+  - component: {fileID: 6150960184744488432}
+  m_Layer: 0
+  m_Name: OldManPoint_04
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8329399522972582139
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7490443389481322550}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8847689031701099965}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6150960184744488432
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7490443389481322550}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd8378804ce79e4458984d4d928e584e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CaveOldManSpawnPoint2D
+  spawnPointId: a3bf2ba2d6cb495f98f683a9116421cd
+  localSpawnOffset: {x: 0, y: 0, z: 0}
+  useSpawnPointRotation: 1
+  canSpawnHere: 1
 --- !u!1 &8953842894894138415
 GameObject:
   m_ObjectHideFlags: 0
@@ -967,6 +1279,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ExpeditionResultCollector2D
   elevatorCarryReceiver: {fileID: 0}
   playerInventory: {fileID: 5667034517058536840}
+  rescueProgressManager: {fileID: 0}
+  recordRescueProgress: 1
   includePlayerInventoryTreasure: 1
   includeRecoveredItemBoxTreasure: 1
   additionalTreasureItems: []

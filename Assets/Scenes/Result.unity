@@ -584,6 +584,7 @@ GameObject:
   m_Component:
   - component: {fileID: 388086415}
   - component: {fileID: 388086414}
+  - component: {fileID: 388086416}
   m_Layer: 0
   m_Name: Manager
   m_TagString: Untagged
@@ -624,6 +625,7 @@ MonoBehaviour:
   missionRewardClaimedLabel: "\u5831\u916C\u53D7\u53D6\u6E08\u307F"
   missionRewardPendingLabel: "\u5831\u916C\u672A\u53D7\u53D6"
   missionIncompleteLabel: "\u672A\u9054\u6210"
+  collectedItemSubmittedFormat: "\u56DE\u53CE\u54C1\u63D0\u51FA: {0} \xD7 {1}"
   rescuedNpcFormat: "{0} \u4EBA"
   deadNpcFormat: "{0} \u4EBA"
   recoveredItemBoxFormat: "{0} \u500B"
@@ -649,6 +651,46 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &388086416
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 388086413}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 588f585da032c3e4fafb3a4ba5054edc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RescueProgressionController
+  processOnStart: 1
+  firstRescueStoryFlagId: rescue_first_completed
+  milestones:
+  - RequiredRescueCount: 3
+    DisplayName: "\u7D2F\u8A083\u4EBA\u6551\u51FA"
+    UnlockStoryFlagId: rescue_total_3
+    FacilityId: 
+    FacilityLevel: 1
+  - RequiredRescueCount: 6
+    DisplayName: "\u7D2F\u8A086\u4EBA\u6551\u51FA"
+    UnlockStoryFlagId: rescue_total_6
+    FacilityId: 
+    FacilityLevel: 1
+  - RequiredRescueCount: 10
+    DisplayName: "\u7D2F\u8A0810\u4EBA\u6551\u51FA"
+    UnlockStoryFlagId: rescue_total_10
+    FacilityId: 
+    FacilityLevel: 1
+  - RequiredRescueCount: 15
+    DisplayName: "\u7D2F\u8A0815\u4EBA\u6551\u51FA"
+    UnlockStoryFlagId: rescue_total_15
+    FacilityId: 
+    FacilityLevel: 1
+  totalRescuedNpcCountText: {fileID: 0}
+  unlockNotificationText: {fileID: 0}
+  totalRescueFormat: "\u7D2F\u8A08\u6551\u51FA\u4EBA\u6570\uFF1A{0}\u4EBA"
+  noNewUnlockMessage: "\u65B0\u3057\u3044\u89E3\u653E\u306F\u3042\u308A\u307E\u305B\u3093"
+  showDebugLogs: 1
 --- !u!1 &428223263
 GameObject:
   m_ObjectHideFlags: 0

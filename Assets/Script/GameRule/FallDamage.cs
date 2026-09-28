@@ -34,6 +34,17 @@ public class FallDamage : MonoBehaviour
     [Tooltip("壁登りによる落下計測リセットをConsoleへ表示します")]
     [SerializeField] private bool showWallFallDebugLogs = false;
 
+    [Header("ワープ・リスポーン連携")]
+    [Tooltip(
+        "チェックポイント復帰やワープ直後、この秒数だけ落下ダメージ・骨折判定を無効にします。" +
+        "GameManagerからResetAfterTeleport()が呼ばれた時に使用します。"
+    )]
+    [SerializeField, Min(0f)]
+    private float teleportFallIgnoreDuration = 0.35f;
+
+    [Tooltip("ワープ後の落下計測リセットをConsoleへ表示します")]
+    [SerializeField] private bool showTeleportResetDebugLogs = false;
+
     private Rigidbody2D rb;
     private PlayerMove playerMove;
     private CharacterHealth health;
@@ -43,6 +54,7 @@ public class FallDamage : MonoBehaviour
     private bool isTrackingFall;
     private float highestY;
     private bool wasWallClimbing;
+    private float ignoreFallUntilTime;
 
     private void Awake()
     {
@@ -83,6 +95,16 @@ public class FallDamage : MonoBehaviour
 
         bool isGrounded = playerMove.IsGrounded;
         bool isWallClimbing = IsWallClimbingNow();
+
+        // チェックポイント復帰・ワープ直後は、
+        // ワープ前のY座標を落下開始地点として扱わないようにする。
+        if (Time.time < ignoreFallUntilTime)
+        {
+            ResetFallTrackingToCurrentPosition();
+            wasGrounded = isGrounded;
+            wasWallClimbing = isWallClimbing;
+            return;
+        }
 
         // 壁を伝っている間は落下ではない。
         // 壁を掴む前に溜まっていた落下距離もここで破棄する。
@@ -156,6 +178,47 @@ public class FallDamage : MonoBehaviour
 
         wasGrounded = isGrounded;
         wasWallClimbing = false;
+    }
+
+    /// <summary>
+    /// チェックポイント復帰・ワープ・強制位置変更の直後に呼びます。
+    /// ワープ前に記録していた最高Yを破棄し、一定時間だけ
+    /// 落下ダメージ／骨折判定を無効にします。
+    /// </summary>
+    public void ResetAfterTeleport()
+    {
+        ResetAfterTeleport(teleportFallIgnoreDuration);
+    }
+
+    public void ResetAfterTeleport(float ignoreDuration)
+    {
+        float safeDuration = Mathf.Max(0f, ignoreDuration);
+
+        ignoreFallUntilTime = Mathf.Max(
+            ignoreFallUntilTime,
+            Time.time + safeDuration
+        );
+
+        ResetFallTrackingToCurrentPosition();
+
+        wasGrounded =
+            playerMove != null && playerMove.IsGrounded;
+
+        FindWallClimbController();
+        wasWallClimbing = IsWallClimbingNow();
+
+        if (showTeleportResetDebugLogs)
+        {
+            float currentY = rb != null
+                ? rb.position.y
+                : transform.position.y;
+
+            Debug.Log(
+                $"[FallDamage] ワープ後の落下計測をリセットしました。" +
+                $" Y={currentY:F2} / 無効時間={safeDuration:F2}s",
+                this
+            );
+        }
     }
 
     private void StartFallTrackingFromCurrentPosition()
@@ -267,6 +330,11 @@ public class FallDamage : MonoBehaviour
         fractureFallDistance = Mathf.Max(
             safeFallDistance,
             fractureFallDistance
+        );
+
+        teleportFallIgnoreDuration = Mathf.Max(
+            0f,
+            teleportFallIgnoreDuration
         );
     }
 }

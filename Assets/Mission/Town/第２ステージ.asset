@@ -17,3 +17,10 @@ MonoBehaviour:
   combatDanger: 3
   caveDanger: 2
   requiredSupplies: 2
+  missionPool:
+  - {fileID: 11400000, guid: 6f7265726346dbe45afd75eab7468437, type: 2}
+  - {fileID: 11400000, guid: 6667a088a29b2f7499a806c7e3464f63, type: 2}
+  - {fileID: 11400000, guid: 134261bf55f508b479b9c0057bf2151c, type: 2}
+  - {fileID: 11400000, guid: dc86b25cce3f16547bc4f51ca835890b, type: 2}
+  - {fileID: 11400000, guid: 46486d1572fa0904aa56f58f7884b651, type: 2}
+  randomMissionCount: 4

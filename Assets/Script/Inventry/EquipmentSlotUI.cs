@@ -217,6 +217,39 @@ public class EquipmentSlotUI : MonoBehaviour
         bool desiredRotation,
         out EquipmentResult result)
     {
+        return TryEquipDroppedItemInternal(
+            item,
+            desiredRotation,
+            null,
+            out result
+        );
+    }
+
+    /// <summary>
+    /// ItemBoxInventoryから直接ドラッグされた装備品を装備します。
+    /// 装備可能かを先に確認し、箱から取り出した後に外部Itemとして装備します。
+    /// 装備に失敗した場合は元の箱・元の位置へ戻します。
+    /// </summary>
+    public bool TryEquipDroppedItemFromItemBox(
+        InventoryItem item,
+        bool desiredRotation,
+        ItemBoxInventory sourceItemBox,
+        out EquipmentResult result)
+    {
+        return TryEquipDroppedItemInternal(
+            item,
+            desiredRotation,
+            sourceItemBox,
+            out result
+        );
+    }
+
+    private bool TryEquipDroppedItemInternal(
+        InventoryItem item,
+        bool desiredRotation,
+        ItemBoxInventory sourceItemBox,
+        out EquipmentResult result)
+    {
         result = EquipmentResult.InvalidItem;
 
         if (item == null || item.ItemData == null)
@@ -259,10 +292,67 @@ public class EquipmentSlotUI : MonoBehaviour
             return false;
         }
 
-        bool equipped = equipmentController.TryEquipItem(
-            item,
-            out result
-        );
+        bool equipped;
+
+        // 通常Player Inventoryからの装備は従来処理。
+        if (sourceItemBox == null)
+        {
+            equipped = equipmentController.TryEquipItem(
+                item,
+                out result
+            );
+        }
+        else
+        {
+            // ItemBoxからの直接装備。
+            // Shopや閲覧専用箱から無料で装備されないよう、許可設定を確認する。
+            if (!sourceItemBox.AllowsDirectEquipToEquipmentSlot ||
+                !sourceItemBox.ContainsItem(item))
+            {
+                result = EquipmentResult.ItemNotInInventory;
+                return false;
+            }
+
+            int originalX = item.GridX;
+            int originalY = item.GridY;
+            bool originalRotation = item.IsRotated;
+
+            // 先に箱から取り出す。
+            if (!sourceItemBox.RemoveItem(item))
+            {
+                result = EquipmentResult.ItemNotInInventory;
+                return false;
+            }
+
+            // Player Inventoryを経由しないItemなのでExternal装備APIを使う。
+            equipped = equipmentController.TryEquipExternalItem(
+                item,
+                out result
+            );
+
+            if (!equipped)
+            {
+                // 装備失敗時は、アイテム消失を防ぐため元の箱へ戻す。
+                bool restored = sourceItemBox.TryMoveItem(
+                    item,
+                    originalX,
+                    originalY,
+                    originalRotation
+                );
+
+                if (!restored)
+                {
+                    Debug.LogError(
+                        "EquipmentSlotUI: ItemBoxから取り出したItemの装備に失敗し、" +
+                        "さらに元のItemBoxへ戻すことにも失敗しました。\n" +
+                        $"Item={item.ItemData.DisplayName} / Result={result}",
+                        this
+                    );
+                }
+
+                return false;
+            }
+        }
 
         if (!equipped)
         {

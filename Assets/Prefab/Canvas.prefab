@@ -2607,8 +2607,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 854, y: 504}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchoredPosition: {x: 675.13556, y: 388}
+  m_SizeDelta: {x: 485.8074, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1654702248027594145
 CanvasRenderer:
@@ -2638,7 +2638,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: enemy0/1
+  m_text: wadadadaw
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
   m_sharedMaterial: {fileID: 3425387125873958259, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
@@ -2665,8 +2665,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 28
+  m_fontSizeBase: 28
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -3134,8 +3134,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 605, y: 504}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchoredPosition: {x: 691, y: 511}
+  m_SizeDelta: {x: 517.5523, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2374276353255905678
 CanvasRenderer:
@@ -3192,8 +3192,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 28
+  m_fontSizeBase: 28
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -8128,8 +8128,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 731, y: 504}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchoredPosition: {x: 661.5684, y: 447}
+  m_SizeDelta: {x: 458.6792, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &589433702868285570
 CanvasRenderer:
@@ -8159,7 +8159,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text: wadadadaw
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
   m_sharedMaterial: {fileID: 3425387125873958259, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
@@ -8186,8 +8186,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 28
+  m_fontSizeBase: 28
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -12899,7 +12899,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.000009428914}
+  m_AnchoredPosition: {x: 0, y: 0.00060653506}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &534914133059350920
@@ -13640,7 +13640,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 5565673303652943409}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.9999987
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

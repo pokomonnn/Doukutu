@@ -322,6 +322,225 @@ public class InventoryGridUI : MonoBehaviour
         );
     }
 
+    /// <summary>
+    /// 別GridからドラッグしてきたスタックItemを、
+    /// このPlayer Inventory内の指定セルにある同一ItemDataへ
+    /// 結合できるか判定します。
+    ///
+    /// 現在は ItemBox(Storage) → Player Inventory のみ許可します。
+    /// Shop / SellCart / 閲覧専用Boxは対象外です。
+    /// </summary>
+    public bool CanMergeItemFrom(
+        InventoryGridUI sourceGridUI,
+        InventoryItem sourceItem,
+        int targetCellX,
+        int targetCellY)
+    {
+        if (sourceGridUI == null ||
+            sourceItem == null ||
+            sourceItem.ItemData == null ||
+            !sourceItem.CanStack)
+        {
+            return false;
+        }
+
+        // 同一Gridは従来処理へ任せる。
+        if (sourceGridUI == this)
+        {
+            return CanMergeItemAt(
+                sourceItem,
+                targetCellX,
+                targetCellY
+            );
+        }
+
+        // 今回許可するのは、直接移動可能なStorage ItemBoxから
+        // Player Inventoryへ持ってくる場合だけ。
+        if (!IsPlayerInventory ||
+            inventoryController == null ||
+            !sourceGridUI.IsItemBoxInventory ||
+            sourceGridUI.ItemBox == null ||
+            !sourceGridUI.ItemBox.AllowsDirectItemTransfer ||
+            !sourceGridUI.AllowsDirectTransfer ||
+            !AllowsDirectTransfer ||
+            !sourceGridUI.ContainsItem(sourceItem))
+        {
+            return false;
+        }
+
+        // 売却カートは通常の売却ルールを通す必要があるため、
+        // クロスGrid結合の対象外にする。
+        if (sourceGridUI.TryGetSellCartInventory(out _))
+        {
+            return false;
+        }
+
+        if (!TryGetInventoryGrid(out InventoryGrid targetGrid) ||
+            !targetGrid.IsInsideGrid(targetCellX, targetCellY))
+        {
+            return false;
+        }
+
+        InventoryItem targetItem = targetGrid.GetItemAt(
+            targetCellX,
+            targetCellY
+        );
+
+        if (targetItem == null ||
+            targetItem == sourceItem ||
+            targetItem.ItemData == null ||
+            targetItem.ItemData != sourceItem.ItemData ||
+            !targetItem.CanStack ||
+            targetItem.IsStackFull)
+        {
+            return false;
+        }
+
+        return targetItem.Amount < targetItem.ItemData.MaxStack;
+    }
+
+    /// <summary>
+    /// ItemBox(Storage)からPlayer Inventoryへドラッグしてきた
+    /// スタックItemを、指定セルの同一ItemDataへ結合します。
+    ///
+    /// 例：Player側30 + ItemBox側20 → Player側50 / Box側削除。
+    ///     Player側80 + ItemBox側20 → Player側90 / Box側10。
+    /// </summary>
+    public bool TryMergeItemFrom(
+        InventoryGridUI sourceGridUI,
+        InventoryItem sourceItem,
+        int targetCellX,
+        int targetCellY,
+        out int transferredAmount)
+    {
+        transferredAmount = 0;
+
+        if (sourceGridUI == this)
+        {
+            return TryMergeItemAt(
+                sourceItem,
+                targetCellX,
+                targetCellY,
+                out transferredAmount
+            );
+        }
+
+        if (!CanMergeItemFrom(
+                sourceGridUI,
+                sourceItem,
+                targetCellX,
+                targetCellY) ||
+            !TryGetInventoryGrid(out InventoryGrid targetGrid))
+        {
+            return false;
+        }
+
+        InventoryItem targetItem = targetGrid.GetItemAt(
+            targetCellX,
+            targetCellY
+        );
+
+        if (targetItem == null || targetItem.ItemData == null)
+        {
+            return false;
+        }
+
+        int freeSpace = Mathf.Max(
+            0,
+            targetItem.ItemData.MaxStack - targetItem.Amount
+        );
+
+        int amountToTransfer = Mathf.Min(
+            sourceItem.Amount,
+            freeSpace
+        );
+
+        if (amountToTransfer <= 0)
+        {
+            return false;
+        }
+
+        int sourceX = sourceItem.GridX;
+        int sourceY = sourceItem.GridY;
+        bool sourceRotation = sourceItem.IsRotated;
+
+        int targetX = targetItem.GridX;
+        int targetY = targetItem.GridY;
+        bool targetRotation = targetItem.IsRotated;
+
+        // まず個数だけ移す。
+        int removedAmount = sourceItem.RemoveAmount(amountToTransfer);
+
+        if (removedAmount <= 0)
+        {
+            return false;
+        }
+
+        int remainder = targetItem.AddAmount(removedAmount);
+        int actuallyTransferred = removedAmount - remainder;
+
+        // 通常はfreeSpaceを事前計算しているのでremainderは0。
+        // 念のため入り切らなかった分は移動元へ戻す。
+        if (remainder > 0)
+        {
+            sourceItem.AddAmount(remainder);
+        }
+
+        if (actuallyTransferred <= 0)
+        {
+            return false;
+        }
+
+        // 移動元Itemが0個になったらBoxから削除。
+        // まだ残っている場合は同じ位置へ再配置して
+        // OnInventoryChangedを発火させ、表示とセーブを更新する。
+        bool sourceUpdated;
+
+        if (sourceItem.IsEmpty())
+        {
+            sourceUpdated =
+                sourceGridUI.RemoveItemFromThisGrid(sourceItem);
+        }
+        else
+        {
+            sourceUpdated = sourceGridUI.TryMoveItem(
+                sourceItem,
+                sourceX,
+                sourceY,
+                sourceRotation
+            );
+        }
+
+        if (!sourceUpdated)
+        {
+            // 万一、移動元の更新に失敗したら個数を元へ戻す。
+            targetItem.RemoveAmount(actuallyTransferred);
+            sourceItem.AddAmount(actuallyTransferred);
+
+            sourceGridUI.RefreshInventoryUI();
+            RefreshInventoryUI();
+            return false;
+        }
+
+        // Player Inventory側も同じ位置へ再配置して
+        // OnInventoryChangedを発火させる。
+        // 重量・UI・セッション保存など、既存の変更通知処理をそのまま使う。
+        bool targetUpdated = TryMoveItem(
+            targetItem,
+            targetX,
+            targetY,
+            targetRotation
+        );
+
+        // TryMoveItemは通常成功するが、表示だけは必ず最新化しておく。
+        sourceGridUI.RefreshInventoryUI();
+        RefreshInventoryUI();
+
+        transferredAmount = actuallyTransferred;
+
+        return targetUpdated || actuallyTransferred > 0;
+    }
+
     public bool TryMoveItem(
         InventoryItem item,
         int targetX,

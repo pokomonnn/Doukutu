@@ -117,6 +117,26 @@ public class PlayerCarryController2D : MonoBehaviour
     [SerializeField] private string frontCarryLabel = "手前に持っています";
     [SerializeField] private string backpackLabel = "背負っています";
 
+    [Header("救出NPC詳細表示")]
+    [Tooltip("ONの場合、持てる距離に入った救出NPCの詳細を画面上に表示します。")]
+    [InspectorName("救出NPCの詳細を表示")]
+    [SerializeField] private bool showRescuePersonDetails = true;
+
+    [Tooltip("詳細UIを表示するCanvasです。未設定ならScene内のScreen Space Canvasを自動検索します。")]
+    [InspectorName("詳細表示Canvas（任意）")]
+    [SerializeField] private Canvas rescuePersonDetailCanvas;
+
+    [Tooltip("救出NPC詳細で使う日本語対応のTextMeshPro Font Assetです。Inventoryなどで日本語表示に使っているフォントを指定してください。")]
+    [InspectorName("詳細表示の日本語フォント")]
+    [SerializeField] private TMP_FontAsset rescuePersonDetailFontAsset;
+
+    [Tooltip(
+        "救出NPC詳細UIのCanvas内での表示順です。0が最も奥側です。" +
+        "InventoryやSkill Panelより小さい値になるよう設定してください。"
+    )]
+    [InspectorName("詳細UIの表示優先度（0＝最背面）")]
+    [SerializeField, Min(0)] private int rescuePersonDetailSiblingIndex = 0;
+
     [Header("入力を止めるPanel（任意）")]
     [SerializeField] private GameObject[] panelsThatBlockInput;
 
@@ -145,21 +165,13 @@ public class PlayerCarryController2D : MonoBehaviour
     private AnimationCurve backpackTransitionCurve =
         AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-    [Header("運搬重量による速度低下")]
-    [SerializeField] private bool enableCarryWeightSlowdown = true;
-
-    [Tooltip("横軸=運搬物のkg、縦軸=移動速度倍率。例：0kg=1、20kg=0.85、40kg=0.65、60kg=0.45")]
-    [SerializeField]
-    private AnimationCurve carryWeightSpeedCurve = new AnimationCurve(
-        new Keyframe(0f, 1f),
-        new Keyframe(10f, 1f),
-        new Keyframe(20f, 0.85f),
-        new Keyframe(40f, 0.65f),
-        new Keyframe(60f, 0.45f)
-    );
-
-    [Tooltip("どれだけ重くても、この倍率より遅くしません")]
-    [SerializeField, Range(0.05f, 1f)] private float minimumCarrySpeedMultiplier = 0.25f;
+    [Header("運搬重量連携")]
+    [Tooltip(
+        "ONの場合、持っているCarryableObject2DのCarry Weight Kgを、" +
+        "PlayerWeightControllerの通常の総重量へ加算します。"
+    )]
+    [InspectorName("運搬物の重量を総重量へ加算")]
+    [SerializeField] private bool addCarryWeightToTotalWeight = true;
 
     [Header("デバッグ診断")]
     [Tooltip("通常の状態変更ログを表示します")]
@@ -233,6 +245,12 @@ public class PlayerCarryController2D : MonoBehaviour
     {
         FindReferences();
         ApplyActionLocks();
+
+        if (IsCarrying)
+        {
+            ApplyCarryWeightToTotal();
+        }
+
         RefreshCarryText();
         LogCarryDiagnostics("OnEnable");
     }
@@ -367,6 +385,8 @@ public class PlayerCarryController2D : MonoBehaviour
 
     private void OnDestroy()
     {
+        RescuePersonDetailTooltipUI.Hide();
+        ClearCarryWeightFromTotal();
         ReleaseAllActionLocks();
     }
 
@@ -437,7 +457,7 @@ public class PlayerCarryController2D : MonoBehaviour
         currentState = PlayerCarryState2D.Front;
 
         ApplyActionLocks();
-        ApplyCarryWeightSlowdown();
+        ApplyCarryWeightToTotal();
         SnapObjectToCurrentCarryPoint();
         RefreshCarryPrompt();
         RefreshCarryText();
@@ -476,7 +496,7 @@ public class PlayerCarryController2D : MonoBehaviour
         // 銃と壁登りが途中で有効にならないようにします。
         currentState = PlayerCarryState2D.Front;
         ApplyActionLocks();
-        ApplyCarryWeightSlowdown();
+        ApplyCarryWeightToTotal();
 
         SetAnimatorTrigger(backpackTransitionTriggerName);
 
@@ -552,12 +572,16 @@ public class PlayerCarryController2D : MonoBehaviour
         backpackTransitionCoroutine = null;
 
         ApplyActionLocks();
-        ApplyCarryWeightSlowdown();
+        ApplyCarryWeightToTotal();
         SnapObjectToCurrentCarryPoint();
         RefreshCarryPrompt();
         RefreshCarryText();
 
-        Log($"{carriedTarget.name} を背負いました。Weight={carriedTarget.CarryWeightKg:0.0}kg / Speed×{GetCurrentCarrySpeedMultiplier():0.00}");
+        Log(
+            $"{carriedTarget.name} を背負いました。" +
+            $"運搬重量={carriedTarget.CarryWeightKg:0.0}kg / " +
+            $"総重量={GetCurrentPlayerTotalWeight():0.0}kg"
+        );
     }
 
     private void StopBackpackTransition()
@@ -586,7 +610,7 @@ public class PlayerCarryController2D : MonoBehaviour
 
         currentState = PlayerCarryState2D.Front;
         ApplyActionLocks();
-        ApplyCarryWeightSlowdown();
+        ApplyCarryWeightToTotal();
         SnapObjectToCurrentCarryPoint();
         RefreshCarryPrompt();
         RefreshCarryText();
@@ -620,7 +644,7 @@ public class PlayerCarryController2D : MonoBehaviour
 
         carriedTarget = null;
         currentState = PlayerCarryState2D.None;
-        ClearCarryWeightSlowdown();
+        ClearCarryWeightFromTotal();
 
         target.HidePrompt();
         target.ReleaseFromCarry(
@@ -654,7 +678,7 @@ public class PlayerCarryController2D : MonoBehaviour
         carriedTarget = null;
         currentState = PlayerCarryState2D.None;
         StopBackpackTransition();
-        ClearCarryWeightSlowdown();
+        ClearCarryWeightFromTotal();
         ReleaseAllActionLocks();
         RefreshCarryText();
     }
@@ -1009,10 +1033,17 @@ public class PlayerCarryController2D : MonoBehaviour
             if (promptTarget != null)
             {
                 promptTarget.ShowPrompt(GetPickupPromptText());
+                RefreshRescuePersonDetail(promptTarget);
+            }
+            else
+            {
+                RescuePersonDetailTooltipUI.Hide();
             }
 
             return;
         }
+
+        HideRescuePersonDetail(promptTarget);
 
         if (promptTarget != null)
         {
@@ -1024,6 +1055,11 @@ public class PlayerCarryController2D : MonoBehaviour
         if (promptTarget != null)
         {
             promptTarget.ShowPrompt(GetPickupPromptText());
+            RefreshRescuePersonDetail(promptTarget);
+        }
+        else
+        {
+            RescuePersonDetailTooltipUI.Hide();
         }
     }
 
@@ -1031,12 +1067,136 @@ public class PlayerCarryController2D : MonoBehaviour
     {
         // UnityのDestroy済みObjectを確実に弾くため、
         // null条件演算子ではなくUnity式の明示null判定を使います。
+        HideRescuePersonDetail(promptTarget);
+
         if (promptTarget != null)
         {
             promptTarget.HidePrompt();
         }
 
         promptTarget = null;
+    }
+
+    private void RefreshRescuePersonDetail(CarryableObject2D target)
+    {
+        if (!showRescuePersonDetails || target == null)
+        {
+            RescuePersonDetailTooltipUI.Hide();
+            return;
+        }
+
+        RescuePersonInfo2D info = ResolveRescuePersonInfo(target);
+
+        if (info == null)
+        {
+            RescuePersonDetailTooltipUI.Hide();
+            return;
+        }
+
+        Canvas targetCanvas = GetRescuePersonDetailCanvas();
+
+        if (targetCanvas == null)
+        {
+            if (showDetailedDiagnostics)
+            {
+                LogWarning(
+                    "[救出NPC詳細] 表示先Canvasが見つかりません。" +
+                    "PlayerCarryController2Dの『詳細表示Canvas』へHUDのCanvasを設定してください。"
+                );
+            }
+            return;
+        }
+
+        RescuePersonDetailTooltipUI.Show(
+            info,
+            targetCanvas,
+            rescuePersonDetailFontAsset,
+            rescuePersonDetailSiblingIndex
+        );
+    }
+
+    private void HideRescuePersonDetail(CarryableObject2D target)
+    {
+        RescuePersonInfo2D info = ResolveRescuePersonInfo(target);
+
+        if (info != null)
+        {
+            RescuePersonDetailTooltipUI.HideFor(info);
+        }
+        else
+        {
+            RescuePersonDetailTooltipUI.Hide();
+        }
+    }
+
+    private static RescuePersonInfo2D ResolveRescuePersonInfo(
+        CarryableObject2D target)
+    {
+        if (target == null)
+        {
+            return null;
+        }
+
+        RescuePersonInfo2D info =
+            target.GetComponent<RescuePersonInfo2D>();
+
+        if (info != null)
+        {
+            return info;
+        }
+
+        info = target.GetComponentInParent<RescuePersonInfo2D>();
+
+        if (info != null)
+        {
+            return info;
+        }
+
+        return target.GetComponentInChildren<RescuePersonInfo2D>(true);
+    }
+
+    private Canvas GetRescuePersonDetailCanvas()
+    {
+        if (rescuePersonDetailCanvas != null)
+        {
+            return rescuePersonDetailCanvas.rootCanvas;
+        }
+
+        Canvas[] canvases = FindObjectsByType<Canvas>(
+            FindObjectsInactive.Exclude,
+            FindObjectsSortMode.None
+        );
+
+        Canvas fallback = null;
+
+        foreach (Canvas canvas in canvases)
+        {
+            if (canvas == null || !canvas.isActiveAndEnabled)
+            {
+                continue;
+            }
+
+            Canvas root = canvas.rootCanvas;
+
+            if (root == null || !root.isActiveAndEnabled)
+            {
+                continue;
+            }
+
+            if (root.renderMode != RenderMode.WorldSpace)
+            {
+                rescuePersonDetailCanvas = root;
+                return rescuePersonDetailCanvas;
+            }
+
+            if (fallback == null)
+            {
+                fallback = root;
+            }
+        }
+
+        rescuePersonDetailCanvas = fallback;
+        return rescuePersonDetailCanvas;
     }
 
     private void RefreshCarryPrompt()
@@ -1286,26 +1446,7 @@ public class PlayerCarryController2D : MonoBehaviour
         playerAnimator.SetTrigger(parameterName);
     }
 
-    private float GetCurrentCarrySpeedMultiplier()
-    {
-        if (!enableCarryWeightSlowdown || carriedTarget == null)
-        {
-            return 1f;
-        }
-
-        float weight = Mathf.Max(0f, carriedTarget.CarryWeightKg);
-        float evaluated = carryWeightSpeedCurve != null
-            ? carryWeightSpeedCurve.Evaluate(weight)
-            : 1f;
-
-        return Mathf.Clamp(
-            evaluated,
-            minimumCarrySpeedMultiplier,
-            1f
-        );
-    }
-
-    private void ApplyCarryWeightSlowdown()
+    private void ApplyCarryWeightToTotal()
     {
         if (playerWeightController == null)
         {
@@ -1314,38 +1455,65 @@ public class PlayerCarryController2D : MonoBehaviour
 
         if (playerWeightController == null)
         {
-            if (enableCarryWeightSlowdown && IsCarrying)
+            if (addCarryWeightToTotalWeight && IsCarrying)
             {
                 LogWarning(
-                    "[Carry診断][重量] PlayerWeightControllerが見つからないため、運搬重量による速度低下を反映できません。"
+                    "[Carry診断][重量] PlayerWeightControllerが見つからないため、" +
+                    "運搬物の重量を総重量へ加算できません。"
                 );
             }
             return;
         }
 
-        float multiplier = GetCurrentCarrySpeedMultiplier();
-        playerWeightController.SetCarryLoadState(
-            IsCarrying && enableCarryWeightSlowdown,
-            multiplier
+        bool shouldAdd =
+            addCarryWeightToTotalWeight &&
+            IsCarrying &&
+            carriedTarget != null;
+
+        float weightKg = shouldAdd
+            ? Mathf.Max(0f, carriedTarget.CarryWeightKg)
+            : 0f;
+
+        playerWeightController.SetExternalCarryWeight(
+            shouldAdd,
+            weightKg
         );
 
-        if (showDebugLogs && IsCarrying && carriedTarget != null)
+        if (showDebugLogs && shouldAdd)
         {
             Log(
-                $"[Carry診断][重量] Object={carriedTarget.name} / " +
-                $"Weight={carriedTarget.CarryWeightKg:0.0}kg / Speed×{multiplier:0.00}"
+                $"[Carry診断][重量加算] Object={carriedTarget.name} / " +
+                $"運搬重量={weightKg:0.0}kg / " +
+                $"有効運搬重量={playerWeightController.CurrentEffectiveExternalCarryWeightKg:0.0}kg / " +
+                $"総重量={playerWeightController.CurrentWeight:0.0}kg / " +
+                $"WeightState={playerWeightController.CurrentState}"
             );
         }
     }
 
-    private void ClearCarryWeightSlowdown()
+    private void ClearCarryWeightFromTotal()
     {
         if (playerWeightController == null)
         {
             FindReferences();
         }
 
-        playerWeightController?.SetCarryLoadState(false, 1f);
+        playerWeightController?.SetExternalCarryWeight(
+            false,
+            0f
+        );
+    }
+
+    private float GetCurrentPlayerTotalWeight()
+    {
+        if (playerWeightController == null)
+        {
+            FindReferences();
+        }
+
+        return playerWeightController != null
+            ? playerWeightController.CurrentWeight
+            : 0f;
     }
 
     private void FindReferences()
@@ -1527,7 +1695,6 @@ public class PlayerCarryController2D : MonoBehaviour
         inheritedPlayerVelocity = Mathf.Clamp01(inheritedPlayerVelocity);
         playerCollisionIgnoreDuration = Mathf.Max(0f, playerCollisionIgnoreDuration);
         backpackTransitionDuration = Mathf.Max(0f, backpackTransitionDuration);
-        minimumCarrySpeedMultiplier = Mathf.Clamp(minimumCarrySpeedMultiplier, 0.05f, 1f);
         repeatedDiagnosticInterval = Mathf.Max(0.1f, repeatedDiagnosticInterval);
 
         if (carryModeSwitchKey == carryKey)

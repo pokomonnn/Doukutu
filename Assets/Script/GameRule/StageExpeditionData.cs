@@ -1,6 +1,46 @@
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+
+
+[Serializable]
+public class StageExpeditionEntryPointData
+{
+    [Tooltip(
+        "出撃地点を識別するIDです。Stage側のStageExpeditionSpawnPointと同じIDにしてください。" +
+        "例：entry_01"
+    )]
+    [InspectorName("出撃地点ID")]
+    [SerializeField]
+    private string entryPointId = "entry_01";
+
+    [Tooltip("出撃パネルのButton名や選択中の地点名として表示します。")]
+    [InspectorName("表示名")]
+    [SerializeField]
+    private string displayName = "出撃地点";
+
+    [Tooltip("この出撃地点を選択した時に出撃パネルへ表示する画像です。")]
+    [InspectorName("プレビュー画像")]
+    [SerializeField]
+    private Sprite previewImage;
+
+    public string EntryPointId =>
+        entryPointId?.Trim() ?? string.Empty;
+
+    public string DisplayName =>
+        string.IsNullOrWhiteSpace(displayName)
+            ? EntryPointId
+            : displayName.Trim();
+
+    public Sprite PreviewImage => previewImage;
+
+    public void Validate()
+    {
+        entryPointId = entryPointId?.Trim() ?? string.Empty;
+        displayName = displayName?.Trim() ?? string.Empty;
+    }
+}
 
 [CreateAssetMenu(fileName = "NewStageExpeditionData", menuName = "Game/Stage Expedition Data")]
 public class StageExpeditionData : ScriptableObject
@@ -13,6 +53,16 @@ public class StageExpeditionData : ScriptableObject
     [SerializeField, Range(1, 5)] private int combatDanger = 1;
     [SerializeField, Range(1, 5)] private int caveDanger = 1;
     [SerializeField, Range(1, 5)] private int requiredSupplies = 1;
+
+    [Header("出撃地点")]
+    [Tooltip(
+        "このステージで選択できる出撃地点一覧です。" +
+        "Stage1で4か所使う場合はSizeを4にして、entry_01～entry_04などを設定してください。"
+    )]
+    [InspectorName("出撃地点一覧")]
+    [SerializeField]
+    private List<StageExpeditionEntryPointData> entryPoints =
+        new List<StageExpeditionEntryPointData>();
 
     [Header("ランダムミッション")]
     [Tooltip(
@@ -36,6 +86,24 @@ public class StageExpeditionData : ScriptableObject
     public int CombatDanger => Mathf.Clamp(combatDanger, 1, 5);
     public int CaveDanger => Mathf.Clamp(caveDanger, 1, 5);
     public int RequiredSupplies => Mathf.Clamp(requiredSupplies, 1, 5);
+
+    public IReadOnlyList<StageExpeditionEntryPointData> EntryPoints =>
+        entryPoints;
+
+    public int EntryPointCount =>
+        entryPoints != null ? entryPoints.Count : 0;
+
+    public StageExpeditionEntryPointData GetEntryPoint(int index)
+    {
+        if (entryPoints == null ||
+            index < 0 ||
+            index >= entryPoints.Count)
+        {
+            return null;
+        }
+
+        return entryPoints[index];
+    }
 
     /// <summary>
     /// この洞窟で抽選対象になるミッション候補です。
@@ -84,6 +152,16 @@ public class StageExpeditionData : ScriptableObject
         caveDanger = Mathf.Clamp(caveDanger, 1, 5);
         requiredSupplies = Mathf.Clamp(requiredSupplies, 1, 5);
         randomMissionCount = Mathf.Max(1, randomMissionCount);
+
+        if (entryPoints == null)
+        {
+            entryPoints = new List<StageExpeditionEntryPointData>();
+        }
+
+        for (int i = 0; i < entryPoints.Count; i++)
+        {
+            entryPoints[i]?.Validate();
+        }
 
         if (missionPool == null)
         {

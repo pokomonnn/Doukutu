@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
@@ -321,7 +321,7 @@ public class EquipmentItemDragHandler : MonoBehaviour,
         }
 
         // -----------------------------------------------------
-        // 1. 通常Inventoryへ戻す
+        // 1. Inventory / ItemBox Gridへ移動
         // -----------------------------------------------------
         if (TryFindTargetGrid(
                 eventData,
@@ -331,27 +331,60 @@ public class EquipmentItemDragHandler : MonoBehaviour,
             Vector2Int targetPosition =
                 pointerGridPosition - dragCellOffset;
 
-            bool moved =
-                equipmentSlotUI.TryUnequipToInventoryPosition(
+            bool moved = false;
+            EquipmentResult result = EquipmentResult.InvalidSlot;
+
+            InventoryController playerInventory =
+                equipmentSlotUI != null
+                    ? equipmentSlotUI.InventoryController
+                    : null;
+
+            // 従来どおり、Player Inventoryへ装備解除して戻す。
+            if (targetGridUI.IsPlayerInventory &&
+                targetGridUI.Controller == playerInventory)
+            {
+                moved =
+                    equipmentSlotUI.TryUnequipToInventoryPosition(
+                        targetPosition.x,
+                        targetPosition.y,
+                        dragIsRotated,
+                        out result
+                    );
+
+                if (moved)
+                {
+                    LogDrop(
+                        "装備ItemをPlayer Inventoryへ戻しました。"
+                    );
+                }
+            }
+            // Storage ItemBoxへは直接収納できる。
+            else if (targetGridUI.IsItemBoxInventory)
+            {
+                moved = TryUnequipToItemBox(
+                    targetGridUI,
                     targetPosition.x,
                     targetPosition.y,
                     dragIsRotated,
-                    out EquipmentResult result
+                    out result
                 );
+
+                if (moved)
+                {
+                    LogDrop(
+                        "装備ItemをItemBoxへ直接収納しました。"
+                    );
+                }
+            }
 
             if (moved)
             {
                 soundPlayer?.PlayPlace();
-
-                LogDrop(
-                    $"装備ItemをInventoryへ戻しました：" +
-                    $"{equipmentSlotUI.GetEquippedItem()?.ItemData?.DisplayName}"
-                );
             }
             else
             {
                 Debug.Log(
-                    $"装備解除できません：{result}",
+                    $"装備Itemの移動に失敗しました：{result}",
                     this
                 );
 
@@ -363,10 +396,10 @@ public class EquipmentItemDragHandler : MonoBehaviour,
         }
 
         // -----------------------------------------------------
-        // 2. 装備枠・ItemBox Gridなど、Inventory系UIの上
+        // 2. 装備枠・Inventory系UIの上
         // -----------------------------------------------------
-        // 有効な通常Inventory位置ではないだけで、
-        // Inventory系UI上にいる場合は誤って地面へ捨てない。
+        // 有効なGrid位置ではないだけで、Inventory系UI上にいる場合は
+        // 誤って地面へ捨てない。
         if (IsPointerOverInventoryRelatedUI(eventData))
         {
             soundPlayer?.PlayFailed();
@@ -404,6 +437,136 @@ public class EquipmentItemDragHandler : MonoBehaviour,
         );
 
         FinishDrag();
+    }
+
+    /// <summary>
+    /// 装備中のItemを、通常Inventoryを経由せずStorage ItemBoxへ直接移します。
+    /// 同じInventoryItem個体を使うため、武器の残弾・耐久・ジャム状態を維持します。
+    /// 収納に失敗した場合は装備枠へ復元します。
+    /// </summary>
+    private bool TryUnequipToItemBox(
+        InventoryGridUI targetGridUI,
+        int targetX,
+        int targetY,
+        bool isRotated,
+        out EquipmentResult result)
+    {
+        result = EquipmentResult.InvalidSlot;
+
+        if (!FindEquipmentSlotUI() ||
+            targetGridUI == null ||
+            !targetGridUI.IsItemBoxInventory)
+        {
+            return false;
+        }
+
+        // Shopや閲覧専用Boxへは無料で移動させない。
+        if (!targetGridUI.AllowsDirectTransfer)
+        {
+            LogDrop(
+                "このItemBoxは直接収納を許可していません。"
+            );
+            return false;
+        }
+
+        InventoryGrid targetGrid = targetGridUI.Grid;
+        if (targetGrid == null)
+        {
+            result = EquipmentResult.InventoryNotFound;
+            return false;
+        }
+
+        InventoryItem item =
+            equipmentSlotUI.GetEquippedItem();
+
+        if (item == null || item.ItemData == null)
+        {
+            result = EquipmentResult.NothingEquipped;
+            return false;
+        }
+
+        if (item.Amount != 1)
+        {
+            result = EquipmentResult.InvalidStackAmount;
+            return false;
+        }
+
+        bool finalRotation =
+            item.CanRotate && isRotated;
+
+        // 先に置けるか確認し、装備を外した後のItem消失を防ぐ。
+        if (!targetGrid.CanPlaceItem(
+                item,
+                targetX,
+                targetY,
+                finalRotation))
+        {
+            result = EquipmentResult.InventoryFull;
+            return false;
+        }
+
+        EquipmentController equipmentController =
+            equipmentSlotUI.EquipmentControllerRef;
+
+        if (equipmentController == null)
+        {
+            result = EquipmentResult.InventoryNotFound;
+            return false;
+        }
+
+        EquipmentSlotType slotType =
+            equipmentSlotUI.SlotType;
+
+        bool originalRotation = item.IsRotated;
+
+        // Inventoryへ入れず、まず装備枠だけから同じItem個体を外す。
+        if (!equipmentController.TryRemoveEquippedItem(
+                slotType,
+                item,
+                out result))
+        {
+            return false;
+        }
+
+        bool moved = targetGridUI.TryMoveItem(
+            item,
+            targetX,
+            targetY,
+            finalRotation
+        );
+
+        if (moved)
+        {
+            result = EquipmentResult.Success;
+            targetGridUI.RefreshInventoryUI();
+            return true;
+        }
+
+        // 万一、事前判定後に配置が失敗した場合は装備枠へ戻す。
+        if (item.CanRotate &&
+            item.IsRotated != originalRotation)
+        {
+            item.TryRotate();
+        }
+
+        bool restored =
+            equipmentController.RestoreEquippedItem(
+                slotType,
+                item,
+                out EquipmentResult restoreResult
+            );
+
+        if (!restored)
+        {
+            Debug.LogError(
+                "[EquipmentItemDragHandler] ItemBoxへの収納失敗後、" +
+                $"装備枠への復元にも失敗しました。RestoreResult={restoreResult}",
+                this
+            );
+        }
+
+        result = EquipmentResult.InventoryFull;
+        return false;
     }
 
     private bool TryDropEquippedItemToWorld()
@@ -667,18 +830,13 @@ public class EquipmentItemDragHandler : MonoBehaviour,
             return false;
         }
 
-        InventoryController targetInventory =
+        InventoryController playerInventory =
             equipmentSlotUI.InventoryController;
 
-        if (targetInventory == null)
-        {
-            return false;
-        }
-
         InventoryGridUI[] gridUIs =
-    Object.FindObjectsByType<InventoryGridUI>(
-        FindObjectsInactive.Exclude
-    );
+            Object.FindObjectsByType<InventoryGridUI>(
+                FindObjectsInactive.Exclude
+            );
 
         foreach (InventoryGridUI gridUI in gridUIs)
         {
@@ -696,7 +854,20 @@ public class EquipmentItemDragHandler : MonoBehaviour,
                 continue;
             }
 
-            if (gridUI.Controller != targetInventory)
+            // Player Inventoryは、現在のEquipmentControllerと同じ
+            // InventoryControllerを表示しているGridだけ許可する。
+            bool isValidPlayerGrid =
+                gridUI.IsPlayerInventory &&
+                playerInventory != null &&
+                gridUI.Controller == playerInventory;
+
+            // ItemBoxはStorage + DirectTransferが有効なものだけ許可する。
+            bool isValidItemBoxGrid =
+                gridUI.IsItemBoxInventory &&
+                gridUI.AllowsDirectTransfer;
+
+            if (!isValidPlayerGrid &&
+                !isValidItemBoxGrid)
             {
                 continue;
             }

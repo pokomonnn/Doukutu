@@ -14,8 +14,8 @@ public class ShopSellTransactionController : MonoBehaviour
     [Header("参照")]
     [SerializeField] private SellCartInventory sellCart;
 
-    [Tooltip("Town_MainのTownPlayerInventoryを設定します。未設定ならシーン内から探します")]
-    [SerializeField] private TownPlayerInventoryController townPlayerInventory;
+    [Tooltip("町・洞窟共通のPlayerTradeInventoryBridgeを設定します。未設定ならシーン内から探します")]
+    [SerializeField] private PlayerTradeInventoryBridge townPlayerInventory;
 
     [Tooltip("未設定ならGameSessionManager.Instanceを使います")]
     [SerializeField] private GameSessionManager gameSessionManager;
@@ -596,7 +596,9 @@ public class ShopSellTransactionController : MonoBehaviour
         if (townPlayerInventory == null)
         {
             townPlayerInventory =
-                FindAnyObjectByType<TownPlayerInventoryController>();
+                FindAnyObjectByType<PlayerTradeInventoryBridge>(
+                    FindObjectsInactive.Include
+                );
         }
 
         if (gameSessionManager == null)

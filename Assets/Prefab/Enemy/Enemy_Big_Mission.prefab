@@ -165,6 +165,7 @@ GameObject:
   - component: {fileID: 7005886438022472650}
   - component: {fileID: 5338500716690516690}
   - component: {fileID: 882593144795792138}
+  - component: {fileID: 7175326880533122628}
   m_Layer: 11
   m_Name: Enemy_Big_Mission
   m_TagString: Untagged
@@ -603,9 +604,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62343c8ea7826e44caa5e3ad7d95e486, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyArmor2D
-  armorRating: 40
-  damageReductionPerArmorPoint: 0.0364
-  maximumDamageReduction: 0.8
+  armorRating: 54.6
+  damageReductionPerArmorPoint: 0.0521
+  maximumDamageReduction: 0.513
   showArmorLogs: 0
 --- !u!114 &882593144795792138
 MonoBehaviour:
@@ -622,6 +623,22 @@ MonoBehaviour:
   targetType: 1
   targetId: enemy_armored
   displayName: "\u88C5\u7532\u500B\u4F53"
+--- !u!114 &7175326880533122628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3040853378183444072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d3c3354a4eef704b9b41c93d6384fd4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MissionEnemyTarget2D
+  characterHealth: {fileID: 6574071322875458805}
+  targetIdentity: {fileID: 882593144795792138}
+  compassAnchor: {fileID: 0}
+  showDebugLogs: 0
 --- !u!1 &4184479503974072702
 GameObject:
   m_ObjectHideFlags: 0

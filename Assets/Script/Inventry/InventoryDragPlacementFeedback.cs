@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
@@ -439,17 +439,30 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
             return false;
         }
 
-        // 同じプレイヤーInventory内で、マウス先のスタックへ
-        // 実際に結合できる場合は「置ける」と同じ緑表示にする。
-        // MaxStack到達済み・別ItemData・別弾種などはfalseのまま。
-        if (sourceGridUI != null &&
-            sourceGridUI == targetGridUI &&
-            targetGridUI.CanMergeItemAt(
-                item,
-                pointerGridPosition.x,
-                pointerGridPosition.y))
+        // マウス先のスタックへ実際に結合できる場合は、
+        // 通常配置できなくても「置ける」と同じ緑表示にする。
+        // 同一Player Inventoryだけでなく、
+        // ItemBox(Storage) → Player Inventory のクロスGrid結合にも対応。
+        // MaxStack到達済み・別ItemDataなどはfalseのまま。
+        if (sourceGridUI != null)
         {
-            return true;
+            bool canMerge = sourceGridUI == targetGridUI
+                ? targetGridUI.CanMergeItemAt(
+                    item,
+                    pointerGridPosition.x,
+                    pointerGridPosition.y
+                )
+                : targetGridUI.CanMergeItemFrom(
+                    sourceGridUI,
+                    item,
+                    pointerGridPosition.x,
+                    pointerGridPosition.y
+                );
+
+            if (canMerge)
+            {
+                return true;
+            }
         }
 
         return targetGrid.CanPlaceItem(

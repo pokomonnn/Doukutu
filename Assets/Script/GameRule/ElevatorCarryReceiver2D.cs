@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -60,9 +60,8 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
 
     [Header("指定NPC救出ミッション")]
     [Tooltip(
-        "ONならMissionTargetIdentity2D（Target Type = Rescue Npc）を持つ生存NPCが" +
-        "Cargo Slotへ収納完了した時、一致するRescue Target Npcミッションを進行させます。" +
-        "旧MissionRescueTarget2Dにも互換対応します。"
+        "ONならMissionRescueTarget2Dを持つ生存NPCがCargo Slotへ収納完了した時、" +
+        "一致するRescue Target Npcミッションを達成状態にします。"
     )]
     [SerializeField] private bool notifyRescueMissionOnStorageComplete = true;
 
@@ -236,6 +235,11 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
 
         CargoRecord record = CaptureCargoState(target, slot);
         movingTargets.Add(target);
+
+        // Result集計は「収納完了＋移動中」の両方を回収対象にするため、
+        // 特殊NPCの出撃内記録もCargo Slotへ受け付けた時点で登録します。
+        RegisterSpecialRescueForProgress(target);
+
         StartCoroutine(MoveCargoRoutine(record));
 
         Log($"収納開始: {target.name} → {slot.name}");
@@ -680,6 +684,64 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
     }
 
     /// <summary>
+    /// 生存している特殊NPCを今回の出撃用一時データへ登録します。
+    /// 永久保存・解放処理はResult SceneのRescueProgressionControllerが行います。
+    /// </summary>
+    private void RegisterSpecialRescueForProgress(
+        CarryableObject2D target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        RescuePersonTarget2D rescueTarget =
+            FindComponentOnCarryable<
+                RescuePersonTarget2D
+            >(target);
+
+        if (rescueTarget == null)
+        {
+            return;
+        }
+
+        CharacterHealth health =
+            FindComponentOnCarryable<
+                CharacterHealth
+            >(target);
+
+        if (health != null &&
+            health.IsDead)
+        {
+            return;
+        }
+
+        RescuePersonUnlockProfile2D profile =
+            FindComponentOnCarryable<
+                RescuePersonUnlockProfile2D
+            >(target);
+
+        if (profile == null ||
+            !profile.HasValidId)
+        {
+            return;
+        }
+
+        bool registered =
+            RescueProgressExpeditionSession
+                .Register(profile);
+
+        if (registered)
+        {
+            Log(
+                $"特殊NPCを今回の救出候補へ登録: " +
+                $"{profile.DisplayName} " +
+                $"(ID={profile.SpecialNpcId})"
+            );
+        }
+    }
+
+    /// <summary>
     /// 生存している指定NPCがエレベーターへ完全収納された時だけ、
     /// Target Rescue Npc Idが一致する受注中ミッションを完了させます。
     /// </summary>
@@ -691,37 +753,12 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
             return;
         }
 
-        // 新方式：共通MissionTargetIdentity2Dを優先します。
-        MissionTargetIdentity2D identity =
-            FindComponentOnCarryable<MissionTargetIdentity2D>(target);
+        MissionRescueTarget2D rescueMissionTarget =
+            FindComponentOnCarryable<MissionRescueTarget2D>(target);
 
-        string rescueTargetId = string.Empty;
-        string targetDisplayName = target.name;
-
-        if (identity != null &&
-            identity.TargetType == MissionTargetType2D.RescueNpc &&
-            !string.IsNullOrWhiteSpace(identity.TargetId))
-        {
-            rescueTargetId = identity.TargetId;
-            targetDisplayName = identity.DisplayName;
-        }
-        else
-        {
-            // 旧方式との互換：
-            // 以前追加したMissionRescueTarget2Dが残っているPrefabもそのまま動かします。
-            MissionRescueTarget2D legacyTarget =
-                FindComponentOnCarryable<MissionRescueTarget2D>(target);
-
-            if (legacyTarget != null &&
-                !string.IsNullOrWhiteSpace(
-                    legacyTarget.RescueTargetId))
-            {
-                rescueTargetId = legacyTarget.RescueTargetId;
-                targetDisplayName = legacyTarget.TargetDisplayName;
-            }
-        }
-
-        if (string.IsNullOrWhiteSpace(rescueTargetId))
+        if (rescueMissionTarget == null ||
+            string.IsNullOrWhiteSpace(
+                rescueMissionTarget.RescueTargetId))
         {
             return;
         }
@@ -734,8 +771,8 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
         if (health != null && health.IsDead)
         {
             Log(
-                $"指定NPC救出Mission判定: {targetDisplayName} " +
-                $"(ID={rescueTargetId}) は死亡しているため達成しません。"
+                $"指定NPC救出Mission判定: {rescueMissionTarget.TargetDisplayName} " +
+                $"(ID={rescueMissionTarget.RescueTargetId}) は死亡しているため達成しません。"
             );
             return;
         }
@@ -767,7 +804,7 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
                 );
         }
 
-        int updatedCount = 0;
+        int completedCount = 0;
 
         for (int i = 0; i < missionManager.MissionCount; i++)
         {
@@ -783,7 +820,7 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
 
             if (!string.Equals(
                     mission.TargetRescueNpcId,
-                    rescueTargetId,
+                    rescueMissionTarget.RescueTargetId,
                     StringComparison.OrdinalIgnoreCase))
             {
                 continue;
@@ -792,7 +829,8 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
             MissionProgressState2D state =
                 missionManager.GetMissionState(i);
 
-            if (state != MissionProgressState2D.InProgress)
+            if (state == MissionProgressState2D.Inactive ||
+                state == MissionProgressState2D.Completed)
             {
                 continue;
             }
@@ -809,29 +847,31 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
                 continue;
             }
 
-            bool progressed =
-                missionManager.ReportRescueTarget(
+            bool completed =
+                missionManager.RestoreMissionState(
                     i,
-                    rescueTargetId
+                    MissionProgressState2D.Completed,
+                    mission.RequiredAmount,
+                    false
                 );
 
-            if (!progressed)
+            if (!completed)
             {
+                LogWarning(
+                    $"指定NPC救出Missionの完了反映に失敗: {mission.DisplayName}"
+                );
                 continue;
             }
 
-            updatedCount++;
-
+            completedCount++;
             Log(
-                $"指定NPC救出Mission更新: {mission.DisplayName} / " +
-                $"Target={targetDisplayName} / TargetId={rescueTargetId} / " +
-                $"進捗={missionManager.GetMissionProgress(i)}/" +
-                $"{missionManager.GetMissionRequiredAmount(i)}"
+                $"指定NPC救出Mission達成: {mission.DisplayName} / " +
+                $"TargetId={rescueMissionTarget.RescueTargetId}"
             );
         }
 
         // Result Sceneへ移動する前にSession側にも即時反映します。
-        if (updatedCount > 0 && session != null)
+        if (completedCount > 0 && session != null)
         {
             session.CaptureMissionsFromManager(missionManager);
         }

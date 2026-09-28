@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
@@ -12,15 +12,6 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class PawnShopUIController : MonoBehaviour
 {
-    private const string QuickSellDiagnosticVersion =
-        "SellClickFix_v3_2026-09-01";
-
-    public static PawnShopUIController ActiveInstance
-    {
-        get;
-        private set;
-    }
-
     [Header("メインパネル")]
     [SerializeField] private GameObject pawnShopPanel;
 
@@ -36,17 +27,31 @@ public class PawnShopUIController : MonoBehaviour
     [Header("売却システム")]
     [SerializeField] private SellCartInventory sellCart;
     [SerializeField] private ShopSellTransactionController transactionController;
-    [SerializeField] private TownPlayerInventoryController townPlayerInventory;
+    [SerializeField] private PlayerTradeInventoryBridge townPlayerInventory;
+    [SerializeField] private GameSessionManager gameSessionManager;
 
     [Header("購入システム")]
     [SerializeField] private MerchantPurchaseController merchantPurchaseController;
+
+    [Header("Player Inventory接続")]
+    [Tooltip(
+        "ONなら、Player Inventory Grid UIのInspectorに設定されているInventoryControllerを優先します。" +
+        " Manager側のInventoryControllerを表示したい構成ではON推奨です。"
+    )]
+    [SerializeField] private bool preferAssignedPlayerGridInventory = true;
+
+    [Tooltip(
+        "Player Inventory Grid UIにInventoryControllerが未設定の時だけ、" +
+        "PlayerTradeInventoryBridgeのInventoryControllerへ自動接続します。"
+    )]
+    [SerializeField] private bool fallbackToPlayerTradeInventoryBridge = true;
 
     [Header("武器修理システム")]
     [Tooltip("武器修理Panelを管理するControllerです。未設定ならシーン内から自動検索します。")]
     [SerializeField] private MerchantWeaponRepairController weaponRepairController;
 
     [Header("売却側のGrid UI")]
-    [Tooltip("TownPlayerInventoryのInventoryControllerを表示するGrid UIです。")]
+    [Tooltip("プレイヤー所持品を表示するGrid UIです。InspectorでManager側InventoryControllerを設定できます。")]
     [SerializeField] private InventoryGridUI playerInventoryGridUI;
 
     [Tooltip("SellCartInventoryのItemBoxInventoryを表示するGrid UIです。")]
@@ -65,80 +70,121 @@ public class PawnShopUIController : MonoBehaviour
     [Header("デバッグ")]
     [SerializeField] private bool showDebugLogs = true;
 
-    [Header("クリック売却診断")]
-    [Tooltip("Player Inventory左クリック売却の各段階をConsoleへ詳しく出します。原因特定後はOFFにできます。")]
-    [SerializeField] private bool showQuickSellDiagnostics = true;
+    /// <summary>
+    /// 現在開いている売買UIです。InventoryItemUIのクイック売却から参照されます。
+    /// </summary>
+    public static PawnShopUIController ActiveInstance { get; private set; }
 
     public bool IsOpen => isOpen;
     public bool IsPurchaseAvailable => purchaseAvailable;
     public bool IsRepairMode => isRepairMode;
 
-    public bool IsSellPanelActuallyVisible =>
+    /// <summary>
+    /// 売却タブが実際に利用中かを返します。
+    /// </summary>
+    public bool IsSellTabActive =>
+        isOpen &&
+        !isRepairMode &&
         sellPanel != null &&
         sellPanel.activeInHierarchy;
+
+    public bool IsSellPanelActuallyVisible =>
+        sellPanel != null && sellPanel.activeInHierarchy;
 
     public bool IsSellCartGridActuallyVisible =>
         sellCartGridUI != null &&
         sellCartGridUI.gameObject.activeInHierarchy;
 
     /// <summary>
-    /// 現在、通常取引の「売却」タブを表示しているか。
-    /// Player Inventoryの左クリック簡単売却で使用します。
+    /// Player Inventory上のItemを左クリックした時、
+    /// 売却カートの最初に置ける位置へ自動移動します。
     /// </summary>
-    public bool IsSellTabActive
+    public bool TryQuickAddPlayerItemToSellCart(InventoryItem item)
     {
-        get
+        FindReferences();
+
+        if (!IsSellTabActive ||
+            item == null ||
+            item.ItemData == null ||
+            playerInventoryGridUI == null ||
+            sellCartGridUI == null ||
+            sellCart == null ||
+            sellCart.CartInventory == null ||
+            sellCart.CartInventory.Grid == null ||
+            !playerInventoryGridUI.ContainsItem(item))
         {
-            if (!isOpen || isRepairMode)
-            {
-                return false;
-            }
-
-            if (isSellTabActive)
-            {
-                return true;
-            }
-
-            // 内部フラグが更新されていなくても、
-            // 実際にSellPanel、またはSellCart Gridが表示中なら
-            // 売却画面として扱う。
-            //
-            // UI Button側でPanelのSetActiveだけを切り替えていて
-            // ShowSellTab()が呼ばれていない構成にも対応します。
-            return
-                IsSellPanelActuallyVisible ||
-                IsSellCartGridActuallyVisible;
+            return false;
         }
+
+        if (!sellCart.CanAcceptItem(item, out string rejectionReason))
+        {
+            sellCart.ReportRejectedTransfer(item, rejectionReason);
+            return false;
+        }
+
+        InventoryGrid targetGrid = sellCart.CartInventory.Grid;
+        bool firstRotation = item.IsRotated;
+
+        if (TryQuickTransferAtRotation(item, targetGrid, firstRotation))
+        {
+            return true;
+        }
+
+        if (item.CanRotate &&
+            TryQuickTransferAtRotation(item, targetGrid, !firstRotation))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryQuickTransferAtRotation(
+        InventoryItem item,
+        InventoryGrid targetGrid,
+        bool isRotated)
+    {
+        if (item == null || targetGrid == null)
+        {
+            return false;
+        }
+
+        for (int y = 0; y < targetGrid.Height; y++)
+        {
+            for (int x = 0; x < targetGrid.Width; x++)
+            {
+                if (!targetGrid.CanPlaceItem(item, x, y, isRotated))
+                {
+                    continue;
+                }
+
+                bool moved = playerInventoryGridUI.TryTransferItemTo(
+                    item,
+                    sellCartGridUI,
+                    x,
+                    y,
+                    isRotated
+                );
+
+                if (moved)
+                {
+                    BindAndRefreshSellGridUIs();
+                    transactionController?.RefreshUI();
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private bool isOpen;
     private bool purchaseAvailable;
     private bool isRepairMode;
-    private bool isSellTabActive;
     private bool isApplicationQuitting;
 
     private void Awake()
     {
-        ActiveInstance = this;
-
-        QuickSellDiagnostic(
-            $"Awake / Version={QuickSellDiagnosticVersion} / " +
-            $"ActiveInstance設定 / Object={GetTransformPath(transform)}"
-        );
-
-        PawnShopUIController[] pawnControllers =
-            FindObjectsByType<PawnShopUIController>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None
-            );
-
-        if (pawnControllers.Length > 1)
-        {
-            QuickSellDiagnostic(
-                $"注意：PawnShopUIControllerがScene内に{pawnControllers.Length}個あります。"
-            );
-        }
-
         FindReferences();
         SetupTabButtons();
 
@@ -203,10 +249,10 @@ public class PawnShopUIController : MonoBehaviour
         weaponRepairController?.CloseRepairShop();
 
         isRepairMode = false;
-        isSellTabActive = false;
         SetTradeNavigationVisible(true);
         SetPanelVisible(true);
         isOpen = true;
+        ActiveInstance = this;
 
         // 購入側だけでなく、売却カートと会計処理にも
         // 現在の商人を渡し、商人ごとの買取カテゴリーを反映する。
@@ -242,6 +288,27 @@ public class PawnShopUIController : MonoBehaviour
                 "売却画面を表示しました。"
             );
         }
+    }
+
+    /// <summary>
+    /// 会話システムを経由しない洞窟商人などから、
+    /// MerchantStockInventoryを直接指定して売買画面を開きます。
+    /// </summary>
+    public bool OpenPawnShop(MerchantStockInventory stockInventory)
+    {
+        if (stockInventory == null)
+        {
+            LogWarning("MerchantStockInventoryが未設定のため売買画面を開けません。");
+            return false;
+        }
+
+        MerchantShopConversationContext.SetMerchant(
+            null,
+            stockInventory
+        );
+
+        OpenPawnShop();
+        return isOpen;
     }
 
     /// <summary>
@@ -290,8 +357,8 @@ public class PawnShopUIController : MonoBehaviour
 
         purchaseAvailable = false;
         isRepairMode = true;
-        isSellTabActive = false;
         isOpen = true;
+        ActiveInstance = this;
 
         SetPanelVisible(true);
         SetTradePanelsVisible(false);
@@ -307,8 +374,11 @@ public class PawnShopUIController : MonoBehaviour
         if (!repairOpened)
         {
             isRepairMode = false;
-            isSellTabActive = false;
             isOpen = false;
+            if (ActiveInstance == this)
+            {
+                ActiveInstance = null;
+            }
             SetTradeNavigationVisible(true);
             SetPanelVisible(false);
 
@@ -345,13 +415,6 @@ public class PawnShopUIController : MonoBehaviour
             return;
         }
 
-        isSellTabActive = false;
-
-        QuickSellDiagnostic(
-            $"ShowPurchaseTab / IsOpen={isOpen} / " +
-            $"RepairMode={isRepairMode} / SellTabActive={IsSellTabActive}"
-        );
-
         SetTabPanels(true);
         merchantPurchaseController?.RefreshUI();
     }
@@ -363,248 +426,9 @@ public class PawnShopUIController : MonoBehaviour
             return;
         }
 
-        isSellTabActive = true;
-
-        QuickSellDiagnostic(
-            $"ShowSellTab / IsOpen={isOpen} / " +
-            $"RepairMode={isRepairMode} / " +
-            $"InternalSellTab={isSellTabActive} / " +
-            $"PublicSellTab={IsSellTabActive}"
-        );
-
         SetTabPanels(false);
         BindAndRefreshSellGridUIs();
         transactionController?.RefreshUI();
-
-        QuickSellDiagnostic(
-            "ShowSellTab完了 / " +
-            $"SellPanelVisible={IsSellPanelActuallyVisible} / " +
-            $"SellCartGridVisible={IsSellCartGridActuallyVisible} / " +
-            $"PublicSellTab={IsSellTabActive} / " +
-            $"PlayerGrid={(playerInventoryGridUI != null ? GetTransformPath(playerInventoryGridUI.transform) : "null")} / " +
-            $"SellCartGrid={(sellCartGridUI != null ? GetTransformPath(sellCartGridUI.transform) : "null")} / " +
-            $"SellCart={(sellCart != null ? GetTransformPath(sellCart.transform) : "null")} / " +
-            $"Transaction={(transactionController != null ? GetTransformPath(transactionController.transform) : "null")}"
-        );
-    }
-
-    /// <summary>
-    /// 売却タブ中、Player InventoryのItemを左クリックした時に呼ばれます。
-    /// SellCartの空き位置を自動検索し、既存のTryTransferItemTo()経由で
-    /// 商人の買取条件を確認しながらカートへ移動します。
-    /// </summary>
-    public bool TryQuickAddPlayerItemToSellCart(
-        InventoryItem item)
-    {
-        FindReferences();
-
-        string itemName =
-            item != null &&
-            item.ItemData != null
-                ? item.ItemData.DisplayName
-                : "null";
-
-        QuickSellDiagnostic(
-            $"[STEP 1] TryQuickAdd開始 / Item={itemName} / " +
-            $"IsOpen={isOpen} / RepairMode={isRepairMode} / " +
-            $"InternalSellTab={isSellTabActive} / " +
-            $"SellPanelVisible={IsSellPanelActuallyVisible} / " +
-            $"SellCartGridVisible={IsSellCartGridActuallyVisible} / " +
-            $"PublicSellTab={IsSellTabActive}"
-        );
-
-        if (!IsSellTabActive)
-        {
-            QuickSellDiagnostic(
-                "[STOP] 売却タブ判定NG。 " +
-                $"isOpen={isOpen}, isRepairMode={isRepairMode}, " +
-                $"isSellTabActive={isSellTabActive}, " +
-                $"SellPanelVisible={IsSellPanelActuallyVisible}, " +
-                $"SellCartGridVisible={IsSellCartGridActuallyVisible}"
-            );
-            return false;
-        }
-
-        if (item == null)
-        {
-            QuickSellDiagnostic("[STOP] item=null");
-            return false;
-        }
-
-        if (item.ItemData == null)
-        {
-            QuickSellDiagnostic("[STOP] item.ItemData=null");
-            return false;
-        }
-
-        QuickSellDiagnostic(
-            $"[STEP 2] 参照確認 / " +
-            $"PlayerGrid={(playerInventoryGridUI != null ? GetTransformPath(playerInventoryGridUI.transform) : "null")} / " +
-            $"SellCartGrid={(sellCartGridUI != null ? GetTransformPath(sellCartGridUI.transform) : "null")} / " +
-            $"SellCart={(sellCart != null ? GetTransformPath(sellCart.transform) : "null")} / " +
-            $"CartInventory={(sellCart != null && sellCart.CartInventory != null ? GetTransformPath(sellCart.CartInventory.transform) : "null")}"
-        );
-
-        if (playerInventoryGridUI == null)
-        {
-            QuickSellDiagnostic("[STOP] Player Inventory Grid UI = null");
-            LogWarning("クリック売却：Player Inventory Grid UIが未設定です。");
-            return false;
-        }
-
-        if (sellCartGridUI == null)
-        {
-            QuickSellDiagnostic("[STOP] Sell Cart Grid UI = null");
-            LogWarning("クリック売却：Sell Cart Grid UIが未設定です。");
-            return false;
-        }
-
-        if (sellCart == null)
-        {
-            QuickSellDiagnostic("[STOP] SellCartInventory = null");
-            LogWarning("クリック売却：SellCartInventoryが見つかりません。");
-            return false;
-        }
-
-        if (sellCart.CartInventory == null)
-        {
-            QuickSellDiagnostic("[STOP] SellCart.CartInventory = null");
-            LogWarning("クリック売却：SellCartのItemBoxInventoryが見つかりません。");
-            return false;
-        }
-
-        if (sellCart.CartInventory.Grid == null)
-        {
-            QuickSellDiagnostic("[STOP] SellCart.CartInventory.Grid = null");
-            LogWarning("クリック売却：SellCart Gridが初期化されていません。");
-            return false;
-        }
-
-        bool playerContainsItem =
-            playerInventoryGridUI.ContainsItem(item);
-
-        QuickSellDiagnostic(
-            $"[STEP 3] PlayerGrid.ContainsItem={playerContainsItem} / " +
-            $"GridIsPlayer={playerInventoryGridUI.IsPlayerInventory}"
-        );
-
-        if (!playerContainsItem)
-        {
-            QuickSellDiagnostic(
-                "[STOP] PawnShopUIControllerに設定されているPlayer Inventory Grid UIが、" +
-                "クリックしたInventoryItemを保持していません。別のGrid UIを参照している可能性があります。"
-            );
-            return false;
-        }
-
-        bool canAccept =
-            sellCart.CanAcceptItem(
-                item,
-                out string rejectionReason
-            );
-
-        QuickSellDiagnostic(
-            $"[STEP 4] SellCart.CanAcceptItem={canAccept} / " +
-            $"Reason={(string.IsNullOrWhiteSpace(rejectionReason) ? "(なし)" : rejectionReason)} / " +
-            $"Merchant={(sellCart.CurrentMerchantStock != null ? sellCart.CurrentMerchantStock.ShopName : "null")}"
-        );
-
-        if (!canAccept)
-        {
-            sellCart.ReportRejectedTransfer(
-                item,
-                rejectionReason
-            );
-
-            QuickSellDiagnostic(
-                "[STOP] 商人の買取条件または共通売却条件で拒否されました。"
-            );
-            return false;
-        }
-
-        bool foundSpace =
-            sellCart.CartInventory.Grid.FindSpaceForItem(
-                item.ItemData,
-                out Vector2Int position,
-                out bool isRotated
-            );
-
-        QuickSellDiagnostic(
-            $"[STEP 5] FindSpaceForItem={foundSpace} / " +
-            $"Position={position.x},{position.y} / Rotated={isRotated}"
-        );
-
-        if (!foundSpace)
-        {
-            QuickSellDiagnostic(
-                "[STOP] SellCartに配置可能な空きマスがありません。"
-            );
-
-            LogWarning(
-                $"売却カートに空きがありません。Item={item.ItemData.DisplayName}"
-            );
-            return false;
-        }
-
-        QuickSellDiagnostic(
-            $"[STEP 6] TryTransferItemTo実行 / " +
-            $"SourceGrid={GetTransformPath(playerInventoryGridUI.transform)} / " +
-            $"TargetGrid={GetTransformPath(sellCartGridUI.transform)}"
-        );
-
-        bool moved =
-            playerInventoryGridUI.TryTransferItemTo(
-                item,
-                sellCartGridUI,
-                position.x,
-                position.y,
-                isRotated
-            );
-
-        QuickSellDiagnostic(
-            $"[STEP 7] TryTransferItemTo結果={moved} / " +
-            $"PlayerContainsAfter={playerInventoryGridUI.ContainsItem(item)} / " +
-            $"SellCartContainsAfter={sellCartGridUI.ContainsItem(item)}"
-        );
-
-        if (!moved)
-        {
-            QuickSellDiagnostic(
-                "[STOP] TryTransferItemTo=false。 " +
-                "AllowsDirectTransfer、移動先GridのBinding、CanPlaceItem、またはRemove/Move処理を確認してください。"
-            );
-
-            LogWarning(
-                $"クリックで売却カートへ移動できませんでした。" +
-                $"Item={item.ItemData.DisplayName}"
-            );
-            return false;
-        }
-
-        InventoryItemTooltipUI.HideFor(item);
-
-        BindAndRefreshSellGridUIs();
-        transactionController?.RefreshUI();
-
-        int total =
-            transactionController != null
-                ? transactionController.CurrentCheckoutTotal
-                : -1;
-
-        QuickSellDiagnostic(
-            $"[SUCCESS] クリック売却カート追加成功 / " +
-            $"Item={item.ItemData.DisplayName} / " +
-            $"位置={position.x},{position.y} / " +
-            $"売却合計={total}"
-        );
-
-        Log(
-            $"クリックで売却カートへ追加：" +
-            $"{item.ItemData.DisplayName} / " +
-            $"位置={position.x},{position.y}"
-        );
-
-        return true;
     }
 
     public void ClosePawnShop()
@@ -636,8 +460,11 @@ public class PawnShopUIController : MonoBehaviour
 
         purchaseAvailable = false;
         isRepairMode = false;
-        isSellTabActive = false;
         isOpen = false;
+        if (ActiveInstance == this)
+        {
+            ActiveInstance = null;
+        }
         SetTradeNavigationVisible(true);
         SetPanelVisible(false);
 
@@ -716,20 +543,52 @@ public class PawnShopUIController : MonoBehaviour
 
     private void CaptureTownInventory()
     {
-        if (!captureInventoryWhenClosing ||
-            townPlayerInventory == null)
+        if (!captureInventoryWhenClosing)
         {
             return;
         }
 
-        PlayerInventorySessionBridge bridge =
-            townPlayerInventory.SessionBridge;
+        InventoryController resolvedInventory =
+            ResolvePlayerInventoryController(
+                bindFallbackToGrid: false
+            );
 
-        bridge?.CaptureToSession();
+        if (resolvedInventory == null)
+        {
+            LogWarning(
+                "閉じる時の保存対象InventoryControllerが見つかりません。"
+            );
+            return;
+        }
+
+        // Bridgeが同じInventoryを管理している時は従来のSessionBridgeを使用。
+        if (townPlayerInventory != null &&
+            townPlayerInventory.InventoryController == resolvedInventory &&
+            townPlayerInventory.SessionBridge != null)
+        {
+            townPlayerInventory.SessionBridge.CaptureToSession();
+            return;
+        }
+
+        // Manager側InventoryをGrid UIで指定している場合は、
+        // そのInventoryControllerをGameSessionManagerへ直接保存する。
+        if (gameSessionManager != null)
+        {
+            gameSessionManager.CapturePlayerInventory(
+                resolvedInventory,
+                townPlayerInventory != null
+                    ? townPlayerInventory.EquipmentController
+                    : null
+            );
+        }
     }
 
     private void BindAndRefreshSellGridUIs()
     {
+        // Inspectorで設定済みのPlayer InventoryControllerを優先する。
+        // 未設定時のみPlayerTradeInventoryBridgeへ自動接続する。
+        PreparePlayerInventoryGrid();
+
         if (sellCartGridUI != null &&
             sellCart != null &&
             sellCart.CartInventory != null)
@@ -741,6 +600,88 @@ public class PawnShopUIController : MonoBehaviour
 
         playerInventoryGridUI?.RefreshInventoryUI();
         sellCartGridUI?.RefreshInventoryUI();
+    }
+
+    /// <summary>
+    /// Player Inventory Grid UIのInspector設定を優先し、
+    /// 必要な時だけPlayerTradeInventoryBridgeへフォールバックします。
+    /// </summary>
+    private InventoryController ResolvePlayerInventoryController(
+        bool bindFallbackToGrid)
+    {
+        InventoryController gridController =
+            playerInventoryGridUI != null
+                ? playerInventoryGridUI.Controller
+                : null;
+
+        if (preferAssignedPlayerGridInventory &&
+            gridController != null)
+        {
+            return gridController;
+        }
+
+        InventoryController bridgeController =
+            townPlayerInventory != null
+                ? townPlayerInventory.InventoryController
+                : null;
+
+        if (fallbackToPlayerTradeInventoryBridge &&
+            bridgeController != null)
+        {
+            if (bindFallbackToGrid &&
+                playerInventoryGridUI != null &&
+                playerInventoryGridUI.Controller != bridgeController)
+            {
+                playerInventoryGridUI.BindPlayerInventory(
+                    bridgeController
+                );
+            }
+
+            return bridgeController;
+        }
+
+        return gridController;
+    }
+
+    private void PreparePlayerInventoryGrid()
+    {
+        if (playerInventoryGridUI == null)
+        {
+            LogWarning("Player Inventory Grid UIが未設定です。");
+            return;
+        }
+
+        InventoryController before =
+            playerInventoryGridUI.Controller;
+
+        InventoryController resolved =
+            ResolvePlayerInventoryController(
+                bindFallbackToGrid: true
+            );
+
+        if (resolved == null)
+        {
+            LogWarning(
+                "Player Inventory用InventoryControllerを解決できませんでした。" +
+                " InventoryGridUIのInventory Controller設定を確認してください。"
+            );
+            return;
+        }
+
+        playerInventoryGridUI.RefreshInventoryUI();
+
+        if (showDebugLogs)
+        {
+            string mode =
+                preferAssignedPlayerGridInventory && before != null
+                    ? "Grid Inspector設定を維持"
+                    : "PlayerTradeInventoryBridgeへフォールバック";
+
+            Log(
+                $"Player Inventory接続: Mode={mode} / " +
+                $"Controller={resolved.name}"
+            );
+        }
     }
 
     private void SetTradePanelsVisible(bool visible)
@@ -857,7 +798,20 @@ public class PawnShopUIController : MonoBehaviour
         if (townPlayerInventory == null)
         {
             townPlayerInventory =
-                FindAnyObjectByType<TownPlayerInventoryController>(
+                FindAnyObjectByType<PlayerTradeInventoryBridge>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        if (gameSessionManager == null)
+        {
+            gameSessionManager = GameSessionManager.Instance;
+        }
+
+        if (gameSessionManager == null)
+        {
+            gameSessionManager =
+                FindAnyObjectByType<GameSessionManager>(
                     FindObjectsInactive.Include
                 );
         }
@@ -877,40 +831,6 @@ public class PawnShopUIController : MonoBehaviour
                     FindObjectsInactive.Include
                 );
         }
-    }
-
-    private void QuickSellDiagnostic(
-        string message)
-    {
-        if (!showQuickSellDiagnostics)
-        {
-            return;
-        }
-
-        Debug.Log(
-            $"[クリック売却診断][PawnShop] {message}",
-            this
-        );
-    }
-
-    private static string GetTransformPath(
-        Transform target)
-    {
-        if (target == null)
-        {
-            return "null";
-        }
-
-        string path = target.name;
-        Transform current = target.parent;
-
-        while (current != null)
-        {
-            path = current.name + "/" + path;
-            current = current.parent;
-        }
-
-        return path;
     }
 
     private void Log(string message)

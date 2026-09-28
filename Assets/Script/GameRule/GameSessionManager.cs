@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement;
 [DisallowMultipleComponent]
 public class GameSessionManager : MonoBehaviour
 {
-    public const int CurrentSaveVersion = 9;
+    public const int CurrentSaveVersion = 13;
     public const int MinSkillSlots = 3;
     public const int MaxSkillSlots = 7;
 
@@ -37,11 +37,21 @@ public class GameSessionManager : MonoBehaviour
     /// <summary>これまで町へ持ち帰った死亡NPCの累計人数です。</summary>
     public int TotalDeadNpcCount => totalDeadNpcCount;
 
+    /// <summary>これまで町へ生存状態で持ち帰った救出NPCの累計人数です。</summary>
+    public int TotalRescuedNpcCount => totalRescuedNpcCount;
+
+    /// <summary>生存状態で救出済みの特殊NPC ID一覧です。</summary>
+    public IReadOnlyList<string> RescuedSpecialNpcIds =>
+        rescuedSpecialNpcIds;
+
     /// <summary>所持金の初期化が済んでいるかどうかです。</summary>
     public bool HasInitializedMoney => hasInitializedMoney;
 
     /// <summary>インベントリ・装備の引き継ぎデータがあるかどうかです。</summary>
     public bool HasInventorySessionData => hasInventorySessionData;
+
+    /// <summary>町のプレイヤー保管箱の引き継ぎデータがあるかどうかです。</summary>
+    public bool HasPlayerItemBoxSessionData => hasPlayerItemBoxSessionData;
 
     /// <summary>所持金が変化した時に、現在の所持金を通知します。</summary>
     public event Action<int> MoneyChanged;
@@ -49,11 +59,19 @@ public class GameSessionManager : MonoBehaviour
     /// <summary>墓場へ登録された死亡NPC累計人数が変化した時に通知します。</summary>
     public event Action<int> DeadNpcCountChanged;
 
+    /// <summary>
+    /// 生存救出NPCの累計人数、または救出済み特殊NPC一覧が変化した時に通知します。
+    /// </summary>
+    public event Action RescueProgressChanged;
+
     /// <summary>町の施設レベルが変化した時に、FacilityIdと新しいLevelを通知します。</summary>
     public event Action<string, int> FacilityLevelChanged;
 
     /// <summary>インベントリ・装備の引き継ぎデータを保存または復元した時に通知します。</summary>
     public event Action InventorySessionChanged;
+
+    /// <summary>町のプレイヤー保管箱データが変化した時に通知します。</summary>
+    public event Action PlayerItemBoxSessionChanged;
 
     /// <summary>ミッション受注・進行データが変化した時に通知します。</summary>
     public event Action MissionSessionChanged;
@@ -61,8 +79,93 @@ public class GameSessionManager : MonoBehaviour
     /// <summary>スキルカードの取得・装備・スロット解放が変化した時に通知します。</summary>
     public event Action SkillSessionChanged;
 
+    /// <summary>ストーリー進行状態またはStory Flagが変化した時に通知します。</summary>
+    public event Action StorySessionChanged;
+
+    /// <summary>酒場の利用回数や報酬受取状態が変化した時に通知します。</summary>
+    public event Action TavernProgressChanged;
+
     /// <summary>シーン間で保持しているミッション数です。</summary>
     public int MissionSessionCount => missionSessionData.Count;
+
+    /// <summary>シーン間で保持しているストーリークエスト数です。</summary>
+    public int StorySessionCount => storySessionData.Count;
+
+    /// <summary>現在ONになっているStory Flag一覧です。</summary>
+    public IReadOnlyList<string> StoryFlags => storyFlags;
+
+    /// <summary>酒場の現在進捗です。</summary>
+    public TavernProgressData TavernProgress
+    {
+        get
+        {
+            EnsureTavernProgressData();
+            return tavernProgressData;
+        }
+    }
+
+    public int TavernRoundIndex
+    {
+        get
+        {
+            EnsureTavernProgressData();
+            return tavernProgressData.RoundIndex;
+        }
+    }
+
+    public int TavernPersonalDrinkTotal
+    {
+        get
+        {
+            EnsureTavernProgressData();
+            return tavernProgressData.PersonalDrinkTotal;
+        }
+    }
+
+    public int TavernPersonalDrinkThisRound
+    {
+        get
+        {
+            EnsureTavernProgressData();
+            return tavernProgressData.PersonalDrinkThisRound;
+        }
+    }
+
+    public int TavernTreatEveryoneTotal
+    {
+        get
+        {
+            EnsureTavernProgressData();
+            return tavernProgressData.TreatEveryoneTotal;
+        }
+    }
+
+    public int TavernTreatEveryoneThisRound
+    {
+        get
+        {
+            EnsureTavernProgressData();
+            return tavernProgressData.TreatEveryoneThisRound;
+        }
+    }
+
+    public bool TavernPersonalDrinkRewardClaimed
+    {
+        get
+        {
+            EnsureTavernProgressData();
+            return tavernProgressData.PersonalDrinkRewardClaimed;
+        }
+    }
+
+    public bool TavernTreatEveryoneRewardClaimed
+    {
+        get
+        {
+            EnsureTavernProgressData();
+            return tavernProgressData.TreatEveryoneRewardClaimed;
+        }
+    }
 
     /// <summary>追跡中にしたいミッションIDです。空なら追跡なしです。</summary>
     public string TrackedMissionId => trackedMissionId;
@@ -103,13 +206,32 @@ public class GameSessionManager : MonoBehaviour
     private bool hasInitializedMoney;
     private int totalDeadNpcCount;
 
+    private int totalRescuedNpcCount;
+
+    private readonly List<string> rescuedSpecialNpcIds =
+        new List<string>();
+
     private PlayerInventorySessionData inventorySessionData =
         new PlayerInventorySessionData();
 
     private bool hasInventorySessionData;
 
+    private PlayerItemBoxSessionData playerItemBoxSessionData =
+        new PlayerItemBoxSessionData();
+
+    private bool hasPlayerItemBoxSessionData;
+
     private readonly List<MissionSessionData> missionSessionData =
         new List<MissionSessionData>();
+
+    private readonly List<StorySessionData> storySessionData =
+        new List<StorySessionData>();
+
+    private readonly List<string> storyFlags =
+        new List<string>();
+
+    private TavernProgressData tavernProgressData =
+        new TavernProgressData();
 
     private readonly List<TownFacilitySessionData> facilitySessionData =
         new List<TownFacilitySessionData>();
@@ -301,6 +423,123 @@ public class GameSessionManager : MonoBehaviour
 
         totalDeadNpcCount = safeValue;
         NotifyDeadNpcCountChanged();
+    }
+
+    // ---------------------------------------------------------------------
+    // 救出NPC：累計人数・特殊NPC
+    // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// 今回、生存状態で町へ持ち帰った救出NPC数を累計へ加算します。
+    /// </summary>
+    public bool AddRescuedNpcCount(int amount)
+    {
+        if (amount <= 0)
+        {
+            return false;
+        }
+
+        long nextCount =
+            (long)totalRescuedNpcCount +
+            amount;
+
+        totalRescuedNpcCount =
+            nextCount > int.MaxValue
+                ? int.MaxValue
+                : (int)nextCount;
+
+        NotifyRescueProgressChanged();
+
+        Log(
+            $"生存救出NPC数を {amount:N0} 人増やしました。" +
+            $"累計 {totalRescuedNpcCount:N0} 人"
+        );
+
+        return true;
+    }
+
+    /// <summary>
+    /// 生存救出NPCの累計人数を直接設定します。
+    /// ロード・デバッグ用です。
+    /// </summary>
+    public void SetTotalRescuedNpcCount(int amount)
+    {
+        int safeValue =
+            Mathf.Max(0, amount);
+
+        if (totalRescuedNpcCount ==
+            safeValue)
+        {
+            return;
+        }
+
+        totalRescuedNpcCount =
+            safeValue;
+
+        NotifyRescueProgressChanged();
+    }
+
+    /// <summary>
+    /// 指定した特殊NPCを過去に救出済みか確認します。
+    /// </summary>
+    public bool HasRescuedSpecialNpc(
+        string specialNpcId)
+    {
+        if (string.IsNullOrWhiteSpace(
+                specialNpcId))
+        {
+            return false;
+        }
+
+        string target =
+            specialNpcId.Trim();
+
+        foreach (string id in
+                 rescuedSpecialNpcIds)
+        {
+            if (string.Equals(
+                    id,
+                    target,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 特殊NPCを「救出済み」として永久登録します。
+    /// 初回登録時だけtrueを返します。
+    /// </summary>
+    public bool RegisterRescuedSpecialNpc(
+        string specialNpcId)
+    {
+        string normalized =
+            specialNpcId?.Trim() ??
+            string.Empty;
+
+        if (string.IsNullOrWhiteSpace(
+                normalized) ||
+            HasRescuedSpecialNpc(
+                normalized))
+        {
+            return false;
+        }
+
+        rescuedSpecialNpcIds.Add(
+            normalized
+        );
+
+        NotifyRescueProgressChanged();
+
+        Log(
+            $"特殊NPC救出登録: {normalized} / " +
+            $"救出済み特殊NPC={rescuedSpecialNpcIds.Count}人"
+        );
+
+        return true;
     }
 
     // ---------------------------------------------------------------------
@@ -661,6 +900,145 @@ public class GameSessionManager : MonoBehaviour
         Log("インベントリ引き継ぎデータを消去しました。");
     }
 
+    // ---------------------------------------------------------------------
+    // 町のプレイヤー保管箱
+    // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// 町のプレイヤー保管箱の現在内容をシーン間セッションへ保存します。
+    /// ItemData参照、配置、回転、個数、武器残弾・弾種・耐久・ジャム状態を保持します。
+    /// </summary>
+    public bool CapturePlayerItemBox(ItemBoxInventory itemBoxInventory)
+    {
+        if (itemBoxInventory == null || itemBoxInventory.Grid == null)
+        {
+            LogTransferWarning(
+                "プレイヤー保管箱の保存に失敗しました。ItemBoxInventoryまたはGridがnullです。"
+            );
+            return false;
+        }
+
+        PlayerItemBoxSessionData nextData =
+            new PlayerItemBoxSessionData
+            {
+                GridWidth = Mathf.Max(1, itemBoxInventory.Grid.Width),
+                GridHeight = Mathf.Max(1, itemBoxInventory.Grid.Height)
+            };
+
+        int skippedCount = 0;
+
+        foreach (InventoryItem item in itemBoxInventory.Grid.Items)
+        {
+            SessionInventoryItemData snapshot = CreateItemSnapshot(item);
+
+            if (snapshot != null)
+            {
+                nextData.Items.Add(snapshot);
+            }
+            else
+            {
+                skippedCount++;
+            }
+        }
+
+        playerItemBoxSessionData = nextData;
+        hasPlayerItemBoxSessionData = true;
+        PlayerItemBoxSessionChanged?.Invoke();
+
+        LogTransfer(
+            $"プレイヤー保管箱を保存しました。Grid={nextData.GridWidth}x{nextData.GridHeight} / " +
+            $"Item={nextData.Items.Count}件 / Skip={skippedCount}件"
+        );
+
+        return true;
+    }
+
+    /// <summary>
+    /// シーン間セッションに保存されているプレイヤー保管箱を復元します。
+    /// </summary>
+    public bool RestorePlayerItemBox(
+        ItemBoxInventory itemBoxInventory,
+        out string resultMessage)
+    {
+        resultMessage = string.Empty;
+
+        if (!hasPlayerItemBoxSessionData || playerItemBoxSessionData == null)
+        {
+            resultMessage = "プレイヤー保管箱の保存データはまだありません。";
+            return false;
+        }
+
+        if (itemBoxInventory == null)
+        {
+            resultMessage = "復元先のItemBoxInventoryが見つかりません。";
+            return false;
+        }
+
+        List<InventoryItem> restoredItems = new List<InventoryItem>();
+        int failedCount = 0;
+
+        if (playerItemBoxSessionData.Items != null)
+        {
+            foreach (SessionInventoryItemData savedItem in
+                     playerItemBoxSessionData.Items)
+            {
+                InventoryItem item = CreateRuntimeInventoryItem(savedItem);
+
+                if (item != null)
+                {
+                    restoredItems.Add(item);
+                }
+                else
+                {
+                    failedCount++;
+                }
+            }
+        }
+
+        itemBoxInventory.RestoreInventoryFromSave(
+            Mathf.Max(1, playerItemBoxSessionData.GridWidth),
+            Mathf.Max(1, playerItemBoxSessionData.GridHeight),
+            restoredItems
+        );
+
+        resultMessage =
+            $"プレイヤー保管箱を復元しました。Item={restoredItems.Count}件";
+
+        if (failedCount > 0)
+        {
+            resultMessage += $" / 復元失敗={failedCount}件";
+        }
+
+        LogTransfer(resultMessage);
+        return failedCount == 0;
+    }
+
+    /// <summary>町のプレイヤー保管箱セッションを空にします。</summary>
+    public void ClearPlayerItemBoxSessionData()
+    {
+        playerItemBoxSessionData = new PlayerItemBoxSessionData();
+        hasPlayerItemBoxSessionData = false;
+        PlayerItemBoxSessionChanged?.Invoke();
+        LogTransfer("プレイヤー保管箱のセッションデータを消去しました。");
+    }
+
+    /// <summary>診断表示用のプレイヤー保管箱セッション概要です。</summary>
+    public string GetPlayerItemBoxSessionSummary()
+    {
+        if (!hasPlayerItemBoxSessionData || playerItemBoxSessionData == null)
+        {
+            return "[PlayerItemBoxSession] 保存データなし";
+        }
+
+        int count = playerItemBoxSessionData.Items != null
+            ? playerItemBoxSessionData.Items.Count
+            : 0;
+
+        return "[PlayerItemBoxSession] 保存データあり / " +
+               $"Grid={playerItemBoxSessionData.GridWidth}x{playerItemBoxSessionData.GridHeight} / " +
+               $"Item={count}件";
+    }
+
     /// <summary>
     /// タイトル画面のニューゲーム開始時に、
     /// 所持金・インベントリ・装備・ミッションの一時状態を初期化します。
@@ -673,11 +1051,21 @@ public class GameSessionManager : MonoBehaviour
         currentMoney = 0;
         hasInitializedMoney = false;
         totalDeadNpcCount = 0;
+        totalRescuedNpcCount = 0;
+        rescuedSpecialNpcIds.Clear();
+
+        RescueProgressExpeditionSession.Clear();
 
         inventorySessionData = new PlayerInventorySessionData();
         hasInventorySessionData = false;
 
+        playerItemBoxSessionData = new PlayerItemBoxSessionData();
+        hasPlayerItemBoxSessionData = false;
+
         missionSessionData.Clear();
+        storySessionData.Clear();
+        storyFlags.Clear();
+        tavernProgressData = new TavernProgressData();
         facilitySessionData.Clear();
         trackedMissionId = string.Empty;
         currentExpeditionMissionIds.Clear();
@@ -687,8 +1075,12 @@ public class GameSessionManager : MonoBehaviour
 
         NotifyMoneyChanged();
         NotifyDeadNpcCountChanged();
+        NotifyRescueProgressChanged();
         InventorySessionChanged?.Invoke();
+        PlayerItemBoxSessionChanged?.Invoke();
         MissionSessionChanged?.Invoke();
+        StorySessionChanged?.Invoke();
+        TavernProgressChanged?.Invoke();
         SkillSessionChanged?.Invoke();
 
         LogTransfer("ニューゲーム用にGameSessionManagerを初期化しました。");
@@ -1085,6 +1477,13 @@ public class GameSessionManager : MonoBehaviour
     {
         currentExpeditionStageId = stageId?.Trim() ?? string.Empty;
         currentExpeditionMissionIds.Clear();
+
+        // 前回出撃の「特殊NPCをエレベーターへ積んだ」一時記録を破棄します。
+        RescueProgressExpeditionSession.Clear();
+
+        // 1回出撃するごとに酒場の「1ラウンド利用回数」をリセットします。
+        ResetTavernRoundUsage();
+
         MissionSessionChanged?.Invoke();
 
         LogMission(
@@ -1705,6 +2104,485 @@ public class GameSessionManager : MonoBehaviour
     }
 
     // ---------------------------------------------------------------------
+    // 酒場進捗
+    // ---------------------------------------------------------------------
+
+    private void EnsureTavernProgressData()
+    {
+        if (tavernProgressData == null)
+        {
+            tavernProgressData = new TavernProgressData();
+        }
+
+        tavernProgressData.RoundIndex =
+            Mathf.Max(0, tavernProgressData.RoundIndex);
+
+        tavernProgressData.PersonalDrinkTotal =
+            Mathf.Max(0, tavernProgressData.PersonalDrinkTotal);
+
+        tavernProgressData.PersonalDrinkThisRound =
+            Mathf.Max(0, tavernProgressData.PersonalDrinkThisRound);
+
+        tavernProgressData.TreatEveryoneTotal =
+            Mathf.Max(0, tavernProgressData.TreatEveryoneTotal);
+
+        tavernProgressData.TreatEveryoneThisRound =
+            Mathf.Max(0, tavernProgressData.TreatEveryoneThisRound);
+    }
+
+    public bool CanUseTavernPersonalDrink(int perRoundLimit)
+    {
+        EnsureTavernProgressData();
+
+        int limit = Mathf.Max(1, perRoundLimit);
+        return tavernProgressData.PersonalDrinkThisRound < limit;
+    }
+
+    public bool CanUseTavernTreatEveryone(int perRoundLimit)
+    {
+        EnsureTavernProgressData();
+
+        int limit = Mathf.Max(1, perRoundLimit);
+        return tavernProgressData.TreatEveryoneThisRound < limit;
+    }
+
+    /// <summary>
+    /// 一人飲み1回分を記録します。
+    /// 料金の支払いはTavernController側で成功した後に呼び出します。
+    /// </summary>
+    public bool TryRegisterTavernPersonalDrink(
+        int perRoundLimit,
+        out string resultMessage)
+    {
+        EnsureTavernProgressData();
+
+        int limit = Mathf.Max(1, perRoundLimit);
+
+        if (tavernProgressData.PersonalDrinkThisRound >= limit)
+        {
+            resultMessage =
+                $"一人飲みはこのラウンドですでに上限 " +
+                $"{limit} 回に達しています。";
+            return false;
+        }
+
+        tavernProgressData.PersonalDrinkThisRound++;
+        tavernProgressData.PersonalDrinkTotal++;
+
+        TavernProgressChanged?.Invoke();
+
+        resultMessage =
+            $"一人飲み: 今ラウンド " +
+            $"{tavernProgressData.PersonalDrinkThisRound}/{limit} / " +
+            $"累計 {tavernProgressData.PersonalDrinkTotal} 回";
+
+        Log(resultMessage);
+        return true;
+    }
+
+    /// <summary>
+    /// みんなにおごる1回分を記録します。
+    /// 料金の支払いはTavernController側で成功した後に呼び出します。
+    /// </summary>
+    public bool TryRegisterTavernTreatEveryone(
+        int perRoundLimit,
+        out string resultMessage)
+    {
+        EnsureTavernProgressData();
+
+        int limit = Mathf.Max(1, perRoundLimit);
+
+        if (tavernProgressData.TreatEveryoneThisRound >= limit)
+        {
+            resultMessage =
+                $"みんなにおごるはこのラウンドですでに上限 " +
+                $"{limit} 回に達しています。";
+            return false;
+        }
+
+        tavernProgressData.TreatEveryoneThisRound++;
+        tavernProgressData.TreatEveryoneTotal++;
+
+        TavernProgressChanged?.Invoke();
+
+        resultMessage =
+            $"みんなにおごる: 今ラウンド " +
+            $"{tavernProgressData.TreatEveryoneThisRound}/{limit} / " +
+            $"累計 {tavernProgressData.TreatEveryoneTotal} 回";
+
+        Log(resultMessage);
+        return true;
+    }
+
+    /// <summary>
+    /// 新しい出撃ラウンド開始時に、そのラウンド内の酒場利用回数を0へ戻します。
+    /// 累計回数と報酬受取状態は残ります。
+    /// </summary>
+    public void ResetTavernRoundUsage()
+    {
+        EnsureTavernProgressData();
+
+        tavernProgressData.RoundIndex++;
+        tavernProgressData.PersonalDrinkThisRound = 0;
+        tavernProgressData.TreatEveryoneThisRound = 0;
+
+        TavernProgressChanged?.Invoke();
+
+        Log(
+            $"酒場ラウンド更新: Round={tavernProgressData.RoundIndex} / " +
+            "ラウンド内利用回数をリセット"
+        );
+    }
+
+    public bool MarkTavernPersonalDrinkRewardClaimed()
+    {
+        EnsureTavernProgressData();
+
+        if (tavernProgressData.PersonalDrinkRewardClaimed)
+        {
+            return false;
+        }
+
+        tavernProgressData.PersonalDrinkRewardClaimed = true;
+        TavernProgressChanged?.Invoke();
+        return true;
+    }
+
+    public bool MarkTavernTreatEveryoneRewardClaimed()
+    {
+        EnsureTavernProgressData();
+
+        if (tavernProgressData.TreatEveryoneRewardClaimed)
+        {
+            return false;
+        }
+
+        tavernProgressData.TreatEveryoneRewardClaimed = true;
+        TavernProgressChanged?.Invoke();
+        return true;
+    }
+
+    public void ClearTavernProgress()
+    {
+        tavernProgressData = new TavernProgressData();
+        TavernProgressChanged?.Invoke();
+        Log("酒場進捗を初期化しました。");
+    }
+
+    // ---------------------------------------------------------------------
+    // ストーリー進行
+    // ---------------------------------------------------------------------
+
+    /// <summary>
+    /// StoryQuestDefinitionが未登録ならLocked状態で作成します。
+    /// </summary>
+    public StorySessionData EnsureStorySessionData(
+        StoryQuestDefinition story)
+    {
+        if (story == null || string.IsNullOrWhiteSpace(story.StoryId))
+        {
+            return null;
+        }
+
+        string storyId = story.StoryId.Trim();
+        StorySessionData existing = FindStorySessionData(storyId);
+
+        if (existing != null)
+        {
+            existing.Story = story;
+            existing.DisplayName = story.DisplayName;
+            return existing;
+        }
+
+        StorySessionData created = new StorySessionData
+        {
+            Story = story,
+            StoryId = storyId,
+            DisplayName = story.DisplayName,
+            State = StoryQuestState.Locked
+        };
+
+        storySessionData.Add(created);
+        StorySessionChanged?.Invoke();
+        Log($"ストーリー状態を登録: {created.DisplayName} / ID={storyId} / Locked");
+        return created;
+    }
+
+    public bool TryGetStorySession(
+        string storyId,
+        out StorySessionData storyData)
+    {
+        storyData = FindStorySessionData(storyId);
+        return storyData != null;
+    }
+
+    public StoryQuestState GetStoryState(string storyId)
+    {
+        StorySessionData data = FindStorySessionData(storyId);
+        return data != null
+            ? data.State
+            : StoryQuestState.Locked;
+    }
+
+    public bool SetStoryState(
+        StoryQuestDefinition story,
+        StoryQuestState state)
+    {
+        StorySessionData data = EnsureStorySessionData(story);
+
+        if (data == null)
+        {
+            return false;
+        }
+
+        if (data.State == state)
+        {
+            return true;
+        }
+
+        data.Story = story;
+        data.DisplayName = story.DisplayName;
+        data.State = state;
+        StorySessionChanged?.Invoke();
+
+        Log(
+            $"ストーリー状態更新: {data.DisplayName} / " +
+            $"ID={data.StoryId} / 状態={state}"
+        );
+        return true;
+    }
+
+    /// <summary>
+    /// ScriptableObject参照を持てないロード直後などにIDだけで状態を設定します。
+    /// </summary>
+    public bool SetStoryStateById(
+        string storyId,
+        string displayName,
+        StoryQuestState state)
+    {
+        if (string.IsNullOrWhiteSpace(storyId))
+        {
+            return false;
+        }
+
+        string normalizedId = storyId.Trim();
+        StorySessionData data = FindStorySessionData(normalizedId);
+
+        if (data == null)
+        {
+            data = new StorySessionData
+            {
+                Story = null,
+                StoryId = normalizedId,
+                DisplayName = string.IsNullOrWhiteSpace(displayName)
+                    ? normalizedId
+                    : displayName.Trim(),
+                State = state
+            };
+            storySessionData.Add(data);
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                data.DisplayName = displayName.Trim();
+            }
+
+            data.State = state;
+        }
+
+        StorySessionChanged?.Invoke();
+        return true;
+    }
+
+    public bool HasStoryFlag(string flagId)
+    {
+        if (string.IsNullOrWhiteSpace(flagId))
+        {
+            return false;
+        }
+
+        string target = flagId.Trim();
+
+        foreach (string flag in storyFlags)
+        {
+            if (string.Equals(
+                    flag,
+                    target,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Story FlagをON/OFFします。実際に状態が変わった時だけtrueを返します。
+    /// </summary>
+    public bool SetStoryFlag(string flagId, bool enabled = true)
+    {
+        if (string.IsNullOrWhiteSpace(flagId))
+        {
+            return false;
+        }
+
+        string normalized = flagId.Trim();
+        int foundIndex = -1;
+
+        for (int i = 0; i < storyFlags.Count; i++)
+        {
+            if (string.Equals(
+                    storyFlags[i],
+                    normalized,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                foundIndex = i;
+                break;
+            }
+        }
+
+        if (enabled)
+        {
+            if (foundIndex >= 0)
+            {
+                return false;
+            }
+
+            storyFlags.Add(normalized);
+        }
+        else
+        {
+            if (foundIndex < 0)
+            {
+                return false;
+            }
+
+            storyFlags.RemoveAt(foundIndex);
+        }
+
+        StorySessionChanged?.Invoke();
+        Log($"Story Flag更新: {normalized} = {(enabled ? "ON" : "OFF")}");
+        return true;
+    }
+
+    public void ClearStorySessionData()
+    {
+        storySessionData.Clear();
+        storyFlags.Clear();
+        StorySessionChanged?.Invoke();
+        Log("ストーリー進行データを消去しました。");
+    }
+
+    public string GetStorySessionSummary()
+    {
+        List<string> lines = new List<string>();
+
+        foreach (StorySessionData data in storySessionData)
+        {
+            if (data == null)
+            {
+                continue;
+            }
+
+            lines.Add(
+                $"{data.DisplayName}(ID={data.StoryId}, 状態={data.State})"
+            );
+        }
+
+        string flagText = storyFlags.Count > 0
+            ? string.Join(", ", storyFlags)
+            : "なし";
+
+        return
+            $"[StorySession] Stories={storySessionData.Count}件 / " +
+            $"Flags={flagText} / " +
+            string.Join(" / ", lines);
+    }
+
+    private StorySessionData FindStorySessionData(string storyId)
+    {
+        if (string.IsNullOrWhiteSpace(storyId))
+        {
+            return null;
+        }
+
+        string target = storyId.Trim();
+
+        foreach (StorySessionData data in storySessionData)
+        {
+            if (data != null &&
+                string.Equals(
+                    data.StoryId,
+                    target,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return data;
+            }
+        }
+
+        return null;
+    }
+
+    private SavedTavernProgressData CreateSavedTavernProgressData()
+    {
+        EnsureTavernProgressData();
+
+        return new SavedTavernProgressData
+        {
+            RoundIndex = Mathf.Max(0, tavernProgressData.RoundIndex),
+            PersonalDrinkTotal =
+                Mathf.Max(0, tavernProgressData.PersonalDrinkTotal),
+            PersonalDrinkThisRound =
+                Mathf.Max(0, tavernProgressData.PersonalDrinkThisRound),
+            TreatEveryoneTotal =
+                Mathf.Max(0, tavernProgressData.TreatEveryoneTotal),
+            TreatEveryoneThisRound =
+                Mathf.Max(0, tavernProgressData.TreatEveryoneThisRound),
+            PersonalDrinkRewardClaimed =
+                tavernProgressData.PersonalDrinkRewardClaimed,
+            TreatEveryoneRewardClaimed =
+                tavernProgressData.TreatEveryoneRewardClaimed
+        };
+    }
+
+    private void RestoreTavernProgressData(
+        SavedTavernProgressData saved)
+    {
+        tavernProgressData = new TavernProgressData();
+
+        if (saved == null)
+        {
+            EnsureTavernProgressData();
+            return;
+        }
+
+        tavernProgressData.RoundIndex =
+            Mathf.Max(0, saved.RoundIndex);
+
+        tavernProgressData.PersonalDrinkTotal =
+            Mathf.Max(0, saved.PersonalDrinkTotal);
+
+        tavernProgressData.PersonalDrinkThisRound =
+            Mathf.Max(0, saved.PersonalDrinkThisRound);
+
+        tavernProgressData.TreatEveryoneTotal =
+            Mathf.Max(0, saved.TreatEveryoneTotal);
+
+        tavernProgressData.TreatEveryoneThisRound =
+            Mathf.Max(0, saved.TreatEveryoneThisRound);
+
+        tavernProgressData.PersonalDrinkRewardClaimed =
+            saved.PersonalDrinkRewardClaimed;
+
+        tavernProgressData.TreatEveryoneRewardClaimed =
+            saved.TreatEveryoneRewardClaimed;
+
+        EnsureTavernProgressData();
+    }
+
+    // ---------------------------------------------------------------------
     // JSON本セーブ用の書き出し・読み込み
     // ---------------------------------------------------------------------
 
@@ -1724,11 +2602,13 @@ public class GameSessionManager : MonoBehaviour
             SavedSceneName = savedSceneName ?? string.Empty,
             Money = Mathf.Max(0, currentMoney),
             TotalDeadNpcCount = Mathf.Max(0, totalDeadNpcCount),
+            TotalRescuedNpcCount = Mathf.Max(0, totalRescuedNpcCount),
             TrackedMissionId = trackedMissionId ?? string.Empty
         };
 
         EnsureSkillSessionData();
         saveData.SkillCards = CreateSavedSkillCardData();
+        saveData.Tavern = CreateSavedTavernProgressData();
 
         PlayerInventorySessionData sourceInventory =
             inventorySessionData ?? new PlayerInventorySessionData();
@@ -1760,6 +2640,34 @@ public class GameSessionManager : MonoBehaviour
             }
         }
 
+        saveData.PlayerItemBox = new SavedPlayerItemBoxData
+        {
+            HasData = hasPlayerItemBoxSessionData,
+            GridWidth = playerItemBoxSessionData != null
+                ? Mathf.Max(1, playerItemBoxSessionData.GridWidth)
+                : 10,
+            GridHeight = playerItemBoxSessionData != null
+                ? Mathf.Max(1, playerItemBoxSessionData.GridHeight)
+                : 12
+        };
+
+        if (hasPlayerItemBoxSessionData &&
+            playerItemBoxSessionData != null &&
+            playerItemBoxSessionData.Items != null)
+        {
+            foreach (SessionInventoryItemData item in
+                     playerItemBoxSessionData.Items)
+            {
+                SavedInventoryItemData savedItem =
+                    CreateSavedInventoryItem(item);
+
+                if (savedItem != null)
+                {
+                    saveData.PlayerItemBox.Items.Add(savedItem);
+                }
+            }
+        }
+
         foreach (MissionSessionData mission in missionSessionData)
         {
             if (mission == null ||
@@ -1775,8 +2683,45 @@ public class GameSessionManager : MonoBehaviour
                 State = mission.State,
                 Progress = Mathf.Max(0, mission.Progress),
                 RequiredAmount = Mathf.Max(1, mission.RequiredAmount),
-                RewardClaimed = mission.RewardClaimed
+                RewardClaimed = mission.RewardClaimed,
+                AcceptSource = mission.AcceptSource
             });
+        }
+
+        foreach (StorySessionData story in storySessionData)
+        {
+            if (story == null ||
+                string.IsNullOrWhiteSpace(story.StoryId))
+            {
+                continue;
+            }
+
+            saveData.Stories.Add(new SavedStoryQuestData
+            {
+                StoryId = story.StoryId.Trim(),
+                DisplayName = story.DisplayName ?? string.Empty,
+                State = story.State
+            });
+        }
+
+        foreach (string flag in storyFlags)
+        {
+            if (!string.IsNullOrWhiteSpace(flag))
+            {
+                saveData.StoryFlags.Add(flag.Trim());
+            }
+        }
+
+        foreach (string specialNpcId in
+                 rescuedSpecialNpcIds)
+        {
+            if (!string.IsNullOrWhiteSpace(
+                    specialNpcId))
+            {
+                saveData.RescuedSpecialNpcIds.Add(
+                    specialNpcId.Trim()
+                );
+            }
         }
 
         foreach (TownFacilitySessionData facility in facilitySessionData)
@@ -1799,10 +2744,17 @@ public class GameSessionManager : MonoBehaviour
         LogTransfer(
             $"本セーブ用データ作成: Money={saveData.Money:N0} / " +
             $"DeadNpcTotal={saveData.TotalDeadNpcCount:N0}人 / " +
+            $"RescuedNpcTotal={saveData.TotalRescuedNpcCount:N0}人 / " +
+            $"SpecialRescue={saveData.RescuedSpecialNpcIds.Count}人 / " +
             $"Inventory={saveData.PlayerInventory.InventoryItems.Count}件 / " +
             $"PrimaryWeapon={(saveData.PlayerInventory.PrimaryWeapon != null ? "あり" : "なし")} / " +
             $"Helmet={(saveData.PlayerInventory.Helmet != null ? "あり" : "なし")} / " +
+            $"PlayerItemBox={(saveData.PlayerItemBox.HasData ? saveData.PlayerItemBox.Items.Count : 0)}件 / " +
             $"Missions={saveData.Missions.Count}件 / " +
+            $"Stories={saveData.Stories.Count}件 / " +
+            $"StoryFlags={saveData.StoryFlags.Count}件 / " +
+            $"TavernSolo={saveData.Tavern.PersonalDrinkTotal}回 / " +
+            $"TavernTreat={saveData.Tavern.TreatEveryoneTotal}回 / " +
             $"Facilities={saveData.FacilityLevels.Count}件 / " +
             $"SkillCards={saveData.SkillCards.OwnedCardIds.Count}枚 / " +
             $"SkillSlots={saveData.SkillCards.UnlockedSlotCount}"
@@ -1846,6 +2798,40 @@ public class GameSessionManager : MonoBehaviour
         currentMoney = Mathf.Max(0, saveData.Money);
         hasInitializedMoney = true;
         totalDeadNpcCount = Mathf.Max(0, saveData.TotalDeadNpcCount);
+        totalRescuedNpcCount =
+            Mathf.Max(
+                0,
+                saveData.TotalRescuedNpcCount
+            );
+
+        rescuedSpecialNpcIds.Clear();
+
+        if (saveData.RescuedSpecialNpcIds != null)
+        {
+            foreach (string rawSpecialNpcId in
+                     saveData.RescuedSpecialNpcIds)
+            {
+                string specialNpcId =
+                    rawSpecialNpcId?.Trim() ??
+                    string.Empty;
+
+                if (string.IsNullOrWhiteSpace(
+                        specialNpcId) ||
+                    HasRescuedSpecialNpc(
+                        specialNpcId))
+                {
+                    continue;
+                }
+
+                rescuedSpecialNpcIds.Add(
+                    specialNpcId
+                );
+            }
+        }
+
+        RescueProgressExpeditionSession.Clear();
+
+        RestoreTavernProgressData(saveData.Tavern);
 
         SavedPlayerInventoryData savedInventory =
             saveData.PlayerInventory ?? new SavedPlayerInventoryData();
@@ -1920,6 +2906,49 @@ public class GameSessionManager : MonoBehaviour
         inventorySessionData = nextInventory;
         hasInventorySessionData = true;
 
+        playerItemBoxSessionData = new PlayerItemBoxSessionData();
+        hasPlayerItemBoxSessionData = false;
+        int restoredPlayerItemBoxCount = 0;
+
+        SavedPlayerItemBoxData savedPlayerItemBox = saveData.PlayerItemBox;
+
+        if (savedPlayerItemBox != null && savedPlayerItemBox.HasData)
+        {
+            playerItemBoxSessionData.GridWidth =
+                Mathf.Max(1, savedPlayerItemBox.GridWidth);
+            playerItemBoxSessionData.GridHeight =
+                Mathf.Max(1, savedPlayerItemBox.GridHeight);
+
+            if (savedPlayerItemBox.Items != null)
+            {
+                foreach (SavedInventoryItemData savedItem in
+                         savedPlayerItemBox.Items)
+                {
+                    SessionInventoryItemData sessionItem =
+                        CreateSessionInventoryItem(
+                            savedItem,
+                            itemDataDatabase,
+                            out string itemBoxItemError
+                        );
+
+                    if (sessionItem != null)
+                    {
+                        playerItemBoxSessionData.Items.Add(sessionItem);
+                        restoredPlayerItemBoxCount++;
+                    }
+                    else
+                    {
+                        missingItemCount++;
+                        LogTransferWarning(
+                            $"プレイヤー保管箱のItemをロード時にスキップしました: {itemBoxItemError}"
+                        );
+                    }
+                }
+            }
+
+            hasPlayerItemBoxSessionData = true;
+        }
+
         facilitySessionData.Clear();
         int restoredFacilityCount = 0;
 
@@ -1978,7 +3007,8 @@ public class GameSessionManager : MonoBehaviour
                     State = savedMission.State,
                     Progress = Mathf.Max(0, savedMission.Progress),
                     RequiredAmount = Mathf.Max(1, savedMission.RequiredAmount),
-                    RewardClaimed = savedMission.RewardClaimed
+                    RewardClaimed = savedMission.RewardClaimed,
+                    AcceptSource = savedMission.AcceptSource
                 };
 
                 mission.Progress = Mathf.Clamp(
@@ -1996,6 +3026,56 @@ public class GameSessionManager : MonoBehaviour
 
                 missionSessionData.Add(mission);
                 restoredMissionCount++;
+            }
+        }
+
+        storySessionData.Clear();
+        int restoredStoryCount = 0;
+
+        if (saveData.Stories != null)
+        {
+            foreach (SavedStoryQuestData savedStory in saveData.Stories)
+            {
+                if (savedStory == null ||
+                    string.IsNullOrWhiteSpace(savedStory.StoryId))
+                {
+                    continue;
+                }
+
+                string storyId = savedStory.StoryId.Trim();
+
+                if (FindStorySessionData(storyId) != null)
+                {
+                    continue;
+                }
+
+                storySessionData.Add(new StorySessionData
+                {
+                    Story = null,
+                    StoryId = storyId,
+                    DisplayName = string.IsNullOrWhiteSpace(savedStory.DisplayName)
+                        ? storyId
+                        : savedStory.DisplayName,
+                    State = savedStory.State
+                });
+
+                restoredStoryCount++;
+            }
+        }
+
+        storyFlags.Clear();
+
+        if (saveData.StoryFlags != null)
+        {
+            foreach (string savedFlag in saveData.StoryFlags)
+            {
+                if (string.IsNullOrWhiteSpace(savedFlag) ||
+                    HasStoryFlag(savedFlag))
+                {
+                    continue;
+                }
+
+                storyFlags.Add(savedFlag.Trim());
             }
         }
 
@@ -2020,15 +3100,26 @@ public class GameSessionManager : MonoBehaviour
 
         NotifyMoneyChanged();
         NotifyDeadNpcCountChanged();
+        NotifyRescueProgressChanged();
         InventorySessionChanged?.Invoke();
+        PlayerItemBoxSessionChanged?.Invoke();
         MissionSessionChanged?.Invoke();
+        StorySessionChanged?.Invoke();
+        TavernProgressChanged?.Invoke();
         SkillSessionChanged?.Invoke();
 
         resultMessage =
             $"所持金={currentMoney:N0} / " +
             $"墓場の死亡NPC={totalDeadNpcCount:N0}人 / " +
+            $"累計救出NPC={totalRescuedNpcCount:N0}人 / " +
+            $"特殊NPC救出={rescuedSpecialNpcIds.Count}人 / " +
             $"通常アイテム={restoredInventoryCount}件 / " +
+            $"保管箱={restoredPlayerItemBoxCount}件 / " +
             $"ミッション={restoredMissionCount}件 / " +
+            $"ストーリー={restoredStoryCount}件 / " +
+            $"StoryFlag={storyFlags.Count}件 / " +
+            $"酒場一人飲み={TavernPersonalDrinkTotal}回 / " +
+            $"酒場おごり={TavernTreatEveryoneTotal}回 / " +
             $"施設={restoredFacilityCount}件 / " +
             $"スキルカード={restoredSkillCardCount}枚 / " +
             $"スキル枠={UnlockedSkillSlotCount}";
@@ -3138,6 +4229,11 @@ public class GameSessionManager : MonoBehaviour
         DeadNpcCountChanged?.Invoke(totalDeadNpcCount);
     }
 
+    private void NotifyRescueProgressChanged()
+    {
+        RescueProgressChanged?.Invoke();
+    }
+
     private void Log(string message)
     {
         if (!showDebugLogs)
@@ -3223,6 +4319,18 @@ public class PlayerInventorySessionData
         new List<SessionInventoryItemData>();
     public SessionInventoryItemData PrimaryWeaponItem;
     public SessionInventoryItemData HelmetItem;
+}
+
+/// <summary>
+/// 町のプレイヤー保管箱1個分をシーン間で保持するデータです。
+/// </summary>
+[Serializable]
+public class PlayerItemBoxSessionData
+{
+    public int GridWidth = 10;
+    public int GridHeight = 12;
+    public List<SessionInventoryItemData> Items =
+        new List<SessionInventoryItemData>();
 }
 
 [Serializable]

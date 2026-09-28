@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e40ccca5d0d395b44b7cd41360470e57, type: 3}
+  m_Name: "14\u6DF1\u5C64\u306E\u6383\u8A0E"
+  m_EditorClassIdentifier: Assembly-CSharp::MissionDefinition2D
+  missionId: mission_014
+  displayName: "\u6DF1\u5C64\u306E\u6383\u8A0E"
+  description: "\u5F37\u3081\u306EEnemy\u309210\u4F53\u6483\u7834"
+  missionImage: {fileID: 0}
+  objectiveType: 1
+  requiredAmount: 10
+  requiredItem: {fileID: 0}
+  countItemsAlreadyHeldWhenMissionStarts: 0
+  consumeCollectedItemsOnResult: 0
+  targetEnemyId: enemy_mutant
+  targetRescueNpcId: 
+  expeditionMoneyReward: 1000
+  expeditionItemRewards: []
+  skillCardRewards: []
+  skillSlotUnlockAmount: 0

@@ -4,7 +4,8 @@ using UnityEngine;
 
 /// <summary>
 /// Town_Mainで施設アップグレードを実行します。
-/// 必要素材の確認・消費・施設レベル更新・インベントリのセッション同期を担当します。
+/// 必要ミッションの確認・必要素材の確認/消費・施設レベル更新・
+/// インベントリのセッション同期を担当します。
 /// </summary>
 [DisallowMultipleComponent]
 public class TownFacilityUpgradeManager : MonoBehaviour
@@ -90,6 +91,16 @@ public class TownFacilityUpgradeManager : MonoBehaviour
             return false;
         }
 
+        // 先にミッション条件を確認します。
+        // Required Mission が None の場合は常に通過します。
+        if (!HasRequiredMission(
+                upgrade,
+                out resultMessage))
+        {
+            return false;
+        }
+
+        // ミッション条件とは別に、必要素材を確認します。
         if (!HasRequiredItems(
                 inventory,
                 upgrade,
@@ -185,7 +196,134 @@ public class TownFacilityUpgradeManager : MonoBehaviour
             return false;
         }
 
+        if (!HasRequiredMission(
+                upgrade,
+                out resultMessage))
+        {
+            return false;
+        }
+
         return HasRequiredItems(inventory, upgrade, out resultMessage);
+    }
+
+    /// <summary>
+    /// TownFacilityUpgradeLevel に設定された必要ミッション条件を確認します。
+    ///
+    /// Required Mission = None
+    ///     → ミッション条件なし。
+    ///
+    /// Require Mission Reward Claimed = OFF
+    ///     → ミッション目的を達成した時点で条件達成。
+    ///
+    /// Require Mission Reward Claimed = ON
+    ///     → NPCへ報告して報酬を受け取るまで条件未達成。
+    /// </summary>
+    private bool HasRequiredMission(
+        TownFacilityUpgradeLevel upgrade,
+        out string resultMessage)
+    {
+        resultMessage = string.Empty;
+
+        if (upgrade == null)
+        {
+            resultMessage = "アップグレード条件を確認できません。";
+            return false;
+        }
+
+        MissionDefinition2D requiredMission = upgrade.RequiredMission;
+
+        // Noneならミッション条件はありません。
+        if (requiredMission == null)
+        {
+            return true;
+        }
+
+        if (gameSessionManager == null)
+        {
+            resultMessage = "GameSessionManagerが見つからないため、必要ミッションを確認できません。";
+            return false;
+        }
+
+        string missionId = requiredMission.MissionId?.Trim() ?? string.Empty;
+        string missionName = string.IsNullOrWhiteSpace(requiredMission.DisplayName)
+            ? requiredMission.name
+            : requiredMission.DisplayName;
+
+        if (string.IsNullOrWhiteSpace(missionId))
+        {
+            resultMessage =
+                $"必要ミッション『{missionName}』の Mission Id が空です。";
+            LogWarning(resultMessage);
+            return false;
+        }
+
+        if (!gameSessionManager.TryGetMissionSession(
+                missionId,
+                out MissionSessionData missionData) ||
+            missionData == null ||
+            missionData.State == MissionSessionState.Inactive)
+        {
+            resultMessage = GetMissionLockedMessage(
+                upgrade,
+                $"先に町人ミッション『{missionName}』を受注してください。"
+            );
+            return false;
+        }
+
+        int requiredAmount = Mathf.Max(
+            1,
+            missionData.RequiredAmount > 0
+                ? missionData.RequiredAmount
+                : requiredMission.RequiredAmount
+        );
+
+        int currentProgress = Mathf.Max(0, missionData.Progress);
+
+        bool objectiveCompleted =
+            missionData.State == MissionSessionState.Completed ||
+            currentProgress >= requiredAmount;
+
+        if (!objectiveCompleted)
+        {
+            resultMessage = GetMissionLockedMessage(
+                upgrade,
+                $"先に町人ミッション『{missionName}』を達成してください。" +
+                $"\n進捗 {Mathf.Min(currentProgress, requiredAmount)}/{requiredAmount}"
+            );
+            return false;
+        }
+
+        if (upgrade.RequireMissionRewardClaimed &&
+            !missionData.RewardClaimed)
+        {
+            resultMessage = GetMissionLockedMessage(
+                upgrade,
+                $"町人ミッション『{missionName}』の報酬を受け取ると、施設アップグレードが解放されます。"
+            );
+            return false;
+        }
+
+        Log(
+            $"ミッション条件達成: {missionName} / " +
+            $"達成={objectiveCompleted} / " +
+            $"報酬受取={missionData.RewardClaimed} / " +
+            $"報酬受取必須={upgrade.RequireMissionRewardClaimed}"
+        );
+
+        return true;
+    }
+
+    private static string GetMissionLockedMessage(
+        TownFacilityUpgradeLevel upgrade,
+        string fallbackMessage)
+    {
+        if (upgrade != null &&
+            !string.IsNullOrWhiteSpace(upgrade.MissionLockedMessage))
+        {
+            return upgrade.MissionLockedMessage;
+        }
+
+        return fallbackMessage ?? string.Empty;
     }
 
     private bool HasRequiredItems(

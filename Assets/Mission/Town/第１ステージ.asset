@@ -17,6 +17,19 @@ MonoBehaviour:
   combatDanger: 2
   caveDanger: 1
   requiredSupplies: 1
+  entryPoints:
+  - entryPointId: entry_01
+    displayName: "\u6D1E\u7A9F\u5165\u308A\u53E3"
+    previewImage: {fileID: 0}
+  - entryPointId: entry_02
+    displayName: "\u5EC3\u5751\u53E3"
+    previewImage: {fileID: 0}
+  - entryPointId: entry_03
+    displayName: "\u5730\u4E0B\u6C34\u8DEF"
+    previewImage: {fileID: 0}
+  - entryPointId: entry_04
+    displayName: "\u5D29\u843D\u5751\u9053"
+    previewImage: {fileID: 0}
   missionPool:
   - {fileID: 11400000, guid: e4c4c9e4b9a85514086ba143d21ce4f4, type: 2}
   - {fileID: 11400000, guid: 25e45a7ed7fce5e4e8be432db0793e5c, type: 2}

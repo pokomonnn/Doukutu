@@ -30,6 +30,13 @@ public class ItemBoxInventory : MonoBehaviour
     [Tooltip("Storage の時だけ有効。オフなら中身の閲覧専用になります。")]
     [SerializeField] private bool allowDirectItemTransfer = true;
 
+    [Tooltip(
+        "オンの場合、このStorage内の装備品をWeaponSlot / HelmetSlotへ直接ドラッグして装備できます。" +
+        "町のプレイヤー保管箱ではオン、通常の洞窟ItemBoxではオフがおすすめです。"
+    )]
+    [InspectorName("装備スロットへ直接装備を許可")]
+    [SerializeField] private bool allowDirectEquipToEquipmentSlot = false;
+
     [Header("インベントリサイズ")]
     [SerializeField, Min(1)] private int gridWidth = 7;
     [SerializeField, Min(1)] private int gridHeight = 10;
@@ -60,6 +67,14 @@ public class ItemBoxInventory : MonoBehaviour
     public bool AllowsDirectItemTransfer =>
         boxKind == ItemBoxKind.Storage &&
         allowDirectItemTransfer;
+
+    /// <summary>
+    /// この箱から装備スロットへ直接ドラッグ装備してよいか。
+    /// Shopや閲覧専用Storageでは常にfalseです。
+    /// </summary>
+    public bool AllowsDirectEquipToEquipmentSlot =>
+        AllowsDirectItemTransfer &&
+        allowDirectEquipToEquipmentSlot;
 
     public event Action OnInventoryChanged;
 
@@ -340,6 +355,24 @@ public class ItemBoxInventory : MonoBehaviour
 
         inventoryGrid.Initialize(gridWidth, gridHeight, true);
         AddStartingItems();
+
+        isInitialized = true;
+        NotifyInventoryChanged();
+    }
+
+    /// <summary>
+    /// Starting Itemsを入れずに、このInventoryを空の状態へリセットします。
+    /// MerchantStockInventoryがMerchantShopDataから商品棚を作る時に使用します。
+    /// 通常のStorageや洞窟ItemBoxは従来どおりResetInventory()を使用してください。
+    /// </summary>
+    public void ResetInventoryEmpty()
+    {
+        if (inventoryGrid == null)
+        {
+            inventoryGrid = new InventoryGrid();
+        }
+
+        inventoryGrid.Initialize(gridWidth, gridHeight, true);
 
         isInitialized = true;
         NotifyInventoryChanged();

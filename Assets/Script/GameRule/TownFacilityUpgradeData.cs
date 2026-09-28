@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// 町の施設1つ分のアップグレード設定です。
-/// 例：武器屋 / facilityId=weapon_shop / Lv1→Lv2の必要素材と解禁商品。
+/// 例：武器屋 / facilityId=weapon_shop / Lv1→Lv2の必要ミッション・必要素材・解禁商品。
+///
+/// MerchantShopDataはこのクラスを継承します。
 /// </summary>
 [CreateAssetMenu(
     fileName = "NewTownFacilityUpgrade",
@@ -14,8 +17,10 @@ public class TownFacilityUpgradeData : ScriptableObject
 {
     [Header("施設情報")]
     [Tooltip("セーブデータで施設を識別する重複しないIDです。公開後は変更しないでください。例：weapon_shop")]
+    [FormerlySerializedAs("shopId")]
     [SerializeField] private string facilityId = "weapon_shop";
 
+    [FormerlySerializedAs("shopName")]
     [SerializeField] private string facilityName = "武器屋";
 
     [Tooltip("ニューゲーム開始時の施設レベルです。通常は1です。")]
@@ -102,7 +107,32 @@ public class TownFacilityUpgradeData : ScriptableObject
         }
     }
 
-    private void OnValidate()
+    /// <summary>
+    /// StartingLevelより上からcurrentLevelまでに解禁済みの商品を順番に返します。
+    /// MerchantStockInventoryが店舗在庫をMerchantShopDataから再構築する時に使用します。
+    /// </summary>
+    public IEnumerable<TownFacilityShopUnlockItem> GetShopUnlockItemsUpToLevel(
+        int currentLevel)
+    {
+        int safeLevel = Mathf.Clamp(
+            currentLevel,
+            StartingLevel,
+            MaxLevel
+        );
+
+        for (int level = StartingLevel + 1;
+             level <= safeLevel;
+             level++)
+        {
+            foreach (TownFacilityShopUnlockItem item in
+                     GetShopUnlockItemsForLevel(level))
+            {
+                yield return item;
+            }
+        }
+    }
+
+    protected virtual void OnValidate()
     {
         facilityId = facilityId?.Trim() ?? string.Empty;
         facilityName = facilityName?.Trim() ?? string.Empty;
@@ -142,26 +172,55 @@ public class TownFacilityUpgradeLevel
     [Header("このレベルへアップグレード")]
     [SerializeField, Min(2)] private int targetLevel = 2;
 
+    [Header("必要町人ミッション")]
+    [Tooltip(
+        "このレベルへのアップグレードを解放する町人ミッションです。" +
+        "不要ならNoneのままで、従来どおり素材だけでアップグレードできます。"
+    )]
+    [SerializeField] private MissionDefinition2D requiredMission;
+
+    [Tooltip(
+        "ONならRequired Missionを達成しただけでは足りず、NPCから報酬を受け取った後にアップグレード可能になります。" +
+        "OFFならミッション達成時点でアップグレード可能です。"
+    )]
+    [SerializeField] private bool requireMissionRewardClaimed = true;
+
+    [Tooltip(
+        "ミッション条件を満たしていない時に表示する専用メッセージです。" +
+        "空欄ならManagerが状況に応じた文章を自動生成します。"
+    )]
+    [SerializeField, TextArea(2, 4)] private string missionLockedMessage;
+
     [Header("必要素材")]
     [SerializeField]
     private List<TownFacilityUpgradeRequirement> requiredItems =
         new List<TownFacilityUpgradeRequirement>();
 
-    [Header("このレベルで店に追加する商品")]
-    [Tooltip("ItemBoxInventoryのStarting Itemsとは別に、このレベルへ到達したら商品棚へ追加されます。")]
+    [Header("このレベルで追加解禁する販売商品")]
+    [Tooltip(
+        "この施設レベルへ到達した時に販売解禁する商品です。\n" +
+        "MerchantShopDataを使用する店舗では、Lv1商品はMerchantShopDataのItems、Lv2以降はここで設定します。"
+    )]
     [SerializeField]
     private List<TownFacilityShopUnlockItem> unlockedShopItems =
         new List<TownFacilityShopUnlockItem>();
 
     public int TargetLevel => Mathf.Max(1, targetLevel);
+    public MissionDefinition2D RequiredMission => requiredMission;
+    public bool RequireMissionRewardClaimed => requireMissionRewardClaimed;
+    public string MissionLockedMessage =>
+        missionLockedMessage?.Trim() ?? string.Empty;
+
     public IReadOnlyList<TownFacilityUpgradeRequirement> RequiredItems =>
         requiredItems;
+
     public IReadOnlyList<TownFacilityShopUnlockItem> UnlockedShopItems =>
         unlockedShopItems;
 
     public void Validate(int startingLevel)
     {
         targetLevel = Mathf.Max(startingLevel + 1, targetLevel);
+        missionLockedMessage = missionLockedMessage?.Trim() ?? string.Empty;
 
         if (requiredItems == null)
         {
@@ -205,7 +264,7 @@ public class TownFacilityShopUnlockItem
 {
     [SerializeField] private ItemData itemData;
 
-    [Tooltip("商品棚へ追加する初期在庫数です。")]
+    [Tooltip("この商品が解禁された時の商品棚在庫数です。")]
     [SerializeField, Min(1)] private int amount = 1;
 
     public ItemData ItemData => itemData;

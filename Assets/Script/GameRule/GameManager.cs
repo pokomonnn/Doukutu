@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -13,6 +13,11 @@ public class GameManager : MonoBehaviour
 
     [Header("Player設定")]
     [SerializeField] private string playerTag = "Player";
+
+    [Header("出撃地点連携")]
+    [Tooltip("町の出撃パネルで選択した出撃地点から開始した時のログを表示します。")]
+    [InspectorName("出撃地点スポーンのログ表示")]
+    [SerializeField] private bool showExpeditionEntrySpawnLogs = true;
 
     [Header("死亡BGM")]
     [SerializeField] private AudioSource deathBgmSource;
@@ -136,18 +141,37 @@ public class GameManager : MonoBehaviour
         }
 
         Vector3 spawnPosition;
+        string spawnSource;
 
         if (hasCheckpoint)
         {
             spawnPosition = currentSpawnPosition;
+            spawnSource = $"Checkpoint {currentCheckpointNumber}";
+        }
+        else if (TryGetSelectedExpeditionSpawnPosition(
+                     out Vector3 selectedEntryPosition,
+                     out string selectedEntryDescription))
+        {
+            spawnPosition = selectedEntryPosition;
+            spawnSource = selectedEntryDescription;
         }
         else if (firstSpawnPoint != null)
         {
             spawnPosition = firstSpawnPoint.position;
+            spawnSource = "First Spawn Point";
         }
         else
         {
             yield break;
+        }
+
+        if (showExpeditionEntrySpawnLogs)
+        {
+            Debug.Log(
+                $"[GameManager] Player生成位置を決定：" +
+                $"{spawnSource} / Position={spawnPosition}",
+                this
+            );
         }
 
         Rigidbody2D rb = player.GetComponent<Rigidbody2D>();
@@ -156,11 +180,107 @@ public class GameManager : MonoBehaviour
         {
             rb.position = spawnPosition;
             rb.linearVelocity = Vector2.zero;
+            rb.angularVelocity = 0f;
         }
         else
         {
             player.transform.position = spawnPosition;
         }
+
+        // FallDamage.Start()はGameManagerの移動より先に実行される場合があります。
+        // その状態で高い初期位置→低いチェックポイントへワープすると、
+        // ワープ距離を「落下距離」と誤認して骨折するため、ここで計測をリセットします。
+        FallDamage fallDamage = player.GetComponent<FallDamage>();
+
+        if (fallDamage == null)
+        {
+            fallDamage =
+                player.GetComponentInChildren<FallDamage>(true);
+        }
+
+        fallDamage?.ResetAfterTeleport();
+    }
+
+    private bool TryGetSelectedExpeditionSpawnPosition(
+        out Vector3 spawnPosition,
+        out string description)
+    {
+        spawnPosition = Vector3.zero;
+        description = string.Empty;
+
+        if (!ExpeditionEntrySelectionSession.TryGetSelection(
+                out string selectedStageId,
+                out string selectedEntryPointId,
+                out string selectedDisplayName))
+        {
+            return false;
+        }
+
+        StageExpeditionSpawnPoint[] spawnPoints =
+            FindObjectsByType<StageExpeditionSpawnPoint>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None
+            );
+
+        StageExpeditionSpawnPoint matchedPoint = null;
+        int matchCount = 0;
+
+        for (int i = 0; i < spawnPoints.Length; i++)
+        {
+            StageExpeditionSpawnPoint candidate =
+                spawnPoints[i];
+
+            if (candidate == null ||
+                !candidate.Matches(
+                    selectedStageId,
+                    selectedEntryPointId))
+            {
+                continue;
+            }
+
+            matchCount++;
+
+            if (matchedPoint == null)
+            {
+                matchedPoint = candidate;
+            }
+        }
+
+        if (matchedPoint == null)
+        {
+            Debug.LogWarning(
+                "[GameManager] " +
+                $"選択された出撃地点に一致するStageExpeditionSpawnPointが見つかりません。" +
+                $" StageId={selectedStageId} / EntryPointId={selectedEntryPointId}。" +
+                " First Spawn Pointへフォールバックします。",
+                this
+            );
+            return false;
+        }
+
+        if (matchCount > 1)
+        {
+            Debug.LogWarning(
+                "[GameManager] " +
+                $"同じ出撃地点IDのStageExpeditionSpawnPointが{matchCount}個あります。" +
+                $" 最初に見つかった『{matchedPoint.name}』を使用します。" +
+                $" StageId={selectedStageId} / EntryPointId={selectedEntryPointId}",
+                this
+            );
+        }
+
+        spawnPosition = matchedPoint.SpawnPosition;
+
+        string resolvedName =
+            string.IsNullOrWhiteSpace(selectedDisplayName)
+                ? selectedEntryPointId
+                : selectedDisplayName;
+
+        description =
+            $"出撃地点 {resolvedName} " +
+            $"({selectedStageId}/{selectedEntryPointId})";
+
+        return true;
     }
 
     // PlayerDeathHandler の On Player Died から呼ぶ

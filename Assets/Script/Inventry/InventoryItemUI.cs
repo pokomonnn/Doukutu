@@ -677,15 +677,34 @@ public class InventoryItemUI : MonoBehaviour,
                 out InventoryGridUI targetGridUI,
                 out Vector2Int pointerGridPosition))
         {
-            // 同じプレイヤーInventory内で、同一ItemDataのスタック上へ
-            // ドロップした場合は、通常移動より先にスタック結合を試す。
+            // 通常移動より先にスタック結合を試す。
+            // ・Player Inventory内 → 従来どおり同一Grid結合
+            // ・ItemBox(Storage) → Player Inventory → クロスGrid結合
             // 例：30 + 20 = 50。80 + 20なら90 + 10。
-            if (targetGridUI == gridUI &&
-                gridUI.TryMergeItemAt(
+            int transferredAmount = 0;
+            bool merged = false;
+
+            if (targetGridUI == gridUI)
+            {
+                merged = gridUI.TryMergeItemAt(
                     inventoryItem,
                     pointerGridPosition.x,
                     pointerGridPosition.y,
-                    out int transferredAmount))
+                    out transferredAmount
+                );
+            }
+            else
+            {
+                merged = targetGridUI.TryMergeItemFrom(
+                    gridUI,
+                    inventoryItem,
+                    pointerGridPosition.x,
+                    pointerGridPosition.y,
+                    out transferredAmount
+                );
+            }
+
+            if (merged)
             {
                 PlayInventorySound(
                     "Place",
@@ -695,7 +714,8 @@ public class InventoryItemUI : MonoBehaviour,
                 Log(
                     $"スタック結合成功：" +
                     $"{inventoryItem.ItemData.DisplayName} / " +
-                    $"移動数={transferredAmount}"
+                    $"移動数={transferredAmount} / " +
+                    $"別Grid={(targetGridUI != gridUI)}"
                 );
 
                 FinishDrag();
@@ -775,40 +795,66 @@ public class InventoryItemUI : MonoBehaviour,
     {
         wasOverEquipmentSlot = false;
 
-        // 箱から直接装備はさせず、いったんプレイヤー側へ移してから装備する。
-        if (gridUI == null || !gridUI.IsPlayerInventory ||
-            EventSystem.current == null)
+        if (gridUI == null ||
+            EventSystem.current == null ||
+            eventData == null)
         {
+            Log(
+                "装備スロット判定を開始できません：" +
+                $"GridUI={(gridUI != null ? "あり" : "なし")} / " +
+                $"EventSystem={(EventSystem.current != null ? "あり" : "なし")}"
+            );
             return false;
         }
 
-        List<RaycastResult> results =
-            new List<RaycastResult>();
-
-        EventSystem.current.RaycastAll(
-            eventData,
-            results
-        );
-
-        foreach (RaycastResult raycastResult in results)
+        // 先に「本当に装備スロットの上か」を判定します。
+        // ItemBoxPanelや透明Imageが前面にある場合、RaycastAllだけでは
+        // EquipmentSlotUIを拾えないことがあるため、RectTransformの座標判定も併用します。
+        if (!TryFindEquipmentSlotUnderPointer(
+                eventData,
+                out EquipmentSlotUI equipmentSlotUI))
         {
-            if (raycastResult.gameObject == null)
-            {
-                continue;
-            }
+            Log(
+                "装備スロットを検出できませんでした。" +
+                $" Pointer={eventData.position}"
+            );
+            return false;
+        }
 
-            EquipmentSlotUI equipmentSlotUI =
-                raycastResult.gameObject
-                    .GetComponentInParent<EquipmentSlotUI>();
+        wasOverEquipmentSlot = true;
 
-            if (equipmentSlotUI == null)
-            {
-                continue;
-            }
+        // 通常のPlayer Inventoryからは従来どおり装備可能。
+        bool isPlayerInventorySource =
+            gridUI.IsPlayerInventory;
 
-            wasOverEquipmentSlot = true;
+        // ItemBoxからは「装備スロットへ直接装備」を許可したStorageだけ対応。
+        ItemBoxInventory sourceItemBox =
+            gridUI.IsItemBoxInventory
+                ? gridUI.ItemBox
+                : null;
 
-            bool equipped =
+        bool isAllowedItemBoxSource =
+            sourceItemBox != null &&
+            sourceItemBox.AllowsDirectEquipToEquipmentSlot;
+
+        if (!isPlayerInventorySource &&
+            !isAllowedItemBoxSource)
+        {
+            Log(
+                "装備スロット上ですが、移動元Inventoryからの直接装備が許可されていません。" +
+                $" PlayerInventory={isPlayerInventorySource} / " +
+                $" ItemBox={(sourceItemBox != null ? sourceItemBox.name : "なし")} / " +
+                $" DirectTransfer={(sourceItemBox != null && sourceItemBox.AllowsDirectItemTransfer)} / " +
+                $" DirectEquip={(sourceItemBox != null && sourceItemBox.AllowsDirectEquipToEquipmentSlot)}"
+            );
+            return false;
+        }
+
+        bool equipped;
+
+        if (isPlayerInventorySource)
+        {
+            equipped =
                 equipmentSlotUI.TryEquipDroppedItem(
                     inventoryItem,
                     dragIsRotated,
@@ -824,6 +870,139 @@ public class InventoryItemUI : MonoBehaviour,
             }
 
             return equipped;
+        }
+
+        equipped =
+            equipmentSlotUI.TryEquipDroppedItemFromItemBox(
+                inventoryItem,
+                dragIsRotated,
+                sourceItemBox,
+                out EquipmentResult itemBoxResult
+            );
+
+        if (equipped)
+        {
+            Log(
+                $"保管箱から直接装備成功：" +
+                $"{inventoryItem.ItemData.DisplayName}"
+            );
+        }
+        else
+        {
+            Log(
+                $"保管箱から装備スロットへのドロップ失敗：" +
+                $"{inventoryItem.ItemData.DisplayName} / {itemBoxResult}"
+            );
+        }
+
+        return equipped;
+    }
+
+    /// <summary>
+    /// ポインター下のEquipmentSlotUIを探します。
+    /// 通常のUI Raycastで見つからない場合は、全ての有効なEquipmentSlotUIの
+    /// RectTransformに対して座標判定を行います。
+    /// </summary>
+    private bool TryFindEquipmentSlotUnderPointer(
+        PointerEventData eventData,
+        out EquipmentSlotUI equipmentSlotUI)
+    {
+        equipmentSlotUI = null;
+
+        if (eventData == null)
+        {
+            return false;
+        }
+
+        // 1. 通常のGraphic Raycast。
+        if (EventSystem.current != null)
+        {
+            List<RaycastResult> results =
+                new List<RaycastResult>();
+
+            EventSystem.current.RaycastAll(
+                eventData,
+                results
+            );
+
+            foreach (RaycastResult raycastResult in results)
+            {
+                if (raycastResult.gameObject == null)
+                {
+                    continue;
+                }
+
+                EquipmentSlotUI found =
+                    raycastResult.gameObject
+                        .GetComponentInParent<EquipmentSlotUI>();
+
+                if (found == null ||
+                    !found.isActiveAndEnabled ||
+                    !found.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                equipmentSlotUI = found;
+                Log(
+                    $"装備スロット検出：UI Raycast / " +
+                    $"Object={found.gameObject.name} / Slot={found.SlotType}"
+                );
+                return true;
+            }
+        }
+
+        // 2. ItemBoxPanelなど別UIがRaycastを遮っていても拾えるよう、
+        // RectTransformの画面座標でフォールバック判定する。
+        EquipmentSlotUI[] allSlots =
+            Object.FindObjectsByType<EquipmentSlotUI>(
+                FindObjectsInactive.Exclude
+            );
+
+        foreach (EquipmentSlotUI candidate in allSlots)
+        {
+            if (candidate == null ||
+                !candidate.isActiveAndEnabled ||
+                !candidate.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            RectTransform rect =
+                candidate.transform as RectTransform;
+
+            if (rect == null)
+            {
+                continue;
+            }
+
+            Canvas slotCanvas =
+                candidate.GetComponentInParent<Canvas>();
+
+            Camera slotCamera = null;
+
+            if (slotCanvas != null &&
+                slotCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            {
+                slotCamera = slotCanvas.worldCamera != null
+                    ? slotCanvas.worldCamera
+                    : eventData.pressEventCamera;
+            }
+
+            if (!RectTransformUtility.RectangleContainsScreenPoint(
+                    rect,
+                    eventData.position,
+                    slotCamera))
+            {
+                continue;
+            }
+
+            equipmentSlotUI = candidate;
+            Log(
+                $"装備スロット検出：RectTransformフォールバック / " +
+                $"Object={candidate.gameObject.name} / Slot={candidate.SlotType}"
+            );
+            return true;
         }
 
         return false;

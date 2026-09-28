@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e40ccca5d0d395b44b7cd41360470e57, type: 3}
+  m_Name: "16\u8CB4\u91CD\u54C1\u306E\u56DE\u53CE"
+  m_EditorClassIdentifier: Assembly-CSharp::MissionDefinition2D
+  missionId: mission_016
+  displayName: "\u8CB4\u91CD\u54C1\u306E\u56DE\u53CE"
+  description: "\u9AD8\u4FA1\u306ATreasure\u7CFBItem\u30922\u500B\u56DE\u53CE"
+  missionImage: {fileID: 0}
+  objectiveType: 0
+  requiredAmount: 2
+  requiredItem: {fileID: 11400000, guid: bc0b621c4e8f2984ebf5ddc1ce6942fd, type: 2}
+  countItemsAlreadyHeldWhenMissionStarts: 1
+  consumeCollectedItemsOnResult: 0
+  targetEnemyId: 
+  targetRescueNpcId: 
+  expeditionMoneyReward: 1200
+  expeditionItemRewards: []
+  skillCardRewards: []
+  skillSlotUnlockAmount: 0

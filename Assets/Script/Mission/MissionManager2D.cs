@@ -1528,6 +1528,22 @@ public class MissionManager2D : MonoBehaviour
         Log($"ミッション達成: {entry.Mission.DisplayName}");
 
         MissionCompleted?.Invoke(entry.Mission);
+
+        StoryProgressManager storyProgressManager =
+            StoryProgressManager.Instance;
+
+        if (storyProgressManager == null)
+        {
+            storyProgressManager =
+                FindAnyObjectByType<StoryProgressManager>(
+                    FindObjectsInactive.Include
+                );
+        }
+
+        storyProgressManager?.ReportLinkedMissionCompleted(
+            entry.Mission
+        );
+
         MissionStatusChanged?.Invoke(
             entry.Mission,
             MissionProgressState2D.Completed

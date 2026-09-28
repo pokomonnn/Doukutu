@@ -1162,6 +1162,9 @@ GameObject:
   - component: {fileID: 1003010323677137009}
   - component: {fileID: 2221818009085774639}
   - component: {fileID: 8495706650310381090}
+  - component: {fileID: 3423022338156088498}
+  - component: {fileID: -5237936051337415146}
+  - component: {fileID: 5602687106460272354}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -1444,6 +1447,8 @@ MonoBehaviour:
   fractureFallDistance: 4
   wallClimbController: {fileID: 0}
   showWallFallDebugLogs: 0
+  teleportFallIgnoreDuration: 0.35
+  showTeleportResetDebugLogs: 0
 --- !u!114 &7614778521853685153
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1714,6 +1719,11 @@ MonoBehaviour:
   playerWeightController: {fileID: 293587376742321391}
   equipmentVisualController: {fileID: 3441318303056482534}
   playerAnimator: {fileID: 624081966487689268}
+  enableTorchShortcut: 1
+  allowNumpad1: 1
+  inventoryController: {fileID: 0}
+  inventorySoundPlayer: {fileID: 0}
+  showTorchShortcutLogs: 0
 --- !u!95 &624081966487689268
 Animator:
   serializedVersion: 7
@@ -2157,7 +2167,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 98304
   interactionRadius: 1.8
-  carryModeText: {fileID: 0}
+  carryModeText: {fileID: 8215363253035384063}
   useAutomaticKeyPrompts: 1
   pickupPrompt: "E\uFF1A\u6301\u3064"
   frontCarryPrompt: "E\uFF1A\u80CC\u8CA0\u3046\u3000F\uFF1A\u524D\u306B\u7F6E\u304F"
@@ -2166,6 +2176,10 @@ MonoBehaviour:
   backpackDropPrompt: "\u771F\u4E0B\u306B\u7F6E\u304F"
   frontCarryLabel: "\u624B\u524D\u306B\u6301\u3063\u3066\u3044\u307E\u3059"
   backpackLabel: "\u80CC\u8CA0\u3063\u3066\u3044\u307E\u3059"
+  showRescuePersonDetails: 1
+  rescuePersonDetailCanvas: {fileID: 0}
+  rescuePersonDetailFontAsset: {fileID: 0}
+  rescuePersonDetailSiblingIndex: 0
   panelsThatBlockInput: []
   dropWhenPlayerDies: 1
   dropWhenControllerDisabled: 1
@@ -2202,65 +2216,94 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  enableCarryWeightSlowdown: 1
-  carryWeightSpeedCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 10
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 20
-      value: 0.85
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 40
-      value: 0.65
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 60
-      value: 0.45
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  minimumCarrySpeedMultiplier: 0.25
+  addCarryWeightToTotalWeight: 1
   showDebugLogs: 0
   showDetailedDiagnostics: 0
   logInputEvents: 0
   logTargetScanDetails: 0
   repeatedDiagnosticInterval: 1.5
   showInteractionGizmo: 0
+--- !u!114 &3423022338156088498
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6641261635897217815}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cc94d44058ed7f4294753fb411b5975, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventoryController
+  gridWidth: 7
+  gridHeight: 10
+  addStartingItemsOnAwake: 1
+  startingItems: []
+  playerHealth: {fileID: 0}
+  playerStatusConditions: {fileID: 0}
+  playerSurvivalController: {fileID: 0}
+  torchController: {fileID: 0}
+  playerWeightController: {fileID: 0}
+  playerTag: Player
+  inventoryGrid:
+    width: 7
+    height: 10
+    items: []
+  playerConsumableUseController: {fileID: 0}
+--- !u!114 &-5237936051337415146
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6641261635897217815}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ea464fe70274994c9bf9f90d4c1b7cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EquipmentController
+  inventoryController: {fileID: 0}
+  primaryWeaponItem:
+    itemData: {fileID: 0}
+    gridX: 0
+    gridY: 0
+    isRotated: 0
+    amount: 0
+    hasStoredMagazineAmmo: 0
+    storedMagazineAmmo: 0
+    hasStoredMagazineAmmoType: 0
+    storedMagazineAmmoType: {fileID: 0}
+    hasStoredWeaponDurability: 0
+    storedWeaponDurability: 0
+    storedWeaponJammed: 0
+  helmetItem:
+    itemData: {fileID: 0}
+    gridX: 0
+    gridY: 0
+    isRotated: 0
+    amount: 0
+    hasStoredMagazineAmmo: 0
+    storedMagazineAmmo: 0
+    hasStoredMagazineAmmoType: 0
+    storedMagazineAmmoType: {fileID: 0}
+    hasStoredWeaponDurability: 0
+    storedWeaponDurability: 0
+    storedWeaponJammed: 0
+--- !u!114 &5602687106460272354
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6641261635897217815}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a86d208def76d31489a5ec0d6ed50d68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerTradeInventoryBridge
+  inventoryController: {fileID: 3423022338156088498}
+  equipmentController: {fileID: -5237936051337415146}
+  sessionBridge: {fileID: 7396760112016090575}
 --- !u!1 &6718992130171538360
 GameObject:
   m_ObjectHideFlags: 0

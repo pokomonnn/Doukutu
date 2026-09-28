@@ -19,6 +19,9 @@ GameObject:
   - component: {fileID: 2904673517321432195}
   - component: {fileID: 24528342207108349}
   - component: {fileID: 8669522015117036822}
+  - component: {fileID: -5970765192690981758}
+  - component: {fileID: 3663410829204978522}
+  - component: {fileID: -5272432681639803797}
   m_Layer: 16
   m_Name: "\u63A2\u691C\u5BB6"
   m_TagString: Untagged
@@ -93,7 +96,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 0.8679245, g: 0.82489824, b: 0.63456744, a: 1}
+  m_Color: {r: 0.5, g: 0.36422879, b: 0.1485849, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -184,7 +187,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e941dfc38af6cc429dc865df578337c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
-  maxHealth: 20
+  maxHealth: 50
   invincibilityDuration: 0.5
   enableDamageDebugLog: 1
   includePlayerDamageInDebugLog: 0
@@ -305,7 +308,7 @@ MonoBehaviour:
   disableCollidersWhileCarried: 1
   defaultPlayerCollisionIgnoreDuration: 0.25
   repickupDelay: 0.2
-  carryWeightKg: 50
+  carryWeightKg: 35
   applyPromptLocalPosition: 1
   promptLocalPosition: {x: 0, y: 1.1, z: 0}
   showDebugLogs: 0
@@ -323,8 +326,108 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MissionTargetIdentity2D
   targetType: 2
-  targetId: npc_doctor_01
-  displayName: "\u533B\u5E2B"
+  targetId: npc_explorer_01
+  displayName: "\u63A2\u691C\u5BB6"
+--- !u!114 &-5970765192690981758
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 862909085402662033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8311c2457c0b0de45a21480c5df3c3e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RescuePersonInfo2D
+  carryableObject: {fileID: 24528342207108349}
+  characterHealth: {fileID: 7472805106831161681}
+  detailAnchor: {fileID: 0}
+  displayName: "\u751F\u5B58\u8005"
+  occupation: "\u4E00\u822C\u4EBA"
+  condition: 0
+  overrideWithDeathState: 1
+  worsenConditionFromHealth: 1
+  lightInjuryHealthPercent: 0.75
+  injuredHealthPercent: 0.5
+  severeInjuryHealthPercent: 0.25
+--- !u!114 &3663410829204978522
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 862909085402662033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f961f0c8bc6547a4ba5d3cb006d7cf56, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RescuePersonFallDamage2D
+  targetRigidbody: {fileID: 2904673517321432195}
+  characterHealth: {fileID: 7472805106831161681}
+  carryableObject: {fileID: 24528342207108349}
+  rescuePersonInfo: {fileID: -5970765192690981758}
+  groundLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  minimumGroundNormalY: 0.45
+  fallingStartSpeed: 0.1
+  lightDamageDistance: 2.5
+  mediumDamageDistance: 4
+  severeDamageDistance: 6
+  fatalDamageDistance: 8
+  lightDamage: 25
+  mediumDamage: 50
+  severeDamage: 75
+  ignoreWhileCarried: 1
+  ignoreWhileExternallyReserved: 1
+  showDebugLogs: 0
+--- !u!114 &-5272432681639803797
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 862909085402662033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94eeffff4f7175b4fb6ba1bccc44062b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RescuePersonAmbientSpeech2D
+  carryableObject: {fileID: 24528342207108349}
+  characterHealth: {fileID: 7472805106831161681}
+  targetRigidbody: {fileID: 2904673517321432195}
+  speechAnchor: {fileID: 0}
+  speakImmediatelyWhenPickedUp: 1
+  carriedLines:
+  - "\u3042\u308A\u304C\u3068\u3046"
+  - "\u305D\u3063\u3068\u904B\u3093\u3067\u304F\u308C\uFF5E"
+  - "\u65E9\u304F\u52A9\u3051\u3066\u304F\u308C\u3088"
+  carriedSpeechMinInterval: 4
+  carriedSpeechMaxInterval: 8
+  fallingLines:
+  - "\u3046\u308F\uFF5E\uFF01"
+  - "\u843D\u3061\u308B\u30FC\uFF01"
+  - "\u52A9\u3051\u3066\u30FC\uFF01"
+  fallingVelocityThreshold: 1.5
+  fallingSpeechCooldown: 2
+  enableIdleSpeech: 0
+  idleLines: []
+  idleSpeechMinInterval: 9
+  idleSpeechMaxInterval: 16
+  japaneseFontAsset: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
+  bubbleWorldOffset: {x: 0, y: 1.45, z: 0}
+  bubbleDuration: 2.2
+  bubbleWidth: 280
+  bubbleHeight: 82
+  fontSize: 24
+  bubbleWorldScale: 0.008
+  backgroundColor: {r: 1, g: 1, b: 1, a: 0.92}
+  textColor: {r: 0.08, g: 0.08, b: 0.08, a: 1}
+  bubbleBackgroundSprite: {fileID: 0}
+  bubbleSortingOrder: 50
+  avoidImmediateRepeat: 1
+  showDebugLogs: 0
 --- !u!1 &1133281558187549016
 GameObject:
   m_ObjectHideFlags: 0
@@ -422,6 +525,7 @@ MonoBehaviour:
   boxDisplayName: "\u30A2\u30A4\u30C6\u30E0\u30DC\u30C3\u30AF\u30B9"
   boxKind: 0
   allowDirectItemTransfer: 1
+  allowDirectEquipToEquipmentSlot: 0
   gridWidth: 3
   gridHeight: 3
   addStartingItemsOnAwake: 1

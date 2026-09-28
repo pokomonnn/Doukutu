@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -43,12 +43,25 @@ public class MerchantPurchaseController : MonoBehaviour
     [Tooltip("商人のItemBoxInventoryを表示するInventoryGridUIです。Inventory Controllerは空欄にします。")]
     [SerializeField] private InventoryGridUI merchantInventoryGridUI;
 
-    [Tooltip("TownPlayerInventoryのInventoryControllerを表示するInventoryGridUIです。")]
+    [Tooltip("プレイヤー所持品を表示するInventoryGridUIです。InspectorでManager側InventoryControllerを設定できます。")]
     [SerializeField] private InventoryGridUI playerInventoryGridUI;
 
     [Header("既存システム")]
-    [SerializeField] private TownPlayerInventoryController townPlayerInventory;
+    [SerializeField] private PlayerTradeInventoryBridge townPlayerInventory;
     [SerializeField] private GameSessionManager gameSessionManager;
+
+    [Header("Player Inventory接続")]
+    [Tooltip(
+        "ONなら、Player Inventory Grid UIのInspectorに設定されているInventoryControllerを優先して使用します。" +
+        " Manager側のInventoryControllerを表示したい構成ではON推奨です。"
+    )]
+    [SerializeField] private bool preferAssignedPlayerGridInventory = true;
+
+    [Tooltip(
+        "Player Inventory Grid UIにInventoryControllerが未設定の時だけ、" +
+        "PlayerTradeInventoryBridgeのInventoryControllerへ自動接続します。"
+    )]
+    [SerializeField] private bool fallbackToPlayerTradeInventoryBridge = true;
 
     [Header("店舗・所持金表示")]
     [SerializeField] private TMP_Text shopNameText;
@@ -425,6 +438,10 @@ public class MerchantPurchaseController : MonoBehaviour
         merchantInventoryGridUI.BindItemBoxInventory(
             currentStock.StockInventory
         );
+
+        // Player側GridはInspectorで設定済みのInventoryControllerを優先する。
+        // 未設定時のみ、必要に応じてPlayerTradeInventoryBridgeへフォールバックする。
+        PreparePlayerInventoryGrid();
 
         SubscribeStock();
         SubscribeMoney();
@@ -822,9 +839,9 @@ public class MerchantPurchaseController : MonoBehaviour
             ? currentStock.StockInventory
             : null;
 
-        playerInventory = townPlayerInventory != null
-            ? townPlayerInventory.InventoryController
-            : null;
+        playerInventory = ResolvePlayerInventoryController(
+            bindFallbackToGrid: true
+        );
 
         if (!isOpen || currentStock == null)
         {
@@ -998,8 +1015,7 @@ public class MerchantPurchaseController : MonoBehaviour
             $"現在選択枠={selectedPurchases.Count}"
         );
     }
-
-    private void SelectAnotherFocusedItem()
+private void SelectAnotherFocusedItem()
     {
         foreach (KeyValuePair<InventoryItem, int> pair
                  in selectedPurchases)
@@ -1170,9 +1186,9 @@ public class MerchantPurchaseController : MonoBehaviour
         }
 
         InventoryController playerInventory =
-            townPlayerInventory != null
-                ? townPlayerInventory.InventoryController
-                : null;
+            ResolvePlayerInventoryController(
+                bindFallbackToGrid: false
+            );
 
         if (upperLimit > 0 &&
             playerInventory != null &&
@@ -1951,27 +1967,126 @@ public class MerchantPurchaseController : MonoBehaviour
 
     private void CapturePlayerInventory()
     {
-        if (!captureInventoryAfterPurchase ||
-            townPlayerInventory == null)
+        if (!captureInventoryAfterPurchase)
         {
             return;
         }
 
-        PlayerInventorySessionBridge bridge =
-            townPlayerInventory.SessionBridge;
+        InventoryController resolvedInventory =
+            ResolvePlayerInventoryController(
+                bindFallbackToGrid: false
+            );
 
-        if (bridge != null)
+        if (resolvedInventory == null)
         {
-            bridge.CaptureToSession();
+            LogWarning(
+                "購入後の保存対象InventoryControllerが見つかりません。"
+            );
             return;
         }
 
-        if (gameSessionManager != null &&
-            townPlayerInventory.InventoryController != null)
+        // Bridgeが同じInventoryControllerを管理している時だけ、
+        // 従来どおりSessionBridgeへ保存する。
+        if (townPlayerInventory != null &&
+            townPlayerInventory.InventoryController == resolvedInventory &&
+            townPlayerInventory.SessionBridge != null)
+        {
+            townPlayerInventory.SessionBridge.CaptureToSession();
+            return;
+        }
+
+        // Grid UIにInspector設定されたManager側Inventoryを使用している場合は、
+        // GameSessionManagerへそのInventoryを直接渡して保存する。
+        if (gameSessionManager != null)
         {
             gameSessionManager.CapturePlayerInventory(
-                townPlayerInventory.InventoryController,
-                townPlayerInventory.EquipmentController
+                resolvedInventory,
+                townPlayerInventory != null
+                    ? townPlayerInventory.EquipmentController
+                    : null
+            );
+        }
+    }
+
+    /// <summary>
+    /// Player Inventory Grid UIのInspector設定を優先し、
+    /// 必要な時だけPlayerTradeInventoryBridgeへフォールバックします。
+    /// </summary>
+    private InventoryController ResolvePlayerInventoryController(
+        bool bindFallbackToGrid)
+    {
+        InventoryController gridController =
+            playerInventoryGridUI != null
+                ? playerInventoryGridUI.Controller
+                : null;
+
+        if (preferAssignedPlayerGridInventory &&
+            gridController != null)
+        {
+            return gridController;
+        }
+
+        InventoryController bridgeController =
+            townPlayerInventory != null
+                ? townPlayerInventory.InventoryController
+                : null;
+
+        if (fallbackToPlayerTradeInventoryBridge &&
+            bridgeController != null)
+        {
+            if (bindFallbackToGrid &&
+                playerInventoryGridUI != null &&
+                playerInventoryGridUI.Controller != bridgeController)
+            {
+                playerInventoryGridUI.BindPlayerInventory(
+                    bridgeController
+                );
+            }
+
+            return bridgeController;
+        }
+
+        // 自動Bindを無効にしている場合でも、Grid側に設定があるなら使用可能。
+        return gridController;
+    }
+
+    private void PreparePlayerInventoryGrid()
+    {
+        if (playerInventoryGridUI == null)
+        {
+            LogWarning("Player Inventory Grid UIが未設定です。");
+            return;
+        }
+
+        InventoryController before =
+            playerInventoryGridUI.Controller;
+
+        InventoryController resolved =
+            ResolvePlayerInventoryController(
+                bindFallbackToGrid: true
+            );
+
+        if (resolved == null)
+        {
+            LogWarning(
+                "Player Inventory用InventoryControllerを解決できませんでした。" +
+                " InventoryGridUIのInventory Controller設定を確認してください。"
+            );
+            return;
+        }
+
+        playerInventoryGridUI.RefreshInventoryUI();
+
+        if (showDebugLogs)
+        {
+            string mode =
+                preferAssignedPlayerGridInventory && before != null
+                    ? "Grid Inspector設定を維持"
+                    : "PlayerTradeInventoryBridgeへフォールバック";
+
+            Log(
+                $"Player Inventory接続: Mode={mode} / " +
+                $"Controller={resolved.name}"
             );
         }
     }
@@ -1987,7 +2102,7 @@ public class MerchantPurchaseController : MonoBehaviour
         {
             townPlayerInventory =
                 FindAnyObjectByType<
-                    TownPlayerInventoryController
+                    PlayerTradeInventoryBridge
                 >(FindObjectsInactive.Include);
         }
 
@@ -1998,7 +2113,7 @@ public class MerchantPurchaseController : MonoBehaviour
         }
 
         if (gameSessionManager == null)
-        {
+{
             gameSessionManager =
                 FindAnyObjectByType<GameSessionManager>(
                     FindObjectsInactive.Include

@@ -134,6 +134,7 @@ GameObject:
   - component: {fileID: 5338500716690516690}
   - component: {fileID: 2069411104809567984}
   - component: {fileID: 1967704061900163163}
+  - component: {fileID: -7203093665786376469}
   m_Layer: 11
   m_Name: Enemy_Sanchi_MIssion
   m_TagString: Untagged
@@ -616,6 +617,22 @@ MonoBehaviour:
   targetType: 1
   targetId: enemy_mutant
   displayName: "\u5909\u7570\u4F53"
+--- !u!114 &-7203093665786376469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3040853378183444072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d3c3354a4eef704b9b41c93d6384fd4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MissionEnemyTarget2D
+  characterHealth: {fileID: 6574071322875458805}
+  targetIdentity: {fileID: 1967704061900163163}
+  compassAnchor: {fileID: 0}
+  showDebugLogs: 0
 --- !u!1 &3293852923392645633
 GameObject:
   m_ObjectHideFlags: 0

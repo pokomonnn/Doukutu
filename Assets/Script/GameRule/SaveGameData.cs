@@ -12,17 +12,31 @@ using System.Collections.Generic;
 /// 第7段階：武器ごとの耐久度
 /// 第8段階：武器ごとのジャム状態
 /// 第9段階：スキルカード所持・装備・解放スロット数
+/// 第10段階：メイン・サブストーリー進行、排他状態、Story Flag
+/// 第11段階：酒場の累計利用回数・ラウンド内利用回数・スキル報酬受取状態
+/// 第12段階：町のプレイヤー保管箱（永久倉庫）
+/// 第13段階：生存救出NPC累計人数・救出済み特殊NPC ID
 /// </summary>
 [Serializable]
 public class SaveGameData
 {
-    public int SaveVersion = 9;
+    public int SaveVersion = 13;
     public string SavedAtUtc = string.Empty;
     public string SavedSceneName = string.Empty;
     public int Money;
 
     /// <summary>これまで町へ持ち帰った死亡NPCの累計人数です。</summary>
     public int TotalDeadNpcCount;
+
+    /// <summary>これまで町へ生存状態で持ち帰った救出NPCの累計人数です。</summary>
+    public int TotalRescuedNpcCount;
+
+    /// <summary>
+    /// これまでに生存状態で救出した特殊NPCのID一覧です。
+    /// 同じ特殊NPCの初回解放を二重実行しないために保存します。
+    /// </summary>
+    public List<string> RescuedSpecialNpcIds =
+        new List<string>();
 
     /// <summary>町の施設IDごとの現在レベルです。</summary>
     public List<SavedTownFacilityLevelData> FacilityLevels =
@@ -31,6 +45,10 @@ public class SaveGameData
     public SavedPlayerInventoryData PlayerInventory =
         new SavedPlayerInventoryData();
 
+    /// <summary>町のプレイヤー専用保管箱です。</summary>
+    public SavedPlayerItemBoxData PlayerItemBox =
+        new SavedPlayerItemBoxData();
+
     public List<SavedMissionData> Missions =
         new List<SavedMissionData>();
 
@@ -38,6 +56,18 @@ public class SaveGameData
 
     public SavedSkillCardData SkillCards =
         new SavedSkillCardData();
+
+    /// <summary>メイン・サブストーリーの進行状態です。</summary>
+    public List<SavedStoryQuestData> Stories =
+        new List<SavedStoryQuestData>();
+
+    /// <summary>一度きりのイベント・解放条件などに使うStory Flag一覧です。</summary>
+    public List<string> StoryFlags =
+        new List<string>();
+
+    /// <summary>酒場の利用進捗です。</summary>
+    public SavedTavernProgressData Tavern =
+        new SavedTavernProgressData();
 
     public SavedPlayerStatusData PlayerStatus =
         new SavedPlayerStatusData();
@@ -70,6 +100,21 @@ public class SavedPlayerInventoryData
 
     public SavedInventoryItemData PrimaryWeapon;
     public SavedInventoryItemData Helmet;
+}
+
+/// <summary>
+/// 町に置くプレイヤー専用保管箱の保存データです。
+/// Version 11以前のセーブではHasData=falseとして空の倉庫から開始します。
+/// </summary>
+[Serializable]
+public class SavedPlayerItemBoxData
+{
+    public bool HasData;
+    public int GridWidth = 10;
+    public int GridHeight = 12;
+
+    public List<SavedInventoryItemData> Items =
+        new List<SavedInventoryItemData>();
 }
 
 /// <summary>
@@ -121,6 +166,34 @@ public class SavedMissionData
     public int Progress;
     public int RequiredAmount = 1;
     public bool RewardClaimed;
+    public MissionAcceptSource AcceptSource = MissionAcceptSource.Unknown;
+}
+
+/// <summary>
+/// ストーリークエスト1件分の保存データです。
+/// StoryQuestDefinition参照ではなくStoryIdを保存します。
+/// </summary>
+[Serializable]
+public class SavedStoryQuestData
+{
+    public string StoryId = string.Empty;
+    public string DisplayName = string.Empty;
+    public StoryQuestState State = StoryQuestState.Locked;
+}
+
+/// <summary>
+/// 酒場の累計利用回数、現在ラウンドの利用回数、報酬受取状態です。
+/// </summary>
+[Serializable]
+public class SavedTavernProgressData
+{
+    public int RoundIndex;
+    public int PersonalDrinkTotal;
+    public int PersonalDrinkThisRound;
+    public int TreatEveryoneTotal;
+    public int TreatEveryoneThisRound;
+    public bool PersonalDrinkRewardClaimed;
+    public bool TreatEveryoneRewardClaimed;
 }
 
 /// <summary>
