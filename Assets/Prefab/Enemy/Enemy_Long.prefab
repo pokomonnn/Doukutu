@@ -133,6 +133,7 @@ GameObject:
   - component: {fileID: 7005886438022472650}
   - component: {fileID: 5338500716690516690}
   - component: {fileID: 5253014657956097868}
+  - component: {fileID: 1061554508479897026}
   m_Layer: 11
   m_Name: Enemy_Long
   m_TagString: Untagged
@@ -594,17 +595,41 @@ MonoBehaviour:
   projectilePrefab: {fileID: 508504824892919759, guid: bcd3dad48209c5c4c82e1923c6fd499d, type: 3}
   minimumAttackDistance: 0
   maximumAttackDistance: 10
-  attackInterval: 1
+  attackInterval: 2
   projectileSpeed: 10
   projectileLifeTime: 5
   requireDetectedPlayer: 0
+  useBallisticArc: 1
+  arcHeight: 2
+  projectileGravityScale: 1
+  forceDynamicBodyForBallistic: 1
+  fallbackToStraightShot: 1
   requireLineOfSight: 0
   obstacleLayers:
     serializedVersion: 2
     m_Bits: 0
   targetOffset: {x: 0, y: 0.5}
   showAttackRangeGizmo: 1
+  showTrajectoryGizmo: 1
+  trajectoryGizmoSegments: 16
   showAttackLogs: 1
+--- !u!114 &1061554508479897026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3040853378183444072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ee3da3df7976a94585e1bcb62c752fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyThrownProjectile2D
+  targetRigidbody: {fileID: 0}
+  visualTransform: {fileID: 0}
+  rotateAlongVelocity: 1
+  rotationOffsetDegrees: 0
+  minimumSpeedToRotate: 0.05
 --- !u!1 &4137653307080498898
 GameObject:
   m_ObjectHideFlags: 0

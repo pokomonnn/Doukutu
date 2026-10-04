@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -49,12 +49,15 @@ public class CaveSupplyOldMan2D : MonoBehaviour
 
     [Header("設定")]
     [SerializeField] private bool activeOnStart = true;
-    [SerializeField] private bool showDebugLogs = true;
+    [Tooltip("通常の診断ログ・警告ログをConsoleへ出す場合だけONにします。通常プレイではOFF推奨です。")]
+    [SerializeField] private bool enableDiagnosticLogs = false;
 
     [Header("診断ログ")]
-    [Tooltip("ON推奨。起動時に現在の設定状態をまとめてConsoleへ出します。")]
-    [SerializeField] private bool logStartupDiagnosis = true;    [Tooltip("ONにすると、待機中のOverlapCircle診断を指定秒数ごとに表示します。")]
-    [SerializeField] private bool logDetectionWhileWaiting = true;
+    [Tooltip("診断ログON時、起動時に現在の設定状態をまとめてConsoleへ出します。")]
+    [SerializeField] private bool logStartupDiagnosis = false;
+
+    [Tooltip("診断ログON時、待機中のOverlapCircle診断を指定秒数ごとに表示します。")]
+    [SerializeField] private bool logDetectionWhileWaiting = false;
     [SerializeField, Min(0.2f)] private float detectionLogInterval = 1f;
     private bool hasDroppedSupplies;
     private bool isActive;
@@ -65,13 +68,13 @@ public class CaveSupplyOldMan2D : MonoBehaviour
     private void Awake()
     {
         isActive = activeOnStart;
-        if (logStartupDiagnosis)
+        if (enableDiagnosticLogs && logStartupDiagnosis)
             PrintDiagnosis("Awake");
     }
 
     private void Start()
     {
-        if (logStartupDiagnosis)
+        if (enableDiagnosticLogs && logStartupDiagnosis)
             PrintDiagnosis("Start");
     }
 
@@ -83,7 +86,7 @@ public class CaveSupplyOldMan2D : MonoBehaviour
         Vector2 center = (Vector2)transform.position + detectionOffset;
         Collider2D hit = Physics2D.OverlapCircle(center, triggerDistance, playerLayer);
 
-        if (logDetectionWhileWaiting && Time.unscaledTime >= nextDetectionLogTime)
+        if (enableDiagnosticLogs && logDetectionWhileWaiting && Time.unscaledTime >= nextDetectionLogTime)
         {
             nextDetectionLogTime = Time.unscaledTime + detectionLogInterval;
             Log($"待機中: PlayerLayerMask={playerLayer.value}, 検知中心={center}, 半径={triggerDistance:F2}, " +
@@ -104,7 +107,7 @@ public class CaveSupplyOldMan2D : MonoBehaviour
     }
 
     [ContextMenu("診断情報をConsoleへ表示")]
-    public void PrintDiagnosisFromContextMenu() => PrintDiagnosis("ContextMenu");
+    public void PrintDiagnosisFromContextMenu() => PrintDiagnosis("ContextMenu", true);
 
     [ContextMenu("Drop Supplies Once")]
     public void DropSuppliesOnce()
@@ -259,8 +262,11 @@ public class CaveSupplyOldMan2D : MonoBehaviour
         return result;
     }
 
-    private void PrintDiagnosis(string source)
+    private void PrintDiagnosis(string source, bool forceLog = false)
     {
+        if (!forceLog && !enableDiagnosticLogs)
+            return;
+
         int supplyCount = supplies == null ? 0 : supplies.Count;
         int validCount = GetValidSupplies().Count;
 
@@ -275,19 +281,21 @@ public class CaveSupplyOldMan2D : MonoBehaviour
             $"WorldItemPickupPrefab={(worldItemPickupPrefab != null ? worldItemPickupPrefab.name : "未設定")}\n" +
             $"Supplies={supplyCount}, ValidSupplies={validCount}\n" +
             $"GuaranteeAtLeastOneDrop={guaranteeAtLeastOneDrop}\n" +
-            $"ShowDebugLogs={showDebugLogs}\n" +
-            "================================");
+            $"EnableDiagnosticLogs={enableDiagnosticLogs}\n" +
+            "================================",
+            forceLog);
     }
 
-    private void Log(string m)
+    private void Log(string m, bool forceLog = false)
     {
-        if (showDebugLogs)
+        if (forceLog || enableDiagnosticLogs)
             Debug.Log($"[CaveSupplyOldMan2D:{name}] {m}", this);
     }
 
     private void LogWarning(string m)
     {
-        Debug.LogWarning($"[CaveSupplyOldMan2D:{name}] {m}", this);
+        if (enableDiagnosticLogs)
+            Debug.LogWarning($"[CaveSupplyOldMan2D:{name}] {m}", this);
     }
 
     private void LogError(string m)

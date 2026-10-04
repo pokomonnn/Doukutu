@@ -24,7 +24,7 @@ EditorBuildSettings:
     path: Assets/Scenes/OpeningCutScene.unity
     guid: 9276fff54548d1d41b727d82d1e27aa0
   - enabled: 1
-    path: Assets/Scenes/Start_Doukustu.unity
+    path: Assets/Scenes/stage/Start_Doukustu.unity
     guid: 0b47bd0c5975e54498c55283dff802cf
   - enabled: 1
     path: Assets/Scenes/Result.unity
