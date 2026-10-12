@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7c4185669380a342a6d946ef845ec2b, type: 3}
   m_Name: Poshon
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemId: item_id
-  displayName: "\u65B0\u3057\u3044\u30A2\u30A4\u30C6\u30E0"
-  description: testestsetst
-  icon: {fileID: 0}
+  itemId: poshon_001
+  displayName: "\u5FDC\u6025\u30AD\u30C3\u30C8"
+  description: "\u5FDC\u6025\u30AD\u30C3\u30C8"
+  icon: {fileID: -7070978805371785539, guid: e0f7f60b6df498044af174995d5d09a6, type: 3}
   localizedDisplayName:
     m_TableReference:
       m_TableCollectionName: 
@@ -34,8 +34,8 @@ MonoBehaviour:
     m_FallbackState: 0
     m_WaitForCompletion: 0
     m_LocalVariables: []
-  width: 1
-  height: 1
+  width: 2
+  height: 2
   canRotate: 1
   maxStack: 1
   purchasePrice: 30

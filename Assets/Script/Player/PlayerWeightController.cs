@@ -28,6 +28,10 @@ public class PlayerWeightController : MonoBehaviour
     [SerializeField]
     private PlayerSurvivalController survivalController;
 
+    [Header("応急キット内の重量")]
+    [SerializeField] private MedicalKitInventory2D medicalKitInventory;
+    private bool isSubscribedToMedicalKit;
+
     [Header("重量ごとの段階")]
     [Tooltip("この重量までは通常速度")]
     [SerializeField, Min(0f)]
@@ -325,6 +329,7 @@ public class PlayerWeightController : MonoBehaviour
     private void OnDisable()
     {
         UnsubscribeEvents();
+        UnsubscribeMedicalKit();
         UnsubscribeSkillEvents();
         StopConsumableUseSlowdown();
         RestoreBaseMovementValues();
@@ -543,6 +548,10 @@ public class PlayerWeightController : MonoBehaviour
         // 通常の重量段階へ参加させるため最後に加算します。
         totalWeight += CurrentEffectiveExternalCarryWeightKg;
 
+        // キットへ移した医療用品の重さも、プレイヤーの所持重量に含める。
+        if (medicalKitInventory != null)
+            totalWeight += medicalKitInventory.ContentsWeightKg;
+
         return totalWeight;
     }
 
@@ -685,8 +694,30 @@ public class PlayerWeightController : MonoBehaviour
         refreshRequested = true;
     }
 
+    private void SubscribeMedicalKit()
+    {
+        if (isSubscribedToMedicalKit || medicalKitInventory == null) return;
+        medicalKitInventory.Changed += HandleMedicalKitChanged;
+        isSubscribedToMedicalKit = true;
+    }
+
+    private void UnsubscribeMedicalKit()
+    {
+        if (!isSubscribedToMedicalKit) return;
+        if (medicalKitInventory != null)
+            medicalKitInventory.Changed -= HandleMedicalKitChanged;
+        isSubscribedToMedicalKit = false;
+    }
+
+    private void HandleMedicalKitChanged()
+    {
+        refreshRequested = true;
+    }
+
     private void SubscribeEvents()
     {
+        SubscribeMedicalKit();
+
         if (!isSubscribedToInventory &&
             inventoryController != null)
         {
@@ -793,6 +824,9 @@ public class PlayerWeightController : MonoBehaviour
             survivalController =
                 GetComponent<PlayerSurvivalController>();
         }
+
+        if (medicalKitInventory == null)
+            medicalKitInventory = GetComponent<MedicalKitInventory2D>();
 
         if (playerRigidbody == null &&
             playerMove != null)

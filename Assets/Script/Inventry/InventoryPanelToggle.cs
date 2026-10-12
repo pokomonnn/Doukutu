@@ -1,9 +1,12 @@
-using Unity.VisualScripting;
+﻿using Unity.VisualScripting;
 using UnityEngine;
 
 [RequireComponent(typeof(AudioSource))]
 public class InventoryPanelToggle : MonoBehaviour
 {
+    public event System.Action InventoryOpened;
+    public bool IsOpen => inventoryPanel != null && inventoryPanel.activeInHierarchy;
+
     [Header("表示・非表示するインベントリUI")]
     [SerializeField] private GameObject inventoryPanel;
 
@@ -99,6 +102,7 @@ public class InventoryPanelToggle : MonoBehaviour
         if (willOpen)
         {
             PlaySound(openClip, openVolume);
+            InventoryOpened?.Invoke();
         }
         else
         {
@@ -116,6 +120,7 @@ public class InventoryPanelToggle : MonoBehaviour
         skillCardPanelController?.ClosePanel();
         inventoryPanel.SetActive(true);
         PlaySound(openClip, openVolume);
+        InventoryOpened?.Invoke();
     }
 
     public void CloseInventory()

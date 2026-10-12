@@ -47,8 +47,9 @@ public class RescuePersonInfo2D : MonoBehaviour
     [SerializeField] private string occupation = "一般人";
 
     [InspectorName("状態")]
-    [SerializeField] private RescuePersonCondition2D condition =
-        RescuePersonCondition2D.Injured;
+    [SerializeField]
+    private RescuePersonCondition2D condition =
+        RescuePersonCondition2D.Healthy;
 
     [Tooltip("ONの場合、CharacterHealthが死亡していればInspectorの状態設定より優先して『死亡』と表示します。")]
     [InspectorName("死亡状態を自動反映")]
@@ -110,17 +111,35 @@ public class RescuePersonInfo2D : MonoBehaviour
             : transform.position;
 
     private bool isHealthSubscribed;
+    private bool hasStarted;
 
     private void Awake()
     {
+        // Awake時点では、別GameObject上のCharacterHealthが
+        // まだ初期化されていない可能性があります。
+        // ここでは参照取得だけを行い、HPからの状態同期はStartで行います。
         FindReferences();
-        RefreshConditionFromHealth();
     }
 
     private void OnEnable()
     {
         FindReferences();
         SubscribeHealthEvents();
+
+        // Start完了後の再有効化時だけ、現在HPから状態を再同期します。
+        // 初回OnEnableではCharacterHealthのAwake前の可能性があるため同期しません。
+        if (hasStarted)
+        {
+            RefreshConditionFromHealth();
+        }
+    }
+
+    private void Start()
+    {
+        hasStarted = true;
+
+        // 全コンポーネントのAwake完了後に初回同期することで、
+        // CurrentHealthの初期値0を「死亡」と誤判定するのを防ぎます。
         RefreshConditionFromHealth();
     }
 
@@ -177,7 +196,10 @@ public class RescuePersonInfo2D : MonoBehaviour
             return;
         }
 
-        if (characterHealth.IsDead || characterHealth.CurrentHealth <= 0)
+        // CharacterHealthの正式な死亡フラグだけを死亡判定に使います。
+        // CurrentHealthはCharacterHealth.Awake前だと初期値0のため、
+        // CurrentHealth <= 0だけで判定するとゲーム開始時に死亡扱いになります。
+        if (characterHealth.IsDead)
         {
             condition = RescuePersonCondition2D.Dead;
             return;

@@ -699,7 +699,13 @@ public class PlayerCarryController2D : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(carryModeSwitchKey))
+        // 通常シーンはQのまま。チュートリアルの「もう一度Eで担ぐ」段階のみEでも切替可能。
+        bool tutorialShoulderE =
+            CaveTutorialManager2D.Instance != null &&
+            CaveTutorialManager2D.Instance.CurrentStep == CaveTutorialStep2D.ShoulderAdventurer &&
+            Input.GetKeyDown(carryKey);
+
+        if (Input.GetKeyDown(carryModeSwitchKey) || tutorialShoulderE)
         {
             consumedCarryInputThisFrame = true;
 

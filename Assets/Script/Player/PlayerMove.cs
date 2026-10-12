@@ -1,9 +1,12 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
 public class PlayerMove : MonoBehaviour
 {
+    // 実際に地上ジャンプを開始した時だけ通知（Spaceの空振りを除外）
+    public event System.Action JumpPerformed;
+
     [Header("移動設定")]
     public float moveSpeed = 5f;
     public float jumpPower = 12f;
@@ -138,6 +141,7 @@ public class PlayerMove : MonoBehaviour
         {
             velocity.y = jumpPower;
             canJump = false;
+            JumpPerformed?.Invoke();
             waitingToLeaveGround = true;
 
             // ジャンプ開始直後に足音が鳴らないようにする

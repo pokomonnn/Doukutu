@@ -41,6 +41,33 @@ public class CaveDialogueAnchorFollower : MonoBehaviour
     public Transform TargetAnchor => targetAnchor;
     public RectTransform DialoguePanelRect => dialoguePanelRect;
 
+    /// <summary>実際に会話パネルが表示され、対象のNPCを追従しているか。</summary>
+    public bool IsDialogueCurrentlyVisible
+    {
+        get
+        {
+            if (!isActiveAndEnabled || targetAnchor == null ||
+                dialoguePanelRect == null ||
+                !dialoguePanelRect.gameObject.activeInHierarchy)
+                return false;
+
+            if (conversationController != null && !conversationController.IsOpen)
+                return false;
+
+            Canvas canvas = dialoguePanelRect.GetComponentInParent<Canvas>();
+            if (canvas == null || !canvas.isActiveAndEnabled)
+                return false;
+
+            CanvasGroup[] groups =
+                dialoguePanelRect.GetComponentsInParent<CanvasGroup>(true);
+            for (int i = 0; i < groups.Length; i++)
+                if (groups[i] != null && groups[i].alpha < 0.01f)
+                    return false;
+
+            return true;
+        }
+    }
+
     private RectTransform parentRect;
     private Vector2 runtimeAnimationOffset;
 

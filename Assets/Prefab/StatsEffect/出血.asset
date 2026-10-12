@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3438ebee74218af458959f66e50a8e9e, type: 3}
+  m_Name: "\u51FA\u8840"
+  m_EditorClassIdentifier: Assembly-CSharp::StatusEffectData2D
+  displayName: "\u51FA\u8840"
+  description: "\u5F90\u3005\u306B\u4F53\u529B\u304C\u6E1B\u3063\u3066\u3057\u307E\u3046\u3001\u5305\u5E2F\u3067\u51FA\u8840\u3092\u6B62\u3081\u306A\u3051\u308C\u3070"
+  icon: {fileID: 5420058259123194835, guid: 422a4de93112362468a88cfb9e4b7025, type: 3}
+  category: 1
+  durationSeconds: 60
+  linkedCondition: 1

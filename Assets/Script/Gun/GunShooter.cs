@@ -148,6 +148,8 @@ public class GunShooter : MonoBehaviour
     private AmmoItemData loadedAmmoData;
     private AmmoItemData selectedAmmoData;
 
+    // 本当に弾薬を消費して装填できた場合だけ通知
+    public event Action<GunShooter> ReloadSucceeded;
     public event Action<int> OnMagazineAmmoChanged;
     public event Action<AmmoItemData> OnLoadedAmmoChanged;
     public event Action<AmmoItemData> OnSelectedAmmoChanged;
@@ -561,6 +563,13 @@ public class GunShooter : MonoBehaviour
             Quaternion.Euler(0f, 0f, shotAngle)
         );
 
+        // チュートリアル中にプレイヤーが生成した弾だけを識別する（通常シーンでは何もしない）。
+        if (CaveTutorialManager2D.Instance != null &&
+            bullet.GetComponent<CaveTutorialPlayerProjectile2D>() == null)
+        {
+            bullet.AddComponent<CaveTutorialPlayerProjectile2D>();
+        }
+
         DamageDealer[] damageDealers =
             bullet.GetComponentsInChildren<DamageDealer>(true);
 
@@ -855,6 +864,7 @@ public class GunShooter : MonoBehaviour
 
             SetCurrentAmmo(currentAmmo + loadedAmmo);
             SetSelectedAmmo(requiredAmmo);
+            ReloadSucceeded?.Invoke(this);
         }
 
         isReloading = false;

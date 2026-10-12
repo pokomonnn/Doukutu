@@ -62,6 +62,32 @@ public class RescuePersonDetailTooltipUI : MonoBehaviour
     public static bool IsVisible =>
         instance != null && instance.isVisible;
 
+    /// <summary>現在表示している生存者情報。非表示中はnull。</summary>
+    public static RescuePersonInfo2D VisibleInfo =>
+        instance != null && instance.isVisible &&
+        instance.currentInfo != null &&
+        instance.gameObject.activeInHierarchy
+            ? instance.currentInfo
+            : null;
+
+    /// <summary>
+    /// 指定NPCについて現在表示されている詳細パネル全体を返します。
+    /// 背景を含むRectTransformを返すため、文字だけでなくパネル全体の重なりを避けられます。
+    /// </summary>
+    public static RectTransform GetVisiblePanelFor(Transform npcRoot)
+    {
+        if (npcRoot == null || VisibleInfo == null)
+            return null;
+
+        Transform infoTransform = instance.currentInfo.transform;
+        if (infoTransform != npcRoot &&
+            !infoTransform.IsChildOf(npcRoot) &&
+            !npcRoot.IsChildOf(infoTransform))
+            return null;
+
+        return instance.panelRect;
+    }
+
     private void Awake()
     {
         if (instance != null && instance != this)

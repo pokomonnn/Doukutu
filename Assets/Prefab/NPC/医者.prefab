@@ -23,6 +23,7 @@ GameObject:
   - component: {fileID: -9083753077329274206}
   - component: {fileID: -3306380577386758920}
   - component: {fileID: 1300606734183223303}
+  - component: {fileID: -8523245872794274485}
   m_Layer: 16
   m_Name: "\u533B\u8005"
   m_TagString: Untagged
@@ -119,10 +120,10 @@ BoxCollider2D:
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 65536
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 65536
   m_LayerOverridePriority: 0
   m_ForceSendLayers:
     serializedVersion: 2
@@ -190,9 +191,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 50
   invincibilityDuration: 0.5
-  enableDamageDebugLog: 1
+  enableDamageDebugLog: 0
   includePlayerDamageInDebugLog: 0
-  logBlockedDamage: 1
+  logBlockedDamage: 0
   audioSource: {fileID: 1786321803443853859}
   damageSound: {fileID: 8300000, guid: 4b9305695b4b2534cb5f1b2429b1b09c, type: 3}
   damageSoundVolume: 0.8
@@ -347,7 +348,7 @@ MonoBehaviour:
   displayName: "\u751F\u5B58\u8005"
   occupation: "\u4E00\u822C\u4EBA"
   condition: 0
-  overrideWithDeathState: 1
+  overrideWithDeathState: 0
   worsenConditionFromHealth: 1
   lightInjuryHealthPercent: 0.75
   injuredHealthPercent: 0.5
@@ -464,6 +465,31 @@ MonoBehaviour:
   unlockStoryFlags:
   - unlock_mechanic_shop
   unlockNote: "\u4F8B\uFF1A\u6B66\u5668\u4FEE\u7406\u6A5F\u80FD\u3092\u89E3\u653E"
+--- !u!114 &-8523245872794274485
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 862909085402662033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02b888044b4aaed4192db1772d99f4b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RescuePersonSymptoms2D
+  characterHealth: {fileID: 7472805106831161681}
+  initialSymptoms: 4
+  initiallyStabilized: 4
+  useRandomSymptoms: 0
+  bleedingChancePercent: 35
+  poisonChancePercent: 15
+  fractureChancePercent: 20
+  bleedingDamagePerTick: 1
+  bleedingTickSeconds: 3
+  poisonDamagePerTick: 1
+  poisonTickSeconds: 4
+  stabilizedPoisonIntervalMultiplier: 5
+  showDebugLogs: 0
 --- !u!1 &1133281558187549016
 GameObject:
   m_ObjectHideFlags: 0
