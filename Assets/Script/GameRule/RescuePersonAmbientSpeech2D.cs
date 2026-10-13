@@ -307,6 +307,7 @@ public class RescuePersonAmbientSpeech2D : MonoBehaviour
 
     private void OnDisable()
     {
+        NpcSpeechCoordinator2D.Release(this);
         StopBubbleAnimationCoroutine();
 
         if (bubbleCanvas != null)
@@ -442,12 +443,16 @@ public class RescuePersonAmbientSpeech2D : MonoBehaviour
             return;
         }
 
-        lastIndex = selectedIndex;
+        // 複数のNPCが同時にしゃべらないよう共通Managerへ表示を申請。
+        // 落下 > 持ち上げ > 運搬中 > 待機中 の優先度。
+        int speechPriority = fallingStyle ? 80 :
+            reason == "持ち上げ" ? 60 :
+            reason == "運搬中" ? 35 : 10;
 
-        ShowBubble(
-            lines[selectedIndex].Trim(),
-            fallingStyle
-        );
+        if (!ShowBubble(lines[selectedIndex].Trim(), fallingStyle, speechPriority))
+            return;
+
+        lastIndex = selectedIndex;
 
         if (showDebugLogs)
         {
@@ -525,13 +530,14 @@ public class RescuePersonAmbientSpeech2D : MonoBehaviour
         return selected;
     }
 
-    private void ShowBubble(
+    private bool ShowBubble(
         string message,
-        bool fallingStyle = false)
+        bool fallingStyle = false,
+        int speechPriority = 60)
     {
         if (string.IsNullOrWhiteSpace(message))
         {
-            return;
+            return false;
         }
 
         EnsureBubbleVisuals();
@@ -540,8 +546,12 @@ public class RescuePersonAmbientSpeech2D : MonoBehaviour
             bubbleCanvasGroup == null ||
             bubbleText == null)
         {
-            return;
+            return false;
         }
+
+        if (!NpcSpeechCoordinator2D.TryShow(
+            this, speechPriority, bubbleDuration + 0.05f, HandleSpeechInterrupted))
+            return false;
 
         bubbleText.text = message;
         currentBubbleIsFalling = fallingStyle;
@@ -560,6 +570,14 @@ public class RescuePersonAmbientSpeech2D : MonoBehaviour
                 fallingStyle
             )
         );
+        return true;
+    }
+
+    // 優先度の高い別NPCの発言が始まった時だけ呼ばれます。
+    private void HandleSpeechInterrupted()
+    {
+        StopBubbleAnimationCoroutine();
+        HideBubbleImmediate();
     }
 
     private IEnumerator BubbleAnimationRoutine(
@@ -578,16 +596,13 @@ public class RescuePersonAmbientSpeech2D : MonoBehaviour
                 )
                 : Mathf.Max(
                     1f,
-                    appearOvershootScale
+                    NpcSpeechUnifiedBubbleVisual2D.AppearOvershoot
                 );
 
         if (enableAppearAnimation)
         {
             float duration =
-                Mathf.Max(
-                    0.01f,
-                    appearDuration
-                );
+                NpcSpeechUnifiedBubbleVisual2D.AppearSeconds;
 
             float firstPhase =
                 duration * 0.62f;
@@ -601,7 +616,7 @@ public class RescuePersonAmbientSpeech2D : MonoBehaviour
             float startScale =
                 Mathf.Max(
                     0.1f,
-                    appearStartScale
+                    NpcSpeechUnifiedBubbleVisual2D.AppearStartScale
                 );
 
             float elapsed = 0f;
@@ -699,7 +714,7 @@ public class RescuePersonAmbientSpeech2D : MonoBehaviour
             enableDisappearAnimation
                 ? Mathf.Max(
                     0.01f,
-                    disappearDuration
+                    NpcSpeechUnifiedBubbleVisual2D.DisappearSeconds
                 )
                 : 0f;
 
@@ -708,7 +723,7 @@ public class RescuePersonAmbientSpeech2D : MonoBehaviour
                 0f,
                 bubbleDuration -
                 (enableAppearAnimation
-                    ? Mathf.Max(0.01f, appearDuration)
+                    ? NpcSpeechUnifiedBubbleVisual2D.AppearSeconds
                     : 0f) -
                 fadeDuration
             );
@@ -786,6 +801,7 @@ public class RescuePersonAmbientSpeech2D : MonoBehaviour
 
     private void HideBubbleImmediate()
     {
+        NpcSpeechCoordinator2D.Release(this);
         currentScaleMultiplier = 1f;
         currentBubbleIsFalling = false;
 
@@ -915,71 +931,19 @@ public class RescuePersonAmbientSpeech2D : MonoBehaviour
 
     private void ApplyVisualSettings()
     {
-        if (bubbleCanvasRect != null)
-        {
-            bubbleCanvasRect.sizeDelta =
-                new Vector2(
-                    bubbleWidth,
-                    bubbleHeight
-                );
-
-            ApplyAnimatedScale();
-
-            bubbleCanvasRect.rotation =
-                Quaternion.identity;
-        }
-
-        if (bubbleCanvas != null)
-        {
-            bubbleCanvas.sortingOrder =
-                bubbleSortingOrder;
-        }
-
-        if (bubbleBackground != null)
-        {
-            bubbleBackground.color =
-                backgroundColor;
-
-            bubbleBackground.sprite =
-                bubbleBackgroundSprite;
-
-            bubbleBackground.type =
-                bubbleBackgroundSprite != null &&
-                bubbleBackgroundSprite.border != Vector4.zero
-                    ? Image.Type.Sliced
-                    : Image.Type.Simple;
-        }
-
-        if (bubbleText != null)
-        {
-            if (japaneseFontAsset != null)
-            {
-                bubbleText.font =
-                    japaneseFontAsset;
-            }
-
-            bubbleText.fontSize =
-                fontSize;
-
-            bubbleText.color =
-                textColor;
-        }
+        // 新しい共通Managerから背景画像・枠・日本語フォント・大きさを受け取る。
+        // 旧Inspectorの個別見た目設定は削除せず残し、将来の移行を安全にする。
+        NpcSpeechUnifiedBubbleVisual2D.Apply(
+            bubbleCanvas, bubbleCanvasRect, bubbleBackground, bubbleText, japaneseFontAsset);
+        ApplyAnimatedScale();
     }
 
     private void ApplyAnimatedScale()
     {
-        if (bubbleCanvasRect == null)
-        {
-            return;
-        }
-
-        bubbleCanvasRect.localScale =
-            Vector3.one *
-            bubbleWorldScale *
-            Mathf.Max(
-                0.01f,
-                currentScaleMultiplier
-            );
+        if (bubbleCanvasRect == null) return;
+        bubbleCanvasRect.localScale = Vector3.one *
+            NpcSpeechUnifiedBubbleVisual2D.WorldScale *
+            Mathf.Max(0.01f, currentScaleMultiplier);
     }
 
     private void UpdateBubbleWorldPosition()
@@ -1000,18 +964,18 @@ public class RescuePersonAmbientSpeech2D : MonoBehaviour
         if (bubbleCanvas != null &&
             bubbleCanvas.gameObject.activeSelf)
         {
-            if (enableFloating &&
-                floatingAmplitude > 0f &&
-                floatingSpeed > 0f)
+            if (NpcSpeechUnifiedBubbleVisual2D.FloatWhileVisible &&
+                NpcSpeechUnifiedBubbleVisual2D.FloatAmplitude > 0f &&
+                NpcSpeechUnifiedBubbleVisual2D.FloatSpeed > 0f)
             {
                 animationOffset.y +=
                     Mathf.Sin(
                         Time.time *
-                        floatingSpeed *
+                        NpcSpeechUnifiedBubbleVisual2D.FloatSpeed *
                         Mathf.PI *
                         2f
                     ) *
-                    floatingAmplitude;
+                    NpcSpeechUnifiedBubbleVisual2D.FloatAmplitude;
             }
 
             if (currentBubbleIsFalling &&

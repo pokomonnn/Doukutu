@@ -1,0 +1,1063 @@
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+public enum ItemUseResult
+{
+    Success,
+    InvalidItem,
+    NotConsumable,
+    PlayerNotFound,
+    PlayerIsDead,
+
+    HealthIsFull,
+    FoodIsFull,
+    WaterIsFull,
+    FoodAndWaterAreFull,
+    TorchIsFull,
+    TorchItemNotFound,
+
+    NoUsableEffect,
+
+    StatusConditionControllerNotFound,
+    SurvivalControllerNotFound,
+    TorchControllerNotFound
+}
+
+public class InventoryController : MonoBehaviour
+{
+    [Serializable]
+    private class StartingItem
+    {
+        [SerializeField] private ItemData itemData;
+        [SerializeField, Min(1)] private int amount = 1;
+
+        public ItemData ItemData => itemData;
+        public int Amount => amount;
+    }
+
+    [Header("インベントリサイズ")]
+    [SerializeField, Min(1)] private int gridWidth = 7;
+    [SerializeField, Min(1)] private int gridHeight = 10;
+
+    [Header("開始時に入れるアイテム（テスト用）")]
+    [SerializeField] private bool addStartingItemsOnAwake = true;
+
+    [SerializeField]
+    private List<StartingItem> startingItems =
+        new List<StartingItem>();
+
+    [Header("使用対象")]
+    [Tooltip(
+        "プレイヤーのCharacterHealth。" +
+        "未設定ならPlayerタグから自動取得します。"
+    )]
+    [SerializeField]
+    private CharacterHealth playerHealth;
+
+    [Tooltip(
+        "プレイヤーの状態異常管理。" +
+        "未設定ならPlayerタグから自動取得します。"
+    )]
+    [SerializeField]
+    private PlayerStatusConditionController
+        playerStatusConditions;
+
+    [Tooltip(
+        "プレイヤーの食料・水分管理。" +
+        "未設定ならPlayerタグから自動取得します。"
+    )]
+    [SerializeField]
+    private PlayerSurvivalController
+        playerSurvivalController;
+
+    [Tooltip(
+        "松明残量の管理。" +
+        "未設定ならPlayerタグから自動取得します。"
+    )]
+    [SerializeField]
+    private TorchController torchController;
+
+    [Tooltip(
+        "回復アイテム使用中の速度低下を反映する管理。" +
+        "未設定ならPlayerタグから自動取得します。"
+    )]
+    [SerializeField]
+    private PlayerWeightController
+        playerWeightController;
+
+    [SerializeField] private string playerTag = "Player";
+
+    [Header("インベントリ本体")]
+    [SerializeField]
+    private InventoryGrid inventoryGrid =
+        new InventoryGrid();
+
+    public InventoryGrid Grid => inventoryGrid;
+
+    public event Action OnInventoryChanged;
+
+    private bool isInitialized;
+
+    [Tooltip(
+    "回復アイテム使用時のアニメーション・" +
+    "銃非表示を管理します。"
+)]
+    [SerializeField]
+    private PlayerConsumableUseController
+    playerConsumableUseController;
+
+
+    private void Awake()
+    {
+        InitializeInventory();
+
+        FindPlayerHealth();
+        FindPlayerStatusConditions();
+        FindPlayerSurvivalController();
+        FindTorchController();
+        FindPlayerWeightController();
+        FindPlayerConsumableUseController();
+    }
+
+    public void InitializeInventory()
+    {
+        if (isInitialized)
+        {
+            return;
+        }
+
+        if (inventoryGrid == null)
+        {
+            inventoryGrid = new InventoryGrid();
+        }
+
+        inventoryGrid.Initialize(gridWidth, gridHeight, true);
+
+        if (addStartingItemsOnAwake)
+        {
+            AddStartingItems();
+        }
+
+        isInitialized = true;
+        NotifyInventoryChanged();
+    }
+
+    public bool TryAddItem(ItemData itemData, int amount = 1)
+    {
+        return TryAddItem(itemData, amount, out _);
+    }
+
+    public bool TryAddItem(
+        ItemData itemData,
+        int amount,
+        out int remainingAmount)
+    {
+        if (!isInitialized)
+        {
+            InitializeInventory();
+        }
+
+        if (itemData == null || amount <= 0)
+        {
+            remainingAmount = Mathf.Max(0, amount);
+            return false;
+        }
+
+        bool addedAll = inventoryGrid.TryAddItem(
+            itemData,
+            amount,
+            out remainingAmount
+        );
+
+        if (remainingAmount < amount)
+        {
+            NotifyInventoryChanged();
+        }
+
+        return addedAll;
+    }
+
+    // 通常の向きのまま移動
+    public bool TryMoveItem(
+        InventoryItem item,
+        int targetX,
+        int targetY)
+    {
+        if (item == null)
+        {
+            return false;
+        }
+
+        bool moved = inventoryGrid.TryPlaceItem(
+            item,
+            targetX,
+            targetY
+        );
+
+        if (moved)
+        {
+            NotifyInventoryChanged();
+        }
+
+        return moved;
+    }
+
+    // ドラッグ中の仮の向きを、ドロップ時に確定して移動する
+    public bool TryMoveItem(
+        InventoryItem item,
+        int targetX,
+        int targetY,
+        bool isRotated)
+    {
+        if (item == null)
+        {
+            return false;
+        }
+
+        bool moved = inventoryGrid.TryPlaceItem(
+            item,
+            targetX,
+            targetY,
+            isRotated
+        );
+
+        if (moved)
+        {
+            NotifyInventoryChanged();
+        }
+
+        return moved;
+    }
+
+    public bool CanMoveItemTo(
+        InventoryItem item,
+        int targetX,
+        int targetY)
+    {
+        if (item == null)
+        {
+            return false;
+        }
+
+        return inventoryGrid.CanPlaceItem(
+            item,
+            targetX,
+            targetY
+        );
+    }
+
+    public bool TryRotateItem(InventoryItem item)
+    {
+        if (item == null)
+        {
+            return false;
+        }
+
+        bool rotated = inventoryGrid.TryRotateItem(item);
+
+        if (rotated)
+        {
+            NotifyInventoryChanged();
+        }
+
+        return rotated;
+    }
+
+    public bool RemoveItem(InventoryItem item)
+    {
+        if (item == null)
+        {
+            return false;
+        }
+
+        bool removed = inventoryGrid.RemoveItem(item);
+
+        if (removed)
+        {
+            NotifyInventoryChanged();
+        }
+
+        return removed;
+    }
+
+    public int RemoveItemAmount(
+        InventoryItem item,
+        int amount)
+    {
+        if (item == null || amount <= 0)
+        {
+            return 0;
+        }
+
+        int removedAmount = inventoryGrid.RemoveAmount(
+            item,
+            amount
+        );
+
+        if (removedAmount > 0)
+        {
+            NotifyInventoryChanged();
+        }
+
+        return removedAmount;
+    }
+
+    public InventoryItem GetItemAt(int x, int y)
+    {
+        return inventoryGrid.GetItemAt(x, y);
+    }
+
+    /// <summary>
+    /// 既存のInventoryItemを入れられる空き位置を自動検索します。
+    /// ItemBoxなど別Inventoryから「同じInventoryItem本体」を移す時に使用します。
+    /// 現在の向きを優先し、入らない場合は回転可能なら反対向きも試します。
+    /// 実際の配置は行いません。
+    /// </summary>
+    public bool TryFindAutoPlacement(
+        InventoryItem item,
+        out int targetX,
+        out int targetY,
+        out bool targetRotated)
+    {
+        targetX = -1;
+        targetY = -1;
+        targetRotated = false;
+
+        if (!isInitialized)
+        {
+            InitializeInventory();
+        }
+
+        if (item == null ||
+            item.ItemData == null ||
+            inventoryGrid == null)
+        {
+            return false;
+        }
+
+        bool firstRotation = item.IsRotated;
+
+        if (TryFindAutoPlacementForRotation(
+                item,
+                firstRotation,
+                out targetX,
+                out targetY))
+        {
+            targetRotated = firstRotation;
+            return true;
+        }
+
+        if (item.CanRotate)
+        {
+            bool secondRotation = !firstRotation;
+
+            if (TryFindAutoPlacementForRotation(
+                    item,
+                    secondRotation,
+                    out targetX,
+                    out targetY))
+            {
+                targetRotated = secondRotation;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryFindAutoPlacementForRotation(
+        InventoryItem item,
+        bool isRotated,
+        out int targetX,
+        out int targetY)
+    {
+        targetX = -1;
+        targetY = -1;
+
+        if (item == null || inventoryGrid == null)
+        {
+            return false;
+        }
+
+        for (int y = 0; y < inventoryGrid.Height; y++)
+        {
+            for (int x = 0; x < inventoryGrid.Width; x++)
+            {
+                if (!inventoryGrid.CanPlaceItem(
+                        item,
+                        x,
+                        y,
+                        isRotated))
+                {
+                    continue;
+                }
+
+                targetX = x;
+                targetY = y;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 同じItemDataの2つのスタックを結合します。
+    /// 例：30発の弾へ20発を重ねると50発になり、20発側は削除されます。
+    /// 80発へ20発なら90発＋10発のように、MaxStackを超える分は元スタックへ残ります。
+    /// </summary>
+    public bool TryMergeItemStacks(
+        InventoryItem sourceItem,
+        InventoryItem targetItem,
+        out int transferredAmount)
+    {
+        transferredAmount = 0;
+
+        if (sourceItem == null ||
+            targetItem == null ||
+            inventoryGrid == null)
+        {
+            return false;
+        }
+
+        bool merged = inventoryGrid.TryMergeStacks(
+            sourceItem,
+            targetItem,
+            out transferredAmount
+        );
+
+        if (merged)
+        {
+            NotifyInventoryChanged();
+        }
+
+        return merged;
+    }
+
+    // 指定ItemDataの所持数を、全スタック合計で返す
+    public int GetTotalAmount(ItemData itemData)
+    {
+        if (itemData == null || inventoryGrid == null)
+        {
+            return 0;
+        }
+
+        int totalAmount = 0;
+
+        foreach (InventoryItem item in inventoryGrid.Items)
+        {
+            if (item == null || item.ItemData != itemData)
+            {
+                continue;
+            }
+
+            totalAmount += item.Amount;
+        }
+
+        return totalAmount;
+    }
+
+    // 指定ItemDataを複数スタックにまたがって消費し、
+    // 実際に消費した数を返す
+    public int RemoveAmountByItemData(
+        ItemData itemData,
+        int amount)
+    {
+        if (itemData == null ||
+            amount <= 0 ||
+            inventoryGrid == null)
+        {
+            return 0;
+        }
+
+        List<InventoryItem> matchingItems =
+            new List<InventoryItem>();
+
+        foreach (InventoryItem item in inventoryGrid.Items)
+        {
+            if (item != null && item.ItemData == itemData)
+            {
+                matchingItems.Add(item);
+            }
+        }
+
+        int remainingAmount = amount;
+        int removedTotal = 0;
+
+        foreach (InventoryItem item in matchingItems)
+        {
+            if (remainingAmount <= 0)
+            {
+                break;
+            }
+
+            int removed = inventoryGrid.RemoveAmount(
+                item,
+                remainingAmount
+            );
+
+            removedTotal += removed;
+            remainingAmount -= removed;
+        }
+
+        if (removedTotal > 0)
+        {
+            NotifyInventoryChanged();
+        }
+
+        return removedTotal;
+    }
+
+    /// <summary>
+    /// インベントリ内から松明回復効果を持つ消耗品を1つ探し、
+    /// 通常のTryUseItem()経由で自動使用します。
+    /// 1キーなどのショートカットから呼ぶことを想定しています。
+    /// </summary>
+    public bool TryUseFirstTorch(out ItemUseResult result)
+    {
+        result = ItemUseResult.TorchItemNotFound;
+
+        if (!isInitialized)
+        {
+            InitializeInventory();
+        }
+
+        if (inventoryGrid == null)
+        {
+            return false;
+        }
+
+        // TryUseItem()成功時にスタックが0になって削除される可能性があるため、
+        // 元Listを直接列挙せずスナップショットから探します。
+        List<InventoryItem> items =
+            new List<InventoryItem>(inventoryGrid.Items);
+
+        foreach (InventoryItem item in items)
+        {
+            if (item == null || item.ItemData == null || item.Amount <= 0)
+            {
+                continue;
+            }
+
+            if (!(item.ItemData is ConsumableItemData consumableData) ||
+                !consumableData.CanRestoreTorch)
+            {
+                continue;
+            }
+
+            // 通常の右クリック使用と同じ処理を通す。
+            // 松明満タン・Player死亡・Controller不足なども既存判定をそのまま利用する。
+            return TryUseItem(item, out result);
+        }
+
+        return false;
+    }
+
+    // 消耗品を使用する
+    public bool TryUseItem(
+        InventoryItem item,
+        out ItemUseResult result)
+    {
+        result = ItemUseResult.InvalidItem;
+
+        if (item == null ||
+            item.ItemData == null ||
+            !inventoryGrid.ContainsItem(item))
+        {
+            return false;
+        }
+
+        ConsumableItemData consumableData =
+            item.ItemData as ConsumableItemData;
+
+        if (consumableData == null)
+        {
+            result = ItemUseResult.NotConsumable;
+            return false;
+        }
+
+        if (!FindPlayerHealth())
+        {
+            result = ItemUseResult.PlayerNotFound;
+            return false;
+        }
+
+        if (playerHealth.IsDead)
+        {
+            result = ItemUseResult.PlayerIsDead;
+            return false;
+        }
+
+        bool needsStatusConditionController =
+            consumableData.CuredConditions !=
+            StatusConditionType.None;
+
+        bool needsSurvivalController =
+            consumableData.CanRestoreFood ||
+            consumableData.CanRestoreWater;
+
+        bool needsTorchController =
+            consumableData.CanRestoreTorch;
+
+        // 状態異常回復アイテムなのにControllerが無い場合、
+        // アイテムが消費されないようにする
+        if (needsStatusConditionController &&
+            !FindPlayerStatusConditions())
+        {
+            result =
+                ItemUseResult.StatusConditionControllerNotFound;
+
+            Debug.LogWarning(
+                "InventoryController：" +
+                "PlayerStatusConditionControllerが" +
+                "Playerに見つかりません。",
+                this
+            );
+
+            return false;
+        }
+
+        // 食料・水分を回復するアイテムなのにControllerが無い場合も、
+        // アイテムだけ消費されないようにする
+        if (needsSurvivalController &&
+            !FindPlayerSurvivalController())
+        {
+            result =
+                ItemUseResult.SurvivalControllerNotFound;
+
+            Debug.LogWarning(
+                "InventoryController：" +
+                "PlayerSurvivalControllerが" +
+                "Playerに見つかりません。",
+                this
+            );
+
+            return false;
+        }
+
+        // 松明回復アイテムなのにTorchControllerが無い場合も、
+        // アイテムだけ消費されないようにする
+        if (needsTorchController &&
+            !FindTorchController())
+        {
+            result =
+                ItemUseResult.TorchControllerNotFound;
+
+            Debug.LogWarning(
+                "InventoryController：" +
+                "TorchControllerがPlayerに見つかりません。",
+                this
+            );
+
+            return false;
+        }
+
+        bool usedEffect = false;
+
+        bool healthIsFull =
+            consumableData.HealAmount > 0 &&
+            playerHealth.CurrentHealth >=
+            playerHealth.MaxHealth;
+
+        bool foodIsFull =
+            consumableData.CanRestoreFood &&
+            playerSurvivalController.IsFoodFull;
+
+        bool waterIsFull =
+            consumableData.CanRestoreWater &&
+            playerSurvivalController.IsWaterFull;
+
+        bool torchIsFull =
+            consumableData.CanRestoreTorch &&
+            torchController.IsFull;
+
+        // HP回復
+        if (consumableData.HealAmount > 0 &&
+            !healthIsFull)
+        {
+            playerHealth.Heal(consumableData.HealAmount);
+            usedEffect = true;
+        }
+
+        // 食料回復
+        if (consumableData.CanRestoreFood &&
+            !foodIsFull)
+        {
+            float restoredFood =
+                playerSurvivalController.RestoreFood(
+                    consumableData.FoodRestoreAmount
+                );
+
+            if (restoredFood > 0f)
+            {
+                usedEffect = true;
+            }
+        }
+
+        // 水分回復
+        if (consumableData.CanRestoreWater &&
+            !waterIsFull)
+        {
+            float restoredWater =
+                playerSurvivalController.RestoreWater(
+                    consumableData.WaterRestoreAmount
+                );
+
+            if (restoredWater > 0f)
+            {
+                usedEffect = true;
+            }
+        }
+
+        // 松明回復
+        if (consumableData.CanRestoreTorch &&
+            !torchIsFull)
+        {
+            float restoredTorch =
+                torchController.RestoreTorch(
+                    consumableData.TorchRestoreAmount
+                );
+
+            if (restoredTorch > 0f)
+            {
+                usedEffect = true;
+            }
+        }
+
+        // 骨折・出血などの状態異常回復
+        if (needsStatusConditionController &&
+            playerStatusConditions.CureConditions(
+                consumableData.CuredConditions
+            ))
+        {
+            usedEffect = true;
+        }
+
+        // 回復できるものが何も無い場合は消費しない
+        if (!usedEffect)
+        {
+            result = GetNoUsableEffectResult(
+                consumableData,
+                healthIsFull,
+                foodIsFull,
+                waterIsFull,
+                torchIsFull
+            );
+
+            return false;
+        }
+
+        // 使用時に消費する設定なら1個減らす
+        if (consumableData.ConsumeOnUse)
+        {
+            RemoveItemAmount(item, 1);
+        }
+
+        // 移動速度低下時間が0より大きい回復アイテムは、
+        // 設定された時間だけ移動速度を下げる。
+        ApplyConsumableUseSlowdown(consumableData);
+
+        result = ItemUseResult.Success;
+        return true;
+    }
+
+    [ContextMenu("Reset Inventory")]
+    public void ResetInventory()
+    {
+        if (inventoryGrid == null)
+        {
+            inventoryGrid = new InventoryGrid();
+        }
+
+        inventoryGrid.Initialize(gridWidth, gridHeight, true);
+        AddStartingItems();
+
+        isInitialized = true;
+        NotifyInventoryChanged();
+    }
+
+    private ItemUseResult GetNoUsableEffectResult(
+        ConsumableItemData consumableData,
+        bool healthIsFull,
+        bool foodIsFull,
+        bool waterIsFull,
+        bool torchIsFull)
+    {
+        bool restoresFood =
+            consumableData.CanRestoreFood;
+
+        bool restoresWater =
+            consumableData.CanRestoreWater;
+
+        bool restoresTorch =
+            consumableData.CanRestoreTorch;
+
+        if (restoresTorch && torchIsFull)
+        {
+            return ItemUseResult.TorchIsFull;
+        }
+
+        if (restoresFood &&
+            restoresWater &&
+            foodIsFull &&
+            waterIsFull)
+        {
+            return ItemUseResult.FoodAndWaterAreFull;
+        }
+
+        if (restoresWater && waterIsFull)
+        {
+            return ItemUseResult.WaterIsFull;
+        }
+
+        if (restoresFood && foodIsFull)
+        {
+            return ItemUseResult.FoodIsFull;
+        }
+
+        if (consumableData.HealAmount > 0 &&
+            healthIsFull)
+        {
+            return ItemUseResult.HealthIsFull;
+        }
+
+        return ItemUseResult.NoUsableEffect;
+    }
+
+    private bool FindPlayerHealth()
+    {
+        if (playerHealth != null)
+        {
+            return true;
+        }
+
+        GameObject player =
+            GameObject.FindGameObjectWithTag(playerTag);
+
+        if (player == null)
+        {
+            return false;
+        }
+
+        playerHealth = player.GetComponent<CharacterHealth>();
+
+        return playerHealth != null;
+    }
+
+    private bool FindPlayerStatusConditions()
+    {
+        if (playerStatusConditions != null)
+        {
+            return true;
+        }
+
+        GameObject player =
+            GameObject.FindGameObjectWithTag(playerTag);
+
+        if (player == null)
+        {
+            return false;
+        }
+
+        playerStatusConditions =
+            player.GetComponent<
+                PlayerStatusConditionController
+            >();
+
+        return playerStatusConditions != null;
+    }
+
+    private bool FindPlayerSurvivalController()
+    {
+        if (playerSurvivalController != null)
+        {
+            return true;
+        }
+
+        GameObject player =
+            GameObject.FindGameObjectWithTag(playerTag);
+
+        if (player == null)
+        {
+            return false;
+        }
+
+        playerSurvivalController =
+            player.GetComponent<PlayerSurvivalController>();
+
+        return playerSurvivalController != null;
+    }
+
+    private bool FindTorchController()
+    {
+        if (torchController != null)
+        {
+            return true;
+        }
+
+        // InventoryControllerと同じPlayerにある場合
+        torchController = GetComponent<TorchController>();
+
+        if (torchController != null)
+        {
+            return true;
+        }
+
+        GameObject player =
+            GameObject.FindGameObjectWithTag(playerTag);
+
+        if (player != null)
+        {
+            torchController =
+                player.GetComponent<TorchController>();
+        }
+
+        if (torchController == null)
+        {
+            torchController =
+                FindAnyObjectByType<TorchController>();
+        }
+
+        return torchController != null;
+    }
+
+    private void ApplyConsumableUseSlowdown(
+    ConsumableItemData consumableData)
+    {
+        if (consumableData == null ||
+            consumableData.SlowdownDuration <= 0f)
+        {
+            return;
+        }
+
+        // 新しい回復演出Controllerがあれば、
+        // アニメーション・銃非表示・速度低下をまとめて処理する
+        if (FindPlayerConsumableUseController())
+        {
+            playerConsumableUseController.BeginConsumableUse(
+                consumableData
+            );
+
+            return;
+        }
+
+        // Controllerを付け忘れた場合も、
+        // 従来どおり移動低下だけは動くようにする
+        if (!FindPlayerWeightController())
+        {
+            Debug.LogWarning(
+                "InventoryController：" +
+                "PlayerWeightControllerがPlayerに見つかりません。",
+                this
+            );
+
+            return;
+        }
+
+        playerWeightController.ApplyConsumableUseSlowdown(
+            consumableData.SlowdownDuration,
+            consumableData.UseMoveSpeedMultiplier
+        );
+    }
+
+    private bool FindPlayerWeightController()
+    {
+        if (playerWeightController != null)
+        {
+            return true;
+        }
+
+        // InventoryControllerと同じPlayerに付いている場合
+        playerWeightController =
+            GetComponent<PlayerWeightController>();
+
+        if (playerWeightController != null)
+        {
+            return true;
+        }
+
+        GameObject player =
+            GameObject.FindGameObjectWithTag(playerTag);
+
+        if (player == null)
+        {
+            return false;
+        }
+
+        playerWeightController =
+            player.GetComponent<PlayerWeightController>();
+
+        return playerWeightController != null;
+    }
+
+    private bool FindPlayerConsumableUseController()
+    {
+        if (playerConsumableUseController != null)
+        {
+            return true;
+        }
+
+        // InventoryControllerと同じPlayerにある場合
+        playerConsumableUseController =
+            GetComponent<PlayerConsumableUseController>();
+
+        if (playerConsumableUseController != null)
+        {
+            return true;
+        }
+
+        GameObject player =
+            GameObject.FindGameObjectWithTag(playerTag);
+
+        if (player == null)
+        {
+            return false;
+        }
+
+        playerConsumableUseController =
+            player.GetComponent<
+                PlayerConsumableUseController
+            >();
+
+        return playerConsumableUseController != null;
+    }
+
+    private void AddStartingItems()
+    {
+        foreach (StartingItem startingItem in startingItems)
+        {
+            if (startingItem == null ||
+                startingItem.ItemData == null)
+            {
+                continue;
+            }
+
+            bool addedAll = inventoryGrid.TryAddItem(
+                startingItem.ItemData,
+                startingItem.Amount,
+                out int remainingAmount
+            );
+
+            if (!addedAll)
+            {
+                Debug.LogWarning(
+                    $"InventoryController: " +
+                    $"{startingItem.ItemData.DisplayName} を " +
+                    $"{remainingAmount} 個入れられませんでした。"
+                );
+            }
+        }
+    }
+
+    private void NotifyInventoryChanged()
+    {
+        OnInventoryChanged?.Invoke();
+    }
+
+    private void OnValidate()
+    {
+        gridWidth = Mathf.Max(1, gridWidth);
+        gridHeight = Mathf.Max(1, gridHeight);
+    }
+}

@@ -1169,6 +1169,7 @@ GameObject:
   - component: {fileID: 6749107279624333898}
   - component: {fileID: 8034558912045858771}
   - component: {fileID: 2116929210091504896}
+  - component: {fileID: 8068436586029113970}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -2386,6 +2387,9 @@ MonoBehaviour:
   - itemData: {fileID: 11400000, guid: 59d3f0fec4f9cde41820b132c33ef8ea, type: 2}
     amount: 3
   maxAmountPerSlot: 3
+  npcSlot0Treats: 4
+  npcSlot1Treats: 2
+  npcSlot2Treats: 1
   showDebugLogs: 1
   allowedItems:
   - {fileID: 11400000, guid: c9fd4e26b48a0ab4995b954c5847b9c7, type: 2}
@@ -2417,7 +2421,13 @@ MonoBehaviour:
   scanInterval: 0.1
   requireNpcInFront: 0
   interactKey: 116
+  promptOnlyWhenTreatmentNeeded: 1
+  synchronizeExplicitNpcInfoSymptoms: 1
+  logTreatmentNeedDiagnosis: 1
   hidePromptWhenMainInventoryOpen: 0
+  hidePromptBehindInventory: 1
+  promptSortingOrder: 1100
+  actualTabInventoryPanel: {fileID: 0}
   interactionPromptText: {fileID: 0}
   japaneseFont: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
   promptMessage: "\u6CBB\u7642\u3059\u308B"
@@ -2425,12 +2435,46 @@ MonoBehaviour:
   promptScreenOffset: {x: 0, y: 0}
   promptFontSize: 21
   promptBackground: {r: 0.08, g: 0.12, b: 0.15, a: 0.86}
+  avoidOverlappingNpcText: 1
+  autoFindNpcChildTexts: 1
+  additionalTextsToAvoid: []
+  textGapPixels: 14
+  maximumAvoidanceSteps: 12
+  screenMarginPixels: 8
+  logPromptReposition: 0
   showDebugLogs: 1
   verboseScanLogs: 0
   diagnosticLogInterval: 3
   autoDiagnoseMissingPrompt: 1
   autoDiagnosticInterval: 5
   inspectAllLayersAndNpcs: 1
+--- !u!114 &8068436586029113970
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6641261635897217815}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 471a217ff4ef0c841b8ef0d40ed3fe36, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAlcoholEffect2D
+  characterHealth: {fileID: 2681148601091786327}
+  weightController: {fileID: 293587376742321391}
+  survivalController: {fileID: 1484419611754063742}
+  statusEffectManager: {fileID: 6749107279624333898}
+  alcoholTolerance: 150
+  alcoholRecoveryPerSecond: 0.5
+  recoveryDelayAfterDrinkSeconds: 12
+  maximumAlcoholPoints: 300
+  overLimitShakeSeconds: 60
+  shakeStrength: 0.1
+  shakeFrequency: 16
+  weightAndCarryBuff: {fileID: 0}
+  hungerDebuff: {fileID: 0}
+  overLimitDebuff: {fileID: 0}
+  showDebugLogs: 1
 --- !u!1 &6718992130171538360
 GameObject:
   m_ObjectHideFlags: 0

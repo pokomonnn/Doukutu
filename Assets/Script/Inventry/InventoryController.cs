@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -587,6 +587,30 @@ public class InventoryController : MonoBehaviour
         {
             result = ItemUseResult.PlayerIsDead;
             return false;
+        }
+
+        // [AlcoholSystem v1.0 / InventoryController]
+        // 通常の回復アイテムと分岐し、SAN・水分・酔い状態を専用コントローラへ委譲。
+        if (consumableData is AlcoholItemData alcoholItem)
+        {
+            PlayerAlcoholEffect2D alcoholEffect =
+                playerHealth.GetComponent<PlayerAlcoholEffect2D>();
+            if (alcoholEffect == null)
+                alcoholEffect = playerHealth.gameObject.AddComponent<PlayerAlcoholEffect2D>();
+
+            if (!alcoholEffect.TryDrink(alcoholItem, out string alcoholFailure))
+            {
+                Debug.LogWarning("[Alcohol] 飲酒失敗: " + alcoholFailure, this);
+                result = ItemUseResult.NoUsableEffect;
+                return false;
+            }
+
+            if (alcoholItem.ConsumeOnUse)
+                RemoveItemAmount(item, 1);
+
+            ApplyConsumableUseSlowdown(alcoholItem);
+            result = ItemUseResult.Success;
+            return true;
         }
 
         bool needsStatusConditionController =

@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3438ebee74218af458959f66e50a8e9e, type: 3}
+  m_Name: AlcoholCombinedEffect
+  m_EditorClassIdentifier: Assembly-CSharp::StatusEffectData2D
+  displayName: "\u98F2\u9152\uFF08\u30D0\u30D5\u30FB\u30C7\u30D0\u30D5\uFF09"
+  description: "\u3010\u30D0\u30D5\u3011\n\u91CD\u91CF\u5236\u9650 +5kg / NPC\u904B\u642C\u901F\u5EA6
+    \xD71.15\n\u3010\u30C7\u30D0\u30D5\u3011\n\u7A7A\u8179\u901F\u5EA6 \xD71.25\n\u3010\u98F2\u307F\u904E\u304E\u3011\n3\u676F\u76EE\u306760\u79D2\u9593\u3086\u3063\u304F\u308A\u753B\u9762\u304C\u63FA\u308C\u308B"
+  icon: {fileID: -6695432726932574018, guid: 89f43a90519ec8141a860d8e1f5af13a, type: 3}
+  category: 0
+  durationSeconds: 0
+  linkedCondition: 0

@@ -7,7 +7,7 @@ using UnityEngine;
 /// 3種類のConsumableItemDataを固定し、各枠に最大3個まで保持します。
 /// 応急キット表示は横3マス×縦2マス。各アイテムは横1×縦2マスです。
 /// 数量0になっても枠とイラストはそのまま残ります。
-/// 注意：このランタイム数量は既存セーブシステムへはまだ接続していません。
+/// 現在のランタイム数量はMedicalKitSessionStore2DとSaveManagerに連携して保存します。
 /// </summary>
 [DisallowMultipleComponent]
 public class MedicalKitInventory2D : MonoBehaviour
@@ -96,8 +96,18 @@ public class MedicalKitInventory2D : MonoBehaviour
 
     private void Start()
     {
-        MigrateLegacyItems();
+        // シーン移動後は一時保存した数量が正。Prefabの初期数量で上書きしない。
+        // 新規ゲームのみ、古いKitGridから移行して初期数量を確定します。
+        if (!MedicalKitSessionStore2D.HasData)
+            MigrateLegacyItems();
+
+        MedicalKitSessionStore2D.Bind(this);
         Changed?.Invoke();
+    }
+
+    private void OnDestroy()
+    {
+        MedicalKitSessionStore2D.Unbind(this);
     }
 
     private void OnValidate()
@@ -316,6 +326,21 @@ public class MedicalKitInventory2D : MonoBehaviour
         Log($"[使用] {data.DisplayName} x{amount} / 残り{fixedSlots[index].amount}");
         Changed?.Invoke();
         return true;
+    }
+
+    /// <summary>
+    /// セッション/セーブから固定3枠の数量を一括復元します。
+    /// 途中状態をUIに通知せず、3枠の反映後にChangedを1回通知します。
+    /// ItemDataの設定やNPCの対応症状は変更しません。
+    /// </summary>
+    public void RestoreSavedAmounts(int slot0, int slot1, int slot2)
+    {
+        EnsureSlots();
+        int capacity = MaxAmountPerSlot;
+        fixedSlots[0].amount = Mathf.Clamp(slot0, 0, capacity);
+        fixedSlots[1].amount = Mathf.Clamp(slot1, 0, capacity);
+        fixedSlots[2].amount = Mathf.Clamp(slot2, 0, capacity);
+        Changed?.Invoke();
     }
 
     /// <summary>セーブ／ロードを接続するときに利用できる数量設定API。</summary>

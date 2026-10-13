@@ -1,0 +1,887 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public enum PlayerWeightState
+{
+    Normal,
+    SlightlySlow,
+    Slow,
+    VerySlow,
+    Immobilized
+}
+
+[DisallowMultipleComponent]
+public class PlayerWeightController : MonoBehaviour
+{
+    [Header("参照")]
+    [SerializeField] private InventoryController inventoryController;
+    [SerializeField] private EquipmentController equipmentController;
+    [SerializeField] private PlayerMove playerMove;
+
+    [Tooltip("骨折など、重量以外の移動速度低下を管理するコンポーネント")]
+    [SerializeField]
+    private PlayerStatusConditionController statusConditionController;
+
+    [Tooltip("食料不足による移動速度低下を管理するコンポーネント")]
+    [SerializeField]
+    private PlayerSurvivalController survivalController;
+
+    [Header("応急キット内の重量")]
+    [SerializeField] private MedicalKitInventory2D medicalKitInventory;
+    private bool isSubscribedToMedicalKit;
+
+    [Header("重量ごとの段階")]
+    [Tooltip("この重量までは通常速度")]
+    [SerializeField, Min(0f)]
+    private float normalWeightLimit = 20f;
+
+    [Tooltip("この重量までは少し遅い")]
+    [SerializeField, Min(0f)]
+    private float slightlySlowWeightLimit = 40f;
+
+    [Tooltip("この重量までは遅い")]
+    [SerializeField, Min(0f)]
+    private float slowWeightLimit = 60f;
+
+    [Tooltip("この重量まではめっちゃ遅い。超えると移動不可")]
+    [SerializeField, Min(0f)]
+    private float verySlowWeightLimit = 75f;
+
+    [Header("速度倍率")]
+    [SerializeField, Range(0.05f, 1f)]
+    private float slightlySlowSpeedMultiplier = 0.85f;
+
+    [SerializeField, Range(0.05f, 1f)]
+    private float slowSpeedMultiplier = 0.65f;
+
+    [SerializeField, Range(0.05f, 1f)]
+    private float verySlowSpeedMultiplier = 0.4f;
+
+    [Header("デバッグ")]
+    [SerializeField] private bool showDebugLogs;
+
+    private Rigidbody2D playerRigidbody;
+
+    private float currentWeight;
+    private PlayerWeightState currentState;
+
+    private float baseMoveSpeed;
+    private float baseJumpPower;
+    private bool hasCachedBaseMovementValues;
+
+    private bool isSubscribedToInventory;
+    private bool isSubscribedToEquipment;
+    private bool isSubscribedToStatusConditions;
+    private bool isSubscribedToSurvival;
+
+    private bool refreshRequested;
+
+    // 回復アイテムを使用している間だけ有効になる速度低下
+    private bool isUsingConsumable;
+    private float consumableUseSpeedMultiplier = 1f;
+
+    private float consumableUseDuration;
+    private float consumableUseEndTime;
+
+    private Coroutine consumableSlowdownCoroutine;
+
+    // ほふく中だけ有効になる速度低下
+    private bool isProne;
+    private float proneMoveSpeedMultiplier = 1f;
+
+    // 旧仕様互換：インベントリ外の運搬物による直接の速度倍率。
+    // 新しいNPC運搬では使用せず、CarryWeightKgを総重量へ加算します。
+    private bool isCarryingExternalLoad;
+    private float carryLoadSpeedMultiplier = 1f;
+
+    // 手前持ち／背負い中のCarryableObject2Dを、通常の所持重量へ加算するための値。
+    private bool hasExternalCarryWeight;
+    private float externalCarryWeightKg;
+
+    public float CurrentWeight => currentWeight;
+
+    public float CurrentSkillWeightLimitBonusKg =>
+        SkillCardEffectUtility.GetAdditiveValue(
+            SkillEffectType.CarryWeightLimitAddKg
+        );
+
+    public float ImmobilizedWeightLimit =>
+        verySlowWeightLimit + CurrentSkillWeightLimitBonusKg;
+
+    public PlayerWeightState CurrentState => currentState;
+
+    public bool IsImmobilized =>
+        currentState == PlayerWeightState.Immobilized;
+
+    // 重量だけによる倍率
+    public float CurrentMoveSpeedMultiplier
+    {
+        get
+        {
+            switch (currentState)
+            {
+                case PlayerWeightState.SlightlySlow:
+                    return slightlySlowSpeedMultiplier;
+
+                case PlayerWeightState.Slow:
+                    return slowSpeedMultiplier;
+
+                case PlayerWeightState.VerySlow:
+                    return verySlowSpeedMultiplier;
+
+                case PlayerWeightState.Immobilized:
+                    return 0f;
+
+                default:
+                    return 1f;
+            }
+        }
+    }
+
+    // 骨折など、状態異常だけによる倍率
+    public float CurrentConditionMoveSpeedMultiplier =>
+        statusConditionController != null
+            ? statusConditionController.MoveSpeedMultiplier
+            : 1f;
+
+    // 食料不足だけによる倍率
+    public float CurrentSurvivalMoveSpeedMultiplier =>
+        survivalController != null
+            ? survivalController.FoodMoveSpeedMultiplier
+            : 1f;
+
+    // 回復アイテムの使用中だけ有効な倍率
+    public float CurrentConsumableUseMoveSpeedMultiplier =>
+        isUsingConsumable
+            ? consumableUseSpeedMultiplier
+            : 1f;
+
+    public bool IsUsingConsumable => isUsingConsumable;
+
+    public bool IsProne => isProne;
+
+    // ほふく中だけ有効な倍率
+    public float CurrentProneMoveSpeedMultiplier =>
+        isProne
+            ? proneMoveSpeedMultiplier
+            : 1f;
+
+    public bool IsCarryingExternalLoad =>
+        isCarryingExternalLoad || hasExternalCarryWeight;
+
+    /// <summary>
+    /// 現在、手前持ち／背負いによって追加されている生の重量です。
+    /// </summary>
+    public float CurrentExternalCarryWeightKg =>
+        hasExternalCarryWeight
+            ? Mathf.Max(0f, externalCarryWeightKg)
+            : 0f;
+
+    /// <summary>
+    /// 実際に総重量へ加える運搬重量です。
+    /// 「救助隊員」系スキルが有効な救出NPCでは、運搬ペナルティ軽減率を
+    /// 追加重量の軽減として適用します。
+    /// </summary>
+    public float CurrentEffectiveExternalCarryWeightKg
+    {
+        get
+        {
+            float rawWeight = CurrentExternalCarryWeightKg;
+
+            if (rawWeight <= 0f ||
+                !SkillCardEffectUtility.IsCarryingRescuePerson())
+            {
+                return rawWeight;
+            }
+
+            float penaltyReduction =
+                SkillCardEffectUtility.GetClamped01Value(
+                    SkillEffectType.RescueCarryPenaltyReduction
+                );
+
+            return Mathf.Max(
+                0f,
+                rawWeight * (1f - penaltyReduction)
+            );
+        }
+    }
+
+    public float CurrentCarryLoadMoveSpeedMultiplier
+    {
+        get
+        {
+            float rawMultiplier = isCarryingExternalLoad
+                ? carryLoadSpeedMultiplier
+                : 1f;
+
+            if (rawMultiplier >= 0.9999f ||
+                !SkillCardEffectUtility.IsCarryingRescuePerson())
+            {
+                return rawMultiplier;
+            }
+
+            // 「救助隊員」：速度倍率そのものを+40%するのではなく、
+            // 運搬によって失った速度（1 - rawMultiplier）の40%を取り戻します。
+            // 例：通常0.60倍 → ペナルティ0.40 → 40%軽減後は0.76倍。
+            float penaltyReduction =
+                SkillCardEffectUtility.GetClamped01Value(
+                    SkillEffectType.RescueCarryPenaltyReduction
+                );
+
+            float rawPenalty = 1f - Mathf.Clamp01(rawMultiplier);
+            float reducedPenalty =
+                rawPenalty * (1f - penaltyReduction);
+
+            return Mathf.Clamp01(1f - reducedPenalty);
+        }
+    }
+
+    // 回復中の合計時間
+    public float ConsumableUseDuration =>
+        consumableUseDuration;
+
+    // 回復中の残り時間
+    public float ConsumableUseRemainingTime
+    {
+        get
+        {
+            if (!isUsingConsumable)
+            {
+                return 0f;
+            }
+
+            return Mathf.Max(
+                0f,
+                consumableUseEndTime - Time.time
+            );
+        }
+    }
+
+    // 回復ゲージ用の進行率
+    // 0 = 開始直後、1 = 完了直前
+    public float ConsumableUseProgress
+    {
+        get
+        {
+            if (!isUsingConsumable ||
+                consumableUseDuration <= 0f)
+            {
+                return 0f;
+            }
+
+            return Mathf.Clamp01(
+                1f -
+                ConsumableUseRemainingTime /
+                consumableUseDuration
+            );
+        }
+    }
+
+    // 実際にPlayerMoveへ反映する最終倍率
+    public float TotalMoveSpeedMultiplier =>
+        CurrentMoveSpeedMultiplier *
+        CurrentConditionMoveSpeedMultiplier *
+        CurrentSurvivalMoveSpeedMultiplier *
+        CurrentConsumableUseMoveSpeedMultiplier *
+        CurrentProneMoveSpeedMultiplier *
+        CurrentCarryLoadMoveSpeedMultiplier *
+        SkillCardEffectUtility.GetMultiplier(
+            SkillEffectType.MoveSpeed
+        );
+
+    public event Action<float> OnWeightChanged;
+    public event Action<PlayerWeightState> OnWeightStateChanged;
+
+    private void Awake()
+    {
+        FindReferences();
+        CacheBaseMovementValues();
+    }
+
+    private void OnEnable()
+    {
+        FindReferences();
+        CacheBaseMovementValues();
+        SubscribeEvents();
+        SubscribeSkillEvents();
+
+        refreshRequested = true;
+    }
+
+    private void Start()
+    {
+        RecalculateWeight();
+    }
+
+    private void LateUpdate()
+    {
+        if (!refreshRequested)
+        {
+            return;
+        }
+
+        refreshRequested = false;
+        RecalculateWeight();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeEvents();
+        UnsubscribeMedicalKit();
+        UnsubscribeSkillEvents();
+        StopConsumableUseSlowdown();
+        RestoreBaseMovementValues();
+    }
+
+    public void RecalculateWeight()
+    {
+        FindReferences();
+        CacheBaseMovementValues();
+        SubscribeEvents();
+
+        float previousWeight = currentWeight;
+        PlayerWeightState previousState = currentState;
+
+        currentWeight = CalculateTotalWeight();
+        currentState = GetWeightState(currentWeight);
+
+        ApplyMovementState();
+
+        if (!Mathf.Approximately(
+                previousWeight,
+                currentWeight
+            ))
+        {
+            OnWeightChanged?.Invoke(currentWeight);
+        }
+
+        if (previousState != currentState)
+        {
+            OnWeightStateChanged?.Invoke(currentState);
+
+            if (showDebugLogs)
+            {
+                Debug.Log(
+                    $"[PlayerWeightController] " +
+                    $"{previousState} → {currentState} / " +
+                    $"{currentWeight:0.0}kg",
+                    this
+                );
+            }
+        }
+    }
+
+    [ContextMenu("Recalculate Weight")]
+    private void RecalculateWeightFromContextMenu()
+    {
+        RecalculateWeight();
+    }
+
+    /// <summary>
+    /// ほふく状態と、ほふく中の移動速度倍率を設定します。
+    /// 重量・骨折・食料不足・回復中の倍率と掛け合わせて反映されます。
+    /// </summary>
+    public void SetProneState(
+        bool prone,
+        float speedMultiplier)
+    {
+        FindReferences();
+        CacheBaseMovementValues();
+
+        isProne = prone;
+        proneMoveSpeedMultiplier = prone
+            ? Mathf.Clamp(speedMultiplier, 0.05f, 1f)
+            : 1f;
+
+        ApplyMovementState();
+    }
+
+    /// <summary>
+    /// インベントリ外の運搬物による移動速度倍率を設定します。
+    /// 重量・骨折・食料不足・回復中・ほふく中の倍率と掛け合わせて反映されます。
+    /// </summary>
+    public void SetCarryLoadState(
+        bool carrying,
+        float speedMultiplier)
+    {
+        FindReferences();
+        CacheBaseMovementValues();
+
+        isCarryingExternalLoad = carrying;
+        carryLoadSpeedMultiplier = carrying
+            ? Mathf.Clamp(speedMultiplier, 0.05f, 1f)
+            : 1f;
+
+        ApplyMovementState();
+    }
+
+    /// <summary>
+    /// 手前持ち／背負い中のCarryableObject2Dの重量を、
+    /// Inventory・装備品と同じ「総重量」へ加算します。
+    /// 持つ／下ろす瞬間にPlayerCarryController2Dから呼びます。
+    /// </summary>
+    public void SetExternalCarryWeight(
+        bool carrying,
+        float weightKg)
+    {
+        FindReferences();
+        CacheBaseMovementValues();
+
+        hasExternalCarryWeight = carrying;
+        externalCarryWeightKg = carrying
+            ? Mathf.Max(0f, weightKg)
+            : 0f;
+
+        // 新仕様では運搬物専用の速度倍率を重ねません。
+        // 速度低下は「Inventory + 装備 + 運搬重量」の通常重量段階だけで決まります。
+        isCarryingExternalLoad = false;
+        carryLoadSpeedMultiplier = 1f;
+
+        RecalculateWeight();
+    }
+
+    // ConsumableItemData の Use Duration の間だけ、
+    // 回復アイテム用の速度倍率を加える。
+    public void ApplyConsumableUseSlowdown(
+     float duration,
+     float speedMultiplier)
+    {
+        duration = Mathf.Max(0f, duration);
+
+        if (duration <= 0f)
+        {
+            return;
+        }
+
+        FindReferences();
+        CacheBaseMovementValues();
+
+        if (consumableSlowdownCoroutine != null)
+        {
+            StopCoroutine(consumableSlowdownCoroutine);
+            consumableSlowdownCoroutine = null;
+        }
+
+        isUsingConsumable = true;
+
+        consumableUseSpeedMultiplier = Mathf.Clamp(
+            speedMultiplier,
+            0.05f,
+            1f
+        );
+
+        consumableUseDuration = duration;
+        consumableUseEndTime = Time.time + duration;
+
+        ApplyMovementState();
+
+        consumableSlowdownCoroutine = StartCoroutine(
+            ConsumableSlowdownRoutine(duration)
+        );
+    }
+
+    private IEnumerator ConsumableSlowdownRoutine(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+
+        consumableSlowdownCoroutine = null;
+
+        FinishConsumableUse();
+    }
+
+    private void StopConsumableUseSlowdown()
+    {
+        if (consumableSlowdownCoroutine != null)
+        {
+            StopCoroutine(consumableSlowdownCoroutine);
+            consumableSlowdownCoroutine = null;
+        }
+
+        FinishConsumableUse();
+    }
+
+    private void FinishConsumableUse()
+    {
+        isUsingConsumable = false;
+        consumableUseSpeedMultiplier = 1f;
+
+        consumableUseDuration = 0f;
+        consumableUseEndTime = 0f;
+
+        ApplyMovementState();
+    }
+    private float CalculateTotalWeight()
+    {
+        float totalWeight = 0f;
+
+        HashSet<InventoryItem> countedItems =
+            new HashSet<InventoryItem>();
+
+        if (inventoryController != null &&
+            inventoryController.Grid != null)
+        {
+            foreach (InventoryItem item in inventoryController.Grid.Items)
+            {
+                totalWeight += AddItemWeightOnce(
+                    item,
+                    countedItems
+                );
+            }
+        }
+
+        if (equipmentController != null)
+        {
+            totalWeight += AddItemWeightOnce(
+                equipmentController.PrimaryWeaponItem,
+                countedItems
+            );
+
+            totalWeight += AddItemWeightOnce(
+                equipmentController.HelmetItem,
+                countedItems
+            );
+        }
+
+        // NPCなどのCarryableObject2DはInventory外ですが、
+        // 通常の重量段階へ参加させるため最後に加算します。
+        totalWeight += CurrentEffectiveExternalCarryWeightKg;
+
+        // キットへ移した医療用品の重さも、プレイヤーの所持重量に含める。
+        if (medicalKitInventory != null)
+            totalWeight += medicalKitInventory.ContentsWeightKg;
+
+        return totalWeight;
+    }
+
+    private float AddItemWeightOnce(
+        InventoryItem item,
+        HashSet<InventoryItem> countedItems)
+    {
+        if (item == null ||
+            item.ItemData == null ||
+            countedItems.Contains(item))
+        {
+            return 0f;
+        }
+
+        countedItems.Add(item);
+
+        float unitWeight = Mathf.Max(
+            0f,
+            item.ItemData.Weight
+        );
+
+        return unitWeight * Mathf.Max(0, item.Amount);
+    }
+
+    private PlayerWeightState GetWeightState(
+        float weight)
+    {
+        float bonus = CurrentSkillWeightLimitBonusKg;
+
+        if (weight > verySlowWeightLimit + bonus)
+        {
+            return PlayerWeightState.Immobilized;
+        }
+
+        if (weight > slowWeightLimit + bonus)
+        {
+            return PlayerWeightState.VerySlow;
+        }
+
+        if (weight > slightlySlowWeightLimit + bonus)
+        {
+            return PlayerWeightState.Slow;
+        }
+
+        if (weight > normalWeightLimit + bonus)
+        {
+            return PlayerWeightState.SlightlySlow;
+        }
+
+        return PlayerWeightState.Normal;
+    }
+
+    private void ApplyMovementState()
+    {
+        if (playerMove == null ||
+            !hasCachedBaseMovementValues)
+        {
+            return;
+        }
+
+        // 基礎速度 × 重量 × 骨折 × 食料
+        playerMove.moveSpeed =
+            baseMoveSpeed *
+            TotalMoveSpeedMultiplier;
+
+        if (IsImmobilized)
+        {
+            playerMove.jumpPower = 0f;
+            StopHorizontalMovement();
+        }
+        else
+        {
+            // 将来の「指定武器装備中だけジャンプ力UP」も、
+            // SkillCardData側のCondition + JumpPowerでそのまま対応できます。
+            playerMove.jumpPower =
+                baseJumpPower *
+                SkillCardEffectUtility.GetMultiplier(
+                    SkillEffectType.JumpPower
+                );
+        }
+    }
+
+    private void StopHorizontalMovement()
+    {
+        if (playerRigidbody == null)
+        {
+            return;
+        }
+
+        Vector2 velocity = playerRigidbody.linearVelocity;
+        velocity.x = 0f;
+
+        playerRigidbody.linearVelocity = velocity;
+    }
+
+    private void HandleInventoryChanged()
+    {
+        refreshRequested = true;
+    }
+
+    private void HandleEquipmentChanged()
+    {
+        refreshRequested = true;
+    }
+
+    private void HandleStatusConditionsChanged(
+        StatusConditionType activeConditions)
+    {
+        refreshRequested = true;
+    }
+
+    private void HandleFoodStateChanged(
+        SurvivalNeedState foodState)
+    {
+        refreshRequested = true;
+    }
+
+    private void SubscribeSkillEvents()
+    {
+        if (GameSessionManager.Instance != null)
+        {
+            GameSessionManager.Instance.SkillSessionChanged -=
+                HandleSkillSessionChanged;
+            GameSessionManager.Instance.SkillSessionChanged +=
+                HandleSkillSessionChanged;
+        }
+    }
+
+    private void UnsubscribeSkillEvents()
+    {
+        if (GameSessionManager.Instance != null)
+        {
+            GameSessionManager.Instance.SkillSessionChanged -=
+                HandleSkillSessionChanged;
+        }
+    }
+
+    private void HandleSkillSessionChanged()
+    {
+        refreshRequested = true;
+    }
+
+    private void SubscribeMedicalKit()
+    {
+        if (isSubscribedToMedicalKit || medicalKitInventory == null) return;
+        medicalKitInventory.Changed += HandleMedicalKitChanged;
+        isSubscribedToMedicalKit = true;
+    }
+
+    private void UnsubscribeMedicalKit()
+    {
+        if (!isSubscribedToMedicalKit) return;
+        if (medicalKitInventory != null)
+            medicalKitInventory.Changed -= HandleMedicalKitChanged;
+        isSubscribedToMedicalKit = false;
+    }
+
+    private void HandleMedicalKitChanged()
+    {
+        refreshRequested = true;
+    }
+
+    private void SubscribeEvents()
+    {
+        SubscribeMedicalKit();
+
+        if (!isSubscribedToInventory &&
+            inventoryController != null)
+        {
+            inventoryController.OnInventoryChanged +=
+                HandleInventoryChanged;
+
+            isSubscribedToInventory = true;
+        }
+
+        if (!isSubscribedToEquipment &&
+            equipmentController != null)
+        {
+            equipmentController.OnEquipmentChanged +=
+                HandleEquipmentChanged;
+
+            isSubscribedToEquipment = true;
+        }
+
+        if (!isSubscribedToStatusConditions &&
+            statusConditionController != null)
+        {
+            statusConditionController.ConditionsChanged +=
+                HandleStatusConditionsChanged;
+
+            isSubscribedToStatusConditions = true;
+        }
+
+        if (!isSubscribedToSurvival &&
+            survivalController != null)
+        {
+            survivalController.FoodStateChanged +=
+                HandleFoodStateChanged;
+
+            isSubscribedToSurvival = true;
+        }
+    }
+
+    private void UnsubscribeEvents()
+    {
+        if (isSubscribedToInventory &&
+            inventoryController != null)
+        {
+            inventoryController.OnInventoryChanged -=
+                HandleInventoryChanged;
+
+            isSubscribedToInventory = false;
+        }
+
+        if (isSubscribedToEquipment &&
+            equipmentController != null)
+        {
+            equipmentController.OnEquipmentChanged -=
+                HandleEquipmentChanged;
+
+            isSubscribedToEquipment = false;
+        }
+
+        if (isSubscribedToStatusConditions &&
+            statusConditionController != null)
+        {
+            statusConditionController.ConditionsChanged -=
+                HandleStatusConditionsChanged;
+
+            isSubscribedToStatusConditions = false;
+        }
+
+        if (isSubscribedToSurvival &&
+            survivalController != null)
+        {
+            survivalController.FoodStateChanged -=
+                HandleFoodStateChanged;
+
+            isSubscribedToSurvival = false;
+        }
+    }
+
+    private void FindReferences()
+    {
+        if (inventoryController == null)
+        {
+            inventoryController =
+                FindAnyObjectByType<InventoryController>();
+        }
+
+        if (equipmentController == null)
+        {
+            equipmentController =
+                FindAnyObjectByType<EquipmentController>();
+        }
+
+        if (playerMove == null)
+        {
+            playerMove = GetComponent<PlayerMove>();
+        }
+
+        if (statusConditionController == null)
+        {
+            statusConditionController =
+                GetComponent<PlayerStatusConditionController>();
+        }
+
+        if (survivalController == null)
+        {
+            survivalController =
+                GetComponent<PlayerSurvivalController>();
+        }
+
+        if (medicalKitInventory == null)
+            medicalKitInventory = GetComponent<MedicalKitInventory2D>();
+
+        if (playerRigidbody == null &&
+            playerMove != null)
+        {
+            playerRigidbody =
+                playerMove.GetComponent<Rigidbody2D>();
+        }
+    }
+
+    private void CacheBaseMovementValues()
+    {
+        if (hasCachedBaseMovementValues ||
+            playerMove == null)
+        {
+            return;
+        }
+
+        baseMoveSpeed = playerMove.moveSpeed;
+        baseJumpPower = playerMove.jumpPower;
+
+        hasCachedBaseMovementValues = true;
+    }
+
+    private void RestoreBaseMovementValues()
+    {
+        if (playerMove == null ||
+            !hasCachedBaseMovementValues)
+        {
+            return;
+        }
+
+        playerMove.moveSpeed = baseMoveSpeed;
+        playerMove.jumpPower = baseJumpPower;
+    }
+
+    private void OnValidate()
+    {
+        normalWeightLimit = Mathf.Max(
+            0f,
+            normalWeightLimit
+        );
+
+        slightlySlowWeightLimit = Mathf.Max(
+            normalWeightLimit,
+            slightlySlowWeightLimit
+        );
+
+        slowWeightLimit = Mathf.Max(
+            slightlySlowWeightLimit,
+            slowWeightLimit
+        );
+
+        verySlowWeightLimit = Mathf.Max(
+            slowWeightLimit,
+            verySlowWeightLimit
+        );
+    }
+}

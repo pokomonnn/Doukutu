@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// 固定枠の在庫から、プレイヤーまたは救出NPCへ回復効果を適用します。
@@ -151,6 +151,10 @@ public sealed class MedicalKitTreatment2D : MonoBehaviour
             return false;
         }
 
+        // NPC治療結果：今回新たに処置した症状だけを記録する。
+        StatusConditionType treatmentBeforeFlags = npc != null
+            ? npc.StabilizedSymptoms : StatusConditionType.None;
+
         // 使えることが確認できたときだけ効果を発生させる。
         bool applied = false;
         if (canCure)
@@ -173,6 +177,14 @@ public sealed class MedicalKitTreatment2D : MonoBehaviour
             message = "治療効果は発生しましたが在庫更新に失敗しました。Consoleを確認してください";
             Debug.LogError("[MedicalKitTreatment] 使用後の消費に失敗。", this);
             return false;
+        }
+
+        // NPC治療結果：処置完了時だけ集計（途中キャンセル・失敗は対象外）。
+        if (npc != null)
+        {
+            StatusConditionType newlyStabilized =
+                npc.StabilizedSymptoms & ~treatmentBeforeFlags;
+            RescueNpcTreatmentResultSession2D.RecordSuccessfulTreatment(npc, newlyStabilized);
         }
 
         if (useAnimation != null) useAnimation.BeginConsumableUse(data);

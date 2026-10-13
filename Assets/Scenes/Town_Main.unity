@@ -172,7 +172,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fed480729c3baaa499877275dad92684, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneTransitionButton
-  targetSceneName: Start_Doukustu
+  targetSceneName: stage1
   loadSceneMode: 0
   captureInventoryBeforeLoad: 1
   closeOpenPawnShopBeforeLoad: 1
@@ -13935,7 +13935,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1745980947}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.99999535
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -16032,7 +16032,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1593693214}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.99999124
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -17069,7 +17069,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.00038341052}
+  m_AnchoredPosition: {x: 0, y: 0.0004121996}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &1800401446
@@ -19659,7 +19659,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.00040996296}
+  m_AnchoredPosition: {x: 0, y: 0.00075560994}
   m_SizeDelta: {x: 0, y: 554.2}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &2093821864

@@ -47,7 +47,7 @@ MonoBehaviour:
   foodRestoreAmount: 0
   waterRestoreAmount: 40
   torchRestoreAmount: 0
-  curedConditions: 0
+  curedConditions: 1
   slowdownDuration: 5
   useMoveSpeedMultiplier: 0.5
   consumeOnUse: 1

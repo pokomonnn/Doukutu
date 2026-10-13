@@ -140,6 +140,9 @@ public class ExpeditionResultCollector2D : MonoBehaviour
 
         RecordRescueProgressOnce(aliveRescueTargets);
 
+        // エレベーター回収NPCの『今回行った治療』だけResultシーンへ引き継ぐ。
+        RescueNpcTreatmentResultSession2D.CaptureFromElevator(elevatorCarryReceiver, result);
+
         LastCollectedResult = result;
         ExpeditionResultSession.SetResult(result);
 

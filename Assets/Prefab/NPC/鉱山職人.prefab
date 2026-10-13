@@ -194,7 +194,7 @@ MonoBehaviour:
   includePlayerDamageInDebugLog: 0
   logBlockedDamage: 1
   audioSource: {fileID: 1786321803443853859}
-  damageSound: {fileID: 8300000, guid: 4b9305695b4b2534cb5f1b2429b1b09c, type: 3}
+  damageSound: {fileID: 0}
   damageSoundVolume: 0.8
 --- !u!114 &2557380799675950954
 MonoBehaviour:

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -65,6 +65,9 @@ public class PlayerWeightController : MonoBehaviour
     private Rigidbody2D playerRigidbody;
 
     private float currentWeight;
+
+    // [AlcoholSystem v1.0 / PlayerWeightController]
+    private float alcoholMoveSpeedMultiplier = 1f;
     private PlayerWeightState currentState;
 
     private float baseMoveSpeed;
@@ -108,7 +111,7 @@ public class PlayerWeightController : MonoBehaviour
         );
 
     public float ImmobilizedWeightLimit =>
-        verySlowWeightLimit + CurrentSkillWeightLimitBonusKg;
+        verySlowWeightLimit + CurrentSkillWeightLimitBonusKg + GetAlcoholWeightBonusKg();
 
     public PlayerWeightState CurrentState => currentState;
 
@@ -219,7 +222,7 @@ public class PlayerWeightController : MonoBehaviour
             if (rawMultiplier >= 0.9999f ||
                 !SkillCardEffectUtility.IsCarryingRescuePerson())
             {
-                return rawMultiplier;
+                return ApplyAlcoholCarryBonus(rawMultiplier);
             }
 
             // 「救助隊員」：速度倍率そのものを+40%するのではなく、
@@ -234,7 +237,7 @@ public class PlayerWeightController : MonoBehaviour
             float reducedPenalty =
                 rawPenalty * (1f - penaltyReduction);
 
-            return Mathf.Clamp01(1f - reducedPenalty);
+            return ApplyAlcoholCarryBonus(Mathf.Clamp01(1f - reducedPenalty));
         }
     }
 
@@ -287,6 +290,7 @@ public class PlayerWeightController : MonoBehaviour
         CurrentConsumableUseMoveSpeedMultiplier *
         CurrentProneMoveSpeedMultiplier *
         CurrentCarryLoadMoveSpeedMultiplier *
+        alcoholMoveSpeedMultiplier *
         SkillCardEffectUtility.GetMultiplier(
             SkillEffectType.MoveSpeed
         );
@@ -442,6 +446,32 @@ public class PlayerWeightController : MonoBehaviour
         RecalculateWeight();
     }
 
+    /// <summary>酔い状態の移動速度倍率を更新します。重量・骨折等の倍率と乗算。</summary>
+    public void SetAlcoholMoveSpeedMultiplier(float multiplier)
+    {
+        FindReferences();
+        CacheBaseMovementValues();
+        alcoholMoveSpeedMultiplier = Mathf.Clamp(multiplier, 0.1f, 1f);
+        ApplyMovementState();
+    }
+
+    // [AlcoholSystem v2.0 / WeightBuff]
+    private float GetAlcoholWeightBonusKg()
+    {
+        PlayerAlcoholEffect2D effect = GetComponent<PlayerAlcoholEffect2D>();
+        return effect != null ? effect.CurrentWeightBonusKg : 0f;
+    }
+
+    private float ApplyAlcoholCarryBonus(float baseMultiplier)
+    {
+        if (!isCarryingExternalLoad || !SkillCardEffectUtility.IsCarryingRescuePerson())
+            return baseMultiplier;
+        PlayerAlcoholEffect2D effect = GetComponent<PlayerAlcoholEffect2D>();
+        float bonus = effect != null ? effect.CurrentRescueCarrySpeedMultiplier : 1f;
+        // 運搬の減速を少し緩和。通常速度以上へ加速はしない。
+        return Mathf.Clamp01(baseMultiplier * bonus);
+    }
+
     // ConsumableItemData の Use Duration の間だけ、
     // 回復アイテム用の速度倍率を加える。
     public void ApplyConsumableUseSlowdown(
@@ -579,7 +609,7 @@ public class PlayerWeightController : MonoBehaviour
     private PlayerWeightState GetWeightState(
         float weight)
     {
-        float bonus = CurrentSkillWeightLimitBonusKg;
+        float bonus = CurrentSkillWeightLimitBonusKg + GetAlcoholWeightBonusKg();
 
         if (weight > verySlowWeightLimit + bonus)
         {

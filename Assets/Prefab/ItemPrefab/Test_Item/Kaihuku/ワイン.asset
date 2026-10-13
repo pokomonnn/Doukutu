@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c7363c6f7f8428479e31b34f1ba3e6b, type: 3}
+  m_Name: "\u30EF\u30A4\u30F3"
+  m_EditorClassIdentifier: Assembly-CSharp::AlcoholItemData
+  itemId: wain_001
+  displayName: "\u30EF\u30A4\u30F3"
+  description: "\u9B45\u529B\u7684\u306A\u30EF\u30A4\u30F3"
+  icon: {fileID: -8926274809034289949, guid: eb185fb1681dbc14abb5f2e1ac9a03b4, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  width: 1
+  height: 2
+  canRotate: 1
+  maxStack: 1
+  purchasePrice: 200
+  sellPrice: 200
+  canSellToShop: 1
+  weight: 1
+  canDiscard: 1
+  healAmount: 5
+  foodRestoreAmount: 5
+  waterRestoreAmount: 20
+  torchRestoreAmount: 0
+  curedConditions: 0
+  slowdownDuration: 3
+  useMoveSpeedMultiplier: 0.5
+  consumeOnUse: 1
+  useSound: {fileID: 8300000, guid: d564dec4937db0246b4fc2033562008b, type: 3}
+  useAnimationTrigger: UseItem
+  alcoholPoints: 50
+  weightLimitBonusKg: 5
+  rescueCarrySpeedMultiplier: 1.15
+  foodDrainMultiplier: 1.25
+  sanityRecovery: 12
+  waterLoss: 6
+  drunkDurationSeconds: 45
+  drunkMoveSpeedMultiplier: 0.8
+  references:
+    version: 2
+    RefIds: []

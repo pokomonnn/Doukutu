@@ -172,7 +172,7 @@ public class PlayerSurvivalController : MonoBehaviour
             foodDecreasePerMinute / 60f * deltaTime *
             SkillCardEffectUtility.GetMultiplier(
                 SkillEffectType.FoodDrain
-            );
+            ) * GetAlcoholFoodDrainMultiplier();
 
         float waterDecrease =
             waterDecreasePerMinute / 60f * deltaTime *
@@ -184,6 +184,13 @@ public class PlayerSurvivalController : MonoBehaviour
         SetWaterInternal(currentWater - waterDecrease, true);
 
         UpdateEmptyDamage(deltaTime);
+    }
+
+    // [AlcoholSystem v2.0 / HungerDebuff]
+    private float GetAlcoholFoodDrainMultiplier()
+    {
+        PlayerAlcoholEffect2D effect = GetComponent<PlayerAlcoholEffect2D>();
+        return effect != null ? effect.CurrentFoodDrainMultiplier : 1f;
     }
 
     // 食料を回復し、実際に回復した量を返す

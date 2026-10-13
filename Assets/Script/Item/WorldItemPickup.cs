@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine.Localization;
 using TMPro;
 using UnityEngine;
@@ -110,6 +110,14 @@ public class WorldItemPickup : MonoBehaviour
         new List<Collider2D>(16);
 
     private bool isPlayerInRange;
+
+    // PickupRangeと重なっている実際のPlayerを保持し、
+    // 同じシーンに別のInventoryControllerがあっても誤収納しない。
+    private Collider2D playerColliderInRange;
+
+    [Header("拾得の診断 v1.2")]
+    [Tooltip("Eキー拾得の収納先、所持数変化、失敗理由をConsoleへ表示します")]
+    [SerializeField] private bool showPickupDebugLogs = true;
 
     private InventoryItem droppedItem;
     private float canPickupAfterTime;
@@ -312,9 +320,18 @@ public class WorldItemPickup : MonoBehaviour
 
         // ロープモード中、または持ち運び操作がEキーを使用している間は、
         // 地面アイテムの拾得入力を受け取りません。
-        if (IsRopeModeBlockingPickup() ||
-            IsCarryInteractionBlockingPickup())
+        bool ropeBlocked = IsRopeModeBlockingPickup();
+        bool carryBlocked = IsCarryInteractionBlockingPickup();
+        if (ropeBlocked || carryBlocked)
         {
+            if (showPickupDebugLogs && isPlayerInRange && Input.GetKeyDown(pickupKey))
+            {
+                Debug.LogWarning(
+                    $"[WorldPickup][P02] 拾得が別操作によりブロックされています。" +
+                    $" Rope={ropeBlocked} / Carry={carryBlocked} / Item={GetDroppedItemLabel()}",
+                    this
+                );
+            }
             return;
         }
 
@@ -512,24 +529,40 @@ public class WorldItemPickup : MonoBehaviour
             return TryPickupSkillCard(skillCardData);
         }
 
-        // PrimaryWeaponが空なら、地面の武器を通常Inventoryへ入れる前に
-        // 同じInventoryItem個体のまま直接装備する。
-        //
-        // これにより通常Inventoryが満杯でも、
-        // 装備枠が空いていれば武器を拾って装備できます。
-        if (TryAutoEquipPickedWeapon())
-        {
-            return true;
-        }
-
+        // 武器自動装備より先に、拾ったPlayerのInventoryを解決する。
+        // Prefabに残った参照やFindAnyObjectByTypeの別Inventoryを優先しない。
         if (!FindInventoryController())
         {
             Debug.LogWarning(
-                "WorldItemPickup: InventoryController が見つかりません。",
+                $"[WorldPickup][P03] InventoryControllerを特定できません。" +
+                $" Item={GetDroppedItemLabel()} / PlayerCollider={GetPlayerColliderLabel()}",
                 this
             );
-
             return false;
+        }
+
+        ItemData pickupItemData = droppedItem.ItemData;
+        string pickupItemName = pickupItemData.DisplayName;
+        int amountBefore = droppedItem.Amount;
+        int inventoryAmountBefore = inventoryController.GetTotalAmount(pickupItemData);
+        if (showPickupDebugLogs)
+        {
+            Debug.Log(
+                $"[WorldPickup][P10] 拾得開始 Item={pickupItemName} x{amountBefore} " +
+                $"/ Inventory={GetHierarchyPath(inventoryController.transform)} " +
+                $"(ID={inventoryController.GetInstanceID()}) " +
+                $"/ 収納前={inventoryAmountBefore} / PlayerCollider={GetPlayerColliderLabel()}",
+                this
+            );
+            DiagnoseInventoryUiLink();
+        }
+
+        // PrimaryWeaponが空なら武器を自動装備（元の機能を維持）。
+        if (TryAutoEquipPickedWeapon())
+        {
+            if (showPickupDebugLogs)
+                Debug.Log($"[WorldPickup][P12] 武器を直接装備: {pickupItemName}", this);
+            return true;
         }
 
         isPickingUp = true;
@@ -554,13 +587,37 @@ public class WorldItemPickup : MonoBehaviour
             RefreshPickupPrompt();
             RefreshStackAmountText();
 
-            Debug.Log(
-                $"インベントリに空きがありません：" +
-                $"{droppedItem.ItemData.DisplayName}",
+            Debug.LogWarning(
+                $"[WorldPickup][P20] 拾得失敗: {pickupItemName} " +
+                $"/ 収納先={GetHierarchyPath(inventoryController.transform)} " +
+                $"/ 空きマス・スタック上限・別Inventory参照を確認してください。",
                 this
             );
 
             return false;
+        }
+
+        int inventoryAmountAfter = inventoryController.GetTotalAmount(pickupItemData);
+        int actuallyAdded = inventoryAmountAfter - inventoryAmountBefore;
+        if (actuallyAdded <= 0)
+        {
+            // 拾得が成功したのに追加先の数量が増えていなければ、
+            // 別のシステムによる即時消費や参照違いなどの可能性を残す。
+            Debug.LogWarning(
+                $"[WorldPickup][P21] 要調査: 拾得成功判定だが個数変化がありません。" +
+                $" Item={pickupItemName} / {inventoryAmountBefore} -> {inventoryAmountAfter}" +
+                $" / Inventory={GetHierarchyPath(inventoryController.transform)}",
+                this
+            );
+        }
+        else if (showPickupDebugLogs)
+        {
+            Debug.Log(
+                $"[WorldPickup][P11] 収納成功 Item={pickupItemName} +{actuallyAdded}" +
+                $" / {inventoryAmountBefore} -> {inventoryAmountAfter}" +
+                $" / Inventory={GetHierarchyPath(inventoryController.transform)}",
+                this
+            );
         }
 
         PlayWorldSound(pickupSound, pickupSoundVolume);
@@ -858,6 +915,7 @@ public class WorldItemPickup : MonoBehaviour
         }
 
         playerColliders.Add(other);
+        playerColliderInRange = other;
         isPlayerInRange = playerColliders.Count > 0;
         RefreshPickupPrompt();
     }
@@ -870,6 +928,18 @@ public class WorldItemPickup : MonoBehaviour
         }
 
         playerColliders.Remove(other);
+        if (playerColliderInRange == other)
+        {
+            playerColliderInRange = null;
+            foreach (Collider2D remaining in playerColliders)
+            {
+                if (remaining != null && IsPlayerCollider(remaining))
+                {
+                    playerColliderInRange = remaining;
+                    break;
+                }
+            }
+        }
         isPlayerInRange = playerColliders.Count > 0;
         RefreshPickupPrompt();
     }
@@ -884,6 +954,8 @@ public class WorldItemPickup : MonoBehaviour
         if (pickupRange == null)
         {
             isPlayerInRange = playerColliders.Count > 0;
+            if (!isPlayerInRange)
+                playerColliderInRange = null;
             return;
         }
 
@@ -891,6 +963,7 @@ public class WorldItemPickup : MonoBehaviour
             !pickupRange.gameObject.activeInHierarchy)
         {
             isPlayerInRange = false;
+            playerColliderInRange = null;
             return;
         }
 
@@ -906,19 +979,22 @@ public class WorldItemPickup : MonoBehaviour
         );
 
         isPlayerInRange = false;
+        playerColliderInRange = null;
+        float closestDistance = float.PositiveInfinity;
 
         foreach (Collider2D other in pickupRangeOverlapResults)
         {
-            if (other == null || other == pickupRange)
-            {
+            if (other == null || other == pickupRange || !IsPlayerCollider(other))
                 continue;
-            }
 
-            if (IsPlayerCollider(other))
+            float distance = (other.ClosestPoint(transform.position) -
+                              (Vector2)transform.position).sqrMagnitude;
+            if (distance < closestDistance)
             {
-                isPlayerInRange = true;
-                break;
+                closestDistance = distance;
+                playerColliderInRange = other;
             }
+            isPlayerInRange = true;
         }
     }
 
@@ -990,51 +1066,184 @@ public class WorldItemPickup : MonoBehaviour
 
     private bool FindEquipmentController()
     {
-        if (equipmentController != null)
-        {
-            return true;
-        }
-
-        // PlayerのInventoryControllerと同じGameObject/親階層にある
-        // EquipmentControllerを優先して取得する。
+        // 自動装備は拾得先Inventoryと同じプレイヤーの装備へ行う。
         if (inventoryController != null)
         {
-            equipmentController =
+            EquipmentController owned =
                 inventoryController.GetComponent<EquipmentController>();
+            if (owned == null)
+                owned = inventoryController.GetComponentInParent<EquipmentController>();
+            if (owned == null)
+                owned = inventoryController.GetComponentInChildren<EquipmentController>(true);
 
-            if (equipmentController == null)
+            if (owned != null)
             {
-                equipmentController =
-                    inventoryController.GetComponentInParent<
-                        EquipmentController
-                    >();
-            }
-
-            if (equipmentController != null)
-            {
+                equipmentController = owned;
                 return true;
             }
         }
 
-        equipmentController =
-            FindAnyObjectByType<EquipmentController>(
-                FindObjectsInactive.Include
-            );
+        if (equipmentController != null)
+            return true;
 
+        equipmentController = FindAnyObjectByType<EquipmentController>(
+            FindObjectsInactive.Include);
         return equipmentController != null;
     }
 
     private bool FindInventoryController()
     {
-        if (inventoryController != null)
+        // v1.3: インベントリはPlayerとは別のManagerにある構成が正しい。
+        // 画面のInventoryGridUIが使用するControllerを「正」として最優先する。
+        // Prefabに以前のPlayer参照が残っていても、毎回UIの参照で上書きする。
+        InventoryController fromUi = GetPlayerGridUiInventory();
+        if (fromUi != null)
         {
+            if (inventoryController != fromUi &&
+                showPickupDebugLogs && playerColliderInRange != null)
+            {
+                Debug.Log(
+                    $"[WorldPickup][P26] UIに合わせて収納先を修正: " +
+                    $"{(inventoryController != null ? GetHierarchyPath(inventoryController.transform) : "未設定")} " +
+                    $"-> {GetHierarchyPath(fromUi.transform)}",
+                    this);
+            }
+
+            inventoryController = fromUi;
             return true;
         }
 
-        inventoryController =
-            FindAnyObjectByType<InventoryController>();
+        // UIがまだ生成されていない特殊なシーンのみ、Player側を予備として確認。
+        InventoryController fromPlayer = GetPlayerInventoryFromRange();
+        if (fromPlayer != null)
+        {
+            inventoryController = fromPlayer;
+            if (showPickupDebugLogs && playerColliderInRange != null)
+                Debug.LogWarning(
+                    "[WorldPickup][P27] InventoryGridUIの参照を見つけられないため、" +
+                    "Player側のInventoryControllerを予備として使用しています。",
+                    this);
+            return true;
+        }
 
-        return inventoryController != null;
+        if (inventoryController != null)
+            return true;
+
+        // 最終的な予備。対象が1個に絞れないときは警告を出す。
+        InventoryController[] all = FindObjectsByType<InventoryController>(
+            FindObjectsInactive.Include, FindObjectsSortMode.None);
+        if (all.Length == 1)
+        {
+            inventoryController = all[0];
+            return true;
+        }
+
+        if (all.Length > 1 && showPickupDebugLogs)
+            Debug.LogWarning(
+                $"[WorldPickup][P23] 複数のInventoryController({all.Length}件)があるため、" +
+                "拾得先を一意に選べません。PlayerまたはInventoryGridUIの参照を確認してください。",
+                this);
+        return false;
+    }
+
+    private InventoryController GetPlayerInventoryFromRange()
+    {
+        Collider2D col = playerColliderInRange;
+        if (col == null)
+            return null;
+
+        PlayerMove playerMove = col.GetComponentInParent<PlayerMove>();
+        if (playerMove != null)
+        {
+            InventoryController owned = playerMove.GetComponent<InventoryController>();
+            if (owned == null)
+                owned = playerMove.GetComponentInChildren<InventoryController>(true);
+            if (owned == null)
+                owned = playerMove.GetComponentInParent<InventoryController>();
+            if (owned != null)
+                return owned;
+        }
+
+        InventoryController onCollider = col.GetComponentInParent<InventoryController>();
+        if (onCollider != null)
+            return onCollider;
+
+        Transform root = col.transform.root;
+        return root != null
+            ? root.GetComponentInChildren<InventoryController>(true)
+            : null;
+    }
+
+    private InventoryController GetPlayerGridUiInventory()
+    {
+        InventoryGridUI[] grids = FindObjectsByType<InventoryGridUI>(
+            FindObjectsInactive.Include, FindObjectsSortMode.None);
+        InventoryController found = null;
+        foreach (InventoryGridUI grid in grids)
+        {
+            if (grid == null || grid.ItemBox != null || grid.Controller == null)
+                continue;
+
+            if (found == null)
+                found = grid.Controller;
+            else if (found != grid.Controller)
+            {
+                // 画面内にプレイヤー用の別Inventoryが複数あるなら、
+                // 先頭を任意に選ばず診断へ回す。
+                if (showPickupDebugLogs)
+                    Debug.LogWarning(
+                        "[WorldPickup][P24] 複数のプレイヤー用InventoryGridUIで" +
+                        "異なるInventoryControllerが設定されています。",
+                        this);
+                return null;
+            }
+        }
+        return found;
+    }
+
+    private void DiagnoseInventoryUiLink()
+    {
+        InventoryGridUI[] grids = FindObjectsByType<InventoryGridUI>(
+            FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (InventoryGridUI grid in grids)
+        {
+            if (grid == null || grid.ItemBox != null || grid.Controller == null)
+                continue;
+
+            if (grid.Controller != inventoryController)
+                Debug.LogWarning(
+                    $"[WorldPickup][P25] 画面Inventoryと収納先の参照が異なります。" +
+                    $" UI={GetHierarchyPath(grid.Controller.transform)}" +
+                    $" / 拾得先={GetHierarchyPath(inventoryController.transform)}",
+                    this);
+        }
+    }
+
+    private string GetDroppedItemLabel()
+    {
+        return droppedItem != null && droppedItem.ItemData != null
+            ? droppedItem.ItemData.DisplayName
+            : "(なし)";
+    }
+
+    private string GetPlayerColliderLabel()
+    {
+        return playerColliderInRange != null
+            ? GetHierarchyPath(playerColliderInRange.transform)
+            : "未検出";
+    }
+
+    private static string GetHierarchyPath(Transform node)
+    {
+        if (node == null)
+            return "null";
+        string path = node.name;
+        while (node.parent != null)
+        {
+            node = node.parent;
+            path = node.name + "/" + path;
+        }
+        return path;
     }
 
     private void FindPickupPromptText()
