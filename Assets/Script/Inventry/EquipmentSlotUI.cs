@@ -372,6 +372,26 @@ public class EquipmentSlotUI : MonoBehaviour
         return true;
     }
 
+
+    // IrregularShapesV2: retain 180/270 rotations on successful equip.
+    public bool TryEquipDroppedItem(InventoryItem item, int desiredRotation, out EquipmentResult result)
+    {
+        result = EquipmentResult.InvalidItem;
+        if (item == null || item.ItemData == null) return false;
+        if (!FindEquipmentController()) { result = EquipmentResult.InventoryNotFound; return false; }
+        if (!equipmentController.TryGetEquipmentSlot(item.ItemData, out EquipmentSlotType itemSlot))
+        { result = EquipmentResult.UnsupportedItem; return false; }
+        if (itemSlot != slotType) { result = EquipmentResult.InvalidSlot; return false; }
+        int steps = item.CanRotate ? ((desiredRotation % 4) + 4) % 4 : 0;
+        Vector2Int size = item.ItemData.GetSize(steps);
+        if (size.x > slotWidth || size.y > slotHeight)
+        { result = EquipmentResult.InvalidSlot; return false; }
+        if (!equipmentController.TryEquipItem(item, out result)) return false;
+        item.SetRotationSteps(steps);
+        RefreshVisual();
+        return true;
+    }
+
     private void RefreshVisual()
     {
         if (itemBackgroundImage == null ||
@@ -432,7 +452,7 @@ public class EquipmentSlotUI : MonoBehaviour
             Quaternion.Euler(
                 0f,
                 0f,
-                equippedItem.IsRotated ? -90f : 0f
+                -90f * equippedItem.RotationSteps
             );
     }
 

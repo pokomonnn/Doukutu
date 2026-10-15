@@ -37,6 +37,8 @@ MonoBehaviour:
   width: 4
   height: 2
   canRotate: 1
+  useCustomShape: 0
+  customShapeCells: []
   maxStack: 1
   purchasePrice: 2000
   sellPrice: 750
@@ -56,7 +58,7 @@ MonoBehaviour:
   compatibleAmmo: {fileID: 11400000, guid: 3884bf05f57149748a1cc1ca2a6a945d, type: 2}
   compatibleAmmoCaliberId: 
   maxDurability: 100
-  durabilityLossPerShot: 3.6
+  durabilityLossPerShot: 25
   jamStartDurabilityPercent: 0.5
   jamChanceAtStart: 0.01
   maxJamChanceAtZeroDurability: 0.25

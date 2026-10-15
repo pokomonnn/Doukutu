@@ -37,6 +37,10 @@ MonoBehaviour:
   width: 1
   height: 2
   canRotate: 1
+  useCustomShape: 1
+  customShapeCells:
+  - {x: 0, y: 1}
+  - {x: 0, y: 0}
   maxStack: 5
   purchasePrice: 75
   sellPrice: 30

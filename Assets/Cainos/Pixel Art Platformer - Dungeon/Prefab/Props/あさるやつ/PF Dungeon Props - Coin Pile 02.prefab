@@ -10,6 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 6265670936862214329}
   - component: {fileID: 8930051543745126958}
+  - component: {fileID: 3309742692573987042}
+  - component: {fileID: 1095238996652883110}
+  - component: {fileID: 8370509684184613737}
   m_Layer: 0
   m_Name: PF Dungeon Props - Coin Pile 02
   m_TagString: Untagged
@@ -92,6 +95,82 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!58 &3309742692573987042
+CircleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 390456860282783827}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0.171875}
+  m_Radius: 0.578125
+--- !u!114 &1095238996652883110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 390456860282783827}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2528cc7170527d64786ff96b7fafae78, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CaveMoneyPickup2D
+  pickupKey: 101
+  playerTag: Player
+  pickupPromptText: {fileID: 0}
+  toastUI: {fileID: 0}
+  pickupSound: {fileID: 8300000, guid: cfdd66c486f0d1542a04a51641b5cd7f, type: 3}
+  pickupSoundVolume: 0.8
+  moneyItem: {fileID: 11400000, guid: dea280d9cfc73c34192717aa6882dd91, type: 2}
+  amount: 800
+--- !u!114 &8370509684184613737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 390456860282783827}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456f0322f38ddef42baac56a88bc79b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractableOutline2D
+  visualRoot: {fileID: 0}
+  targetSprites: []
+  playerTag: Player
+  whiteSilhouetteMaterial: {fileID: 0}
+  outlineThickness: 0.035
+  pulse: 1
+  pulseSpeed: 2
+  minimumAlpha: 0.7
 --- !u!1 &7148676616109011207
 GameObject:
   m_ObjectHideFlags: 0

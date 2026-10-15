@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7765266c7576ada4d8c59db0c35fdc1f, type: 3}
+  m_Name: "\u304A\u91D1"
+  m_EditorClassIdentifier: Assembly-CSharp::TreasureItemData
+  itemId: mony
+  displayName: "\u304A\u91D1"
+  description: "\u304A\u91D1"
+  icon: {fileID: -1887121674, guid: daa359c07b4be2f47b477ca2857b031a, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  width: 3
+  height: 2
+  canRotate: 1
+  useCustomShape: 1
+  customShapeCells:
+  - {x: 1, y: 0}
+  - {x: 0, y: 1}
+  - {x: 1, y: 1}
+  - {x: 2, y: 1}
+  maxStack: 1500
+  purchasePrice: 1
+  sellPrice: 1
+  canSellToShop: 1
+  weight: 0
+  canDiscard: 1
+  references:
+    version: 2
+    RefIds: []

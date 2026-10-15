@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
@@ -74,6 +74,9 @@ public class PawnShopUIController : MonoBehaviour
     /// 現在開いている売買UIです。InventoryItemUIのクイック売却から参照されます。
     /// </summary>
     public static PawnShopUIController ActiveInstance { get; private set; }
+
+    /// <summary>出撃補充画面から既存売買パネルを前面に移動するための参照。</summary>
+    public GameObject TradePanelRoot => pawnShopPanel;
 
     public bool IsOpen => isOpen;
     public bool IsPurchaseAvailable => purchaseAvailable;

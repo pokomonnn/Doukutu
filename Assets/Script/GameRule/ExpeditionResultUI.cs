@@ -52,14 +52,21 @@ public class ExpeditionResultUI : MonoBehaviour
     private string expeditionMissionRewardFormat =
         "{0:N0} G";
 
+    [Header("洞窟で回収した現金")]
+    [Tooltip("プレイヤーのバッグから持ち帰り、町の所持金へ移した現金の表示欄です。")]
+    [SerializeField] private TMP_Text recoveredMoneyText;
+
+    [Tooltip("{0}=今回持ち帰ったGの合計です。")]
+    [SerializeField] private string recoveredMoneyFormat = "{0:N0} G";
+
     [Header("合計報酬")]
     [Tooltip(
-        "救出報酬 + 達成した出撃MissionのMoney報酬を表示するTextです。" +
+        "回収現金 + 救出報酬 + 達成した出撃MissionのMoney報酬を表示するTextです。" +
         "未設定でも集計自体は行われます。"
     )]
     [SerializeField] private TMP_Text totalRewardText;
 
-    [Tooltip("合計報酬の表示形式です。{0}=救出報酬とMission報酬を足した合計")]
+    [Tooltip("合計報酬の表示形式です。{0}=回収現金と救出報酬とMission報酬を足した合計")]
     [SerializeField]
     private string totalRewardFormat = "{0:N0} G";
 
@@ -131,6 +138,7 @@ public class ExpeditionResultUI : MonoBehaviour
     public int CurrentRescueReward { get; private set; }
     public int CurrentExpeditionMissionMoneyReward { get; private set; }
     public int CurrentTotalReward { get; private set; }
+    public int CurrentRecoveredMoney { get; private set; }
     public int GrantedExpeditionMissionMoneyReward { get; private set; }
 
     public bool RescueRewardGranted { get; private set; }
@@ -224,9 +232,19 @@ public class ExpeditionResultUI : MonoBehaviour
             )
         );
 
+        CurrentRecoveredMoney = ExpeditionRecoveredMoneySession.GetAmount(
+            ExpeditionResultSession.Current
+        );
+
+        SetText(
+            recoveredMoneyText,
+            string.Format(recoveredMoneyFormat, CurrentRecoveredMoney)
+        );
+
         CurrentTotalReward = CalculateTotalReward(
             CurrentRescueReward,
-            CurrentExpeditionMissionMoneyReward
+            CurrentExpeditionMissionMoneyReward,
+            CurrentRecoveredMoney
         );
 
         SetText(
@@ -252,6 +270,7 @@ public class ExpeditionResultUI : MonoBehaviour
                 $"Treasure={result.TreasureItems?.Count ?? 0}, " +
                 $"救出報酬={CurrentRescueReward:N0}G, " +
                 $"出撃MissionMoney={CurrentExpeditionMissionMoneyReward:N0}G, " +
+                $"回収現金={CurrentRecoveredMoney:N0}G, " +
                 $"合計報酬={CurrentTotalReward:N0}G",
                 this
             );
@@ -290,13 +309,23 @@ public class ExpeditionResultUI : MonoBehaviour
     /// 救出報酬 + 達成した出撃MissionのMoney報酬を合算します。
     /// この値は表示用で、所持金へ再加算はしません。
     /// </summary>
+    // 従来の2引数版は互換用として残します。
     public int CalculateTotalReward(
         int rescueReward,
         int expeditionMissionMoneyReward)
     {
+        return CalculateTotalReward(rescueReward, expeditionMissionMoneyReward, 0);
+    }
+
+    public int CalculateTotalReward(
+        int rescueReward,
+        int expeditionMissionMoneyReward,
+        int recoveredMoney)
+    {
         long total =
             (long)Mathf.Max(0, rescueReward) +
-            Mathf.Max(0, expeditionMissionMoneyReward);
+            Mathf.Max(0, expeditionMissionMoneyReward) +
+            Mathf.Max(0, recoveredMoney);
 
         return total > int.MaxValue
             ? int.MaxValue
@@ -728,6 +757,7 @@ public class ExpeditionResultUI : MonoBehaviour
             ExpeditionResultSession.Clear();
         }
 
+        ExpeditionRecoveredMoneySession.Clear();
         SceneManager.LoadScene(townSceneName);
     }
 
@@ -840,6 +870,11 @@ public class ExpeditionResultUI : MonoBehaviour
         if (string.IsNullOrWhiteSpace(totalRewardFormat))
         {
             totalRewardFormat = "{0:N0} G";
+        }
+
+        if (string.IsNullOrWhiteSpace(recoveredMoneyFormat))
+        {
+            recoveredMoneyFormat = "{0:N0} G";
         }
     }
 }

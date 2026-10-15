@@ -17,6 +17,16 @@ public class InventoryContextMenuUI : MonoBehaviour
     [SerializeField] private Button repairButton;
     [SerializeField] private Button trashButton;
 
+    [Header("応急ItemBox専用：使用する → 情報 → 戻る")]
+    [Tooltip("『戻る』ボタン。既存『取り出す』を流用する場合はInspectorの古いOn Clickを消してから割り当ててください。")]
+    [SerializeField] private Button emergencyBackButton;
+
+    [Tooltip("不要になった『取り出す』ボタン。専用メニューで非表示にします。『戻る』として流用する場合は空欄にしてください。")]
+    [SerializeField] private Button emergencyTakeOutButtonToHide;
+
+    [Tooltip("応急ItemBoxで使えるのは消費アイテムだけです。Useボタンの表示を切り替えます。")]
+    [SerializeField] private bool emergencyMenuUseOnlyForConsumables = true;
+
     [Header("Information表示（後で作成してもOK）")]
     [SerializeField] private GameObject informationPanel;
     [SerializeField] private TMP_Text informationTitleText;
@@ -50,6 +60,18 @@ public class InventoryContextMenuUI : MonoBehaviour
 
     // 箱・ショップ在庫を右クリックした時は、詳細だけ閲覧できる状態にする
     private bool selectedItemIsReadOnly;
+
+    // 応急ItemBox専用のメニューかどうか。通常のInventoryには影響させない。
+    private bool isEmergencyBoxMenu;
+    private ItemBoxInventory emergencySourceBox;
+
+    // 専用メニューから通常メニューに戻す時、表示状態と兄弟順を元に戻す。
+    private bool savedTakeOutVisibility;
+    private bool takeOutWasActive;
+    private readonly List<Transform> normalButtonOrder = new List<Transform>();
+    private Transform normalButtonParent;
+    private bool hasSavedUseButtonInteractable;
+    private bool useButtonWasInteractable;
 
     [SerializeField] private InventorySoundPlayer soundPlayer;
 
@@ -130,6 +152,8 @@ public class InventoryContextMenuUI : MonoBehaviour
         inventoryController = null;
         selectedEquipmentSlotUI = null;
         selectedItemIsReadOnly = false;
+        isEmergencyBoxMenu = false;
+        emergencySourceBox = null;
     }
 
     private void OnDestroy()
@@ -185,6 +209,8 @@ public class InventoryContextMenuUI : MonoBehaviour
         selectedItem = item;
         inventoryController = controller;
         selectedItemIsReadOnly = false;
+        isEmergencyBoxMenu = false;
+        emergencySourceBox = null;
 
         FindEquipmentController();
         FindEquipmentVisualController();
@@ -223,6 +249,8 @@ public class InventoryContextMenuUI : MonoBehaviour
         inventoryController = equipmentSlotUI.InventoryController;
         selectedEquipmentSlotUI = equipmentSlotUI;
         selectedItemIsReadOnly = false;
+        isEmergencyBoxMenu = false;
+        emergencySourceBox = null;
 
         FindEquipmentController();
         FindEquipmentVisualController();
@@ -260,6 +288,8 @@ public class InventoryContextMenuUI : MonoBehaviour
         inventoryController = null;
         selectedEquipmentSlotUI = null;
         selectedItemIsReadOnly = true;
+        isEmergencyBoxMenu = false;
+        emergencySourceBox = null;
 
         gameObject.SetActive(true);
 
@@ -268,6 +298,41 @@ public class InventoryContextMenuUI : MonoBehaviour
 
         openedFrame = Time.frameCount;
 
+        if (!wasOpen)
+        {
+            soundPlayer?.PlayContextMenuOpen();
+        }
+    }
+
+    /// <summary>
+    /// 応急ItemBoxで選択したItem用。UIは『使用する・情報・戻る』のみ。
+    /// アイテム使用はプレイヤーのConsumable処理を使い、
+    /// 成功時だけItemBoxの個数を減らします。
+    /// </summary>
+    public void ShowEmergencyBoxItem(
+        InventoryItem item,
+        ItemBoxInventory sourceBox,
+        InventoryController playerInventory,
+        Vector2 screenPosition)
+    {
+        if (item == null || item.ItemData == null ||
+            sourceBox == null || !sourceBox.ContainsItem(item))
+        {
+            return;
+        }
+
+        bool wasOpen = IsOpen;
+        selectedItem = item;
+        inventoryController = playerInventory;
+        selectedEquipmentSlotUI = null;
+        selectedItemIsReadOnly = true;
+        isEmergencyBoxMenu = true;
+        emergencySourceBox = sourceBox;
+
+        gameObject.SetActive(true);
+        RefreshMenu();
+        SetMenuPosition(screenPosition);
+        openedFrame = Time.frameCount;
         if (!wasOpen)
         {
             soundPlayer?.PlayContextMenuOpen();
@@ -288,6 +353,8 @@ public class InventoryContextMenuUI : MonoBehaviour
         selectedItem = null;
         inventoryController = null;
         selectedItemIsReadOnly = false;
+        isEmergencyBoxMenu = false;
+        emergencySourceBox = null;
 
         gameObject.SetActive(false);
     }
@@ -337,6 +404,12 @@ public class InventoryContextMenuUI : MonoBehaviour
 
     public void UseSelectedItem()
     {
+        if (isEmergencyBoxMenu)
+        {
+            TryUseSelectedEmergencyBoxItem();
+            return;
+        }
+
         if (selectedItemIsReadOnly ||
             selectedItem == null ||
             inventoryController == null)
@@ -401,6 +474,120 @@ public class InventoryContextMenuUI : MonoBehaviour
             $"アイテムを使用できません：{result}",
             this
         );
+    }
+
+    /// <summary>
+    /// 応急ItemBox内から回復アイテムを使う。
+    /// 既存のInventoryController.TryUseItemを利用してHP/状態異常/演出等を保持する。
+    /// 一時的な1個のItemをPlayer Inventoryに配置して使用判定し、
+    /// 成功時にだけItemBox側の1個を消費。失敗時は双方の所持数を変更しない。
+    /// ※現方式ではプレイヤーInventoryに一時的な空きマスが必要。
+    /// </summary>
+    private void TryUseSelectedEmergencyBoxItem()
+    {
+        if (selectedItem == null ||
+            selectedItem.ItemData == null ||
+            emergencySourceBox == null ||
+            !emergencySourceBox.ContainsItem(selectedItem) ||
+            selectedItem.Amount <= 0 ||
+            inventoryController == null ||
+            inventoryController.Grid == null)
+        {
+            soundPlayer?.PlayFailed();
+            Hide();
+            return;
+        }
+
+        ConsumableItemData consumable =
+            selectedItem.ItemData as ConsumableItemData;
+        if (consumable == null)
+        {
+            soundPlayer?.PlayFailed();
+            return;
+        }
+
+        if (IsUsingConsumable())
+        {
+            soundPlayer?.PlayFailed();
+            healthFullToastUI?.Show(usingConsumableMessage);
+            Hide();
+            return;
+        }
+
+        // この1個は使用判定用の一時Item。箱の在庫は成功時まで触らない。
+        InventoryGrid grid = inventoryController.Grid;
+        if (!grid.FindSpaceForItem(
+                consumable,
+                out Vector2Int pos,
+                out bool rotated))
+        {
+            soundPlayer?.PlayFailed();
+            healthFullToastUI?.Show("インベントリに空きがありません");
+            return;
+        }
+
+        InventoryItem temporaryItem = new InventoryItem(
+            consumable, pos.x, pos.y, 1);
+        if (!inventoryController.TryMoveItem(
+                temporaryItem, pos.x, pos.y, rotated))
+        {
+            soundPlayer?.PlayFailed();
+            return;
+        }
+
+        bool used = false;
+        ItemUseResult result = ItemUseResult.InvalidItem;
+        try
+        {
+            used = inventoryController.TryUseItem(temporaryItem, out result);
+        }
+        finally
+        {
+            // 使用時に消費しない設定、失敗時にも一時Itemを必ず取り除く。
+            if (grid.ContainsItem(temporaryItem))
+            {
+                inventoryController.RemoveItem(temporaryItem);
+            }
+        }
+
+        if (used)
+        {
+            if (consumable.ConsumeOnUse)
+            {
+                int removed = emergencySourceBox.RemoveItemAmount(selectedItem, 1);
+                if (removed != 1)
+                {
+                    Debug.LogError(
+                        "[EmergencyItemBox] 使用成功後の箱在庫の消費に失敗しました。", this);
+                }
+            }
+
+            soundPlayer?.PlayUseSound(consumable.UseSound);
+            Hide();
+            return;
+        }
+
+        if (result == ItemUseResult.HealthIsFull)
+        {
+            soundPlayer?.PlayHealthFull();
+            healthFullToastUI?.Show(localizedHealthFullMessage);
+        }
+        else if (result == ItemUseResult.TorchIsFull)
+        {
+            soundPlayer?.PlayFailed();
+            healthFullToastUI?.Show(torchFullMessage);
+        }
+        else if (result == ItemUseResult.TorchControllerNotFound)
+        {
+            soundPlayer?.PlayFailed();
+            healthFullToastUI?.Show(torchControllerNotFoundMessage);
+        }
+        else
+        {
+            soundPlayer?.PlayFailed();
+            Debug.LogWarning(
+                $"[EmergencyItemBox] 使用できません：{result}", this);
+        }
     }
 
     public void RepairSelectedWeapon()
@@ -787,6 +974,77 @@ public class InventoryContextMenuUI : MonoBehaviour
             itemNameText.text = itemData.DisplayName;
         }
 
+        if (isEmergencyBoxMenu)
+        {
+            // 3ボタン以外は必ず非表示。既存の通常Inventoryには影響しない。
+            equipButton?.gameObject.SetActive(false);
+            repairButton?.gameObject.SetActive(false);
+            trashButton?.gameObject.SetActive(false);
+            if (emergencyTakeOutButtonToHide != null &&
+                emergencyTakeOutButtonToHide != emergencyBackButton)
+            {
+                if (!savedTakeOutVisibility)
+                {
+                    takeOutWasActive = emergencyTakeOutButtonToHide.gameObject.activeSelf;
+                    savedTakeOutVisibility = true;
+                }
+                emergencyTakeOutButtonToHide.gameObject.SetActive(false);
+            }
+
+            // どのItemも3行表示する。使用できないものは灰色で押せなくする。
+            if (useButton != null)
+            {
+                if (!hasSavedUseButtonInteractable)
+                {
+                    useButtonWasInteractable = useButton.interactable;
+                    hasSavedUseButtonInteractable = true;
+                }
+                useButton.gameObject.SetActive(true);
+                useButton.interactable =
+                    (!emergencyMenuUseOnlyForConsumables ||
+                     itemData is ConsumableItemData) &&
+                    inventoryController != null;
+            }
+            if (informationButton != null)
+                informationButton.gameObject.SetActive(true);
+            if (emergencyBackButton != null)
+            {
+                emergencyBackButton.gameObject.SetActive(true);
+                TMP_Text label =
+                    emergencyBackButton.GetComponentInChildren<TMP_Text>(true);
+                if (label != null) label.text = "戻る";
+            }
+
+            // VerticalLayoutGroup等で順番が『使用する → 情報 → 戻る』になる。
+            if (useButton != null && informationButton != null &&
+                emergencyBackButton != null &&
+                useButton.transform.parent == informationButton.transform.parent &&
+                informationButton.transform.parent == emergencyBackButton.transform.parent)
+            {
+                CaptureNormalButtonOrder(useButton.transform.parent);
+                useButton.transform.SetAsLastSibling();
+                informationButton.transform.SetAsLastSibling();
+                emergencyBackButton.transform.SetAsLastSibling();
+            }
+            return;
+        }
+
+        if (emergencyBackButton != null)
+            emergencyBackButton.gameObject.SetActive(false);
+        if (savedTakeOutVisibility)
+        {
+            if (emergencyTakeOutButtonToHide != null &&
+                emergencyTakeOutButtonToHide != emergencyBackButton)
+                emergencyTakeOutButtonToHide.gameObject.SetActive(takeOutWasActive);
+            savedTakeOutVisibility = false;
+        }
+        if (hasSavedUseButtonInteractable)
+        {
+            if (useButton != null) useButton.interactable = useButtonWasInteractable;
+            hasSavedUseButtonInteractable = false;
+        }
+        RestoreNormalButtonOrder();
+
         bool isEquippedItem =
             !selectedItemIsReadOnly &&
             selectedEquipmentSlotUI != null &&
@@ -835,6 +1093,27 @@ public class InventoryContextMenuUI : MonoBehaviour
                 CanDiscard(itemData)
             );
         }
+    }
+
+    private void CaptureNormalButtonOrder(Transform parent)
+    {
+        if (parent == null || normalButtonParent == parent) return;
+        normalButtonParent = parent;
+        normalButtonOrder.Clear();
+        for (int i = 0; i < parent.childCount; i++)
+            normalButtonOrder.Add(parent.GetChild(i));
+    }
+
+    private void RestoreNormalButtonOrder()
+    {
+        if (normalButtonParent == null) return;
+        foreach (Transform child in normalButtonOrder)
+        {
+            if (child != null && child.parent == normalButtonParent)
+                child.SetAsLastSibling();
+        }
+        normalButtonOrder.Clear();
+        normalButtonParent = null;
     }
 
     private bool CanEquip(ItemData itemData)
@@ -1004,6 +1283,11 @@ public class InventoryContextMenuUI : MonoBehaviour
             trashButton.onClick.AddListener(TrashSelectedItem);
         }
 
+        if (emergencyBackButton != null)
+        {
+            emergencyBackButton.onClick.AddListener(CloseContextMenu);
+        }
+
         buttonsRegistered = true;
     }
 
@@ -1037,6 +1321,11 @@ public class InventoryContextMenuUI : MonoBehaviour
         if (trashButton != null)
         {
             trashButton.onClick.RemoveListener(TrashSelectedItem);
+        }
+
+        if (emergencyBackButton != null)
+        {
+            emergencyBackButton.onClick.RemoveListener(CloseContextMenu);
         }
 
         buttonsRegistered = false;

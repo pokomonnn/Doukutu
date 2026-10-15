@@ -1179,6 +1179,10 @@ public class GameSessionManager : MonoBehaviour
         wasNewlyUnlocked = true;
         SkillSessionChanged?.Invoke();
 
+        // 地面のWorldItemPickup・洞窟固定オブジェクト・ミッション報酬など、
+        // 取得経路が異なっても新規習得が確定した時に一度だけ通知する。
+        GameEventLogManager2D.SkillCardAcquired(card.DisplayName);
+
         Log($"スキルカード取得: {card.DisplayName} ({card.ItemId})");
         return true;
     }

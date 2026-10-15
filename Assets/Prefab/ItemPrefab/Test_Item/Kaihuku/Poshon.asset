@@ -34,10 +34,12 @@ MonoBehaviour:
     m_FallbackState: 0
     m_WaitForCompletion: 0
     m_LocalVariables: []
-  width: 2
+  width: 1
   height: 2
   canRotate: 1
-  maxStack: 1
+  useCustomShape: 0
+  customShapeCells: []
+  maxStack: 3
   purchasePrice: 30
   sellPrice: 10
   canSellToShop: 1

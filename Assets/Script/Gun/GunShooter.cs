@@ -953,7 +953,16 @@ public class GunShooter : MonoBehaviour
             return;
         }
 
+        bool wasUsable = currentDurability > 0f;
         currentDurability = clamped;
+
+        // 射撃による耐久度低下などで0へ到達した瞬間だけ通知。
+        // ConfigureDurabilitySystem等のロード・装備復元時は直接代入なので誤通知しない。
+        if (wasUsable && IsBroken && isGunEquipped)
+        {
+            GameEventLogManager2D.WeaponBroken(
+                weaponItemData != null ? weaponItemData.DisplayName : "銃");
+        }
 
         if (IsBroken && isJammed)
         {

@@ -187,6 +187,17 @@ public class ItemBoxInventory : MonoBehaviour
         return moved;
     }
 
+
+    // IrregularShapesV2: same as standard move, but accepts quarter-turns.
+    public bool TryMoveItem(InventoryItem item, int targetX, int targetY, int rotationSteps)
+    {
+        EnsureInitialized();
+        if (item == null) return false;
+        bool moved = inventoryGrid.TryPlaceItem(item, targetX, targetY, rotationSteps);
+        if (moved) NotifyInventoryChanged();
+        return moved;
+    }
+
     public bool CanMoveItemTo(
         InventoryItem item,
         int targetX,

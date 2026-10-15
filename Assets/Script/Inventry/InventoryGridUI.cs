@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,6 +22,16 @@ public class InventoryGridUI : MonoBehaviour
     [SerializeField]
     private Color cellColor =
         new Color(0.16f, 0.16f, 0.16f, 1f);
+
+    [Header("出撃補充画面：中世RPGスキン（このGridだけに適用）")]
+    [SerializeField] private bool useExpeditionMedievalTheme;
+    [SerializeField] private Sprite medievalCellSprite;
+    [SerializeField] private Sprite medievalItemSprite;
+    [SerializeField] private Sprite medievalSelectedItemSprite;
+    [SerializeField] private Color medievalCellTint = Color.white;
+    [SerializeField] private Color medievalItemTint = Color.white;
+    [SerializeField] private Color medievalSelectedTint = Color.white;
+    [SerializeField] private Color medievalStackTextTint = new Color(0.96f, 0.88f, 0.68f, 1f);
 
     private RectTransform gridRect;
     private RectTransform cellRoot;
@@ -571,6 +581,38 @@ public class InventoryGridUI : MonoBehaviour
                );
     }
 
+
+    // IrregularShapesV2: full four-way orientation for player inventory and boxes.
+    public bool TryMoveItem(InventoryItem item, int targetX, int targetY, int rotationSteps)
+    {
+        if (item == null) return false;
+        if (itemBoxInventory != null)
+            return itemBoxInventory.TryMoveItem(item, targetX, targetY, rotationSteps);
+        return inventoryController != null &&
+            inventoryController.TryMoveItem(item, targetX, targetY, rotationSteps);
+    }
+
+    public bool TryTransferItemTo(
+        InventoryItem item, InventoryGridUI targetGridUI,
+        int targetX, int targetY, int rotationSteps)
+    {
+        if (item == null || targetGridUI == null) return false;
+        if (targetGridUI == this)
+            return TryMoveItem(item, targetX, targetY, rotationSteps);
+        if (!AllowsDirectTransfer || !targetGridUI.AllowsDirectTransfer)
+            return false;
+        if (!TryGetInventoryGrid(out InventoryGrid sourceGrid) ||
+            !targetGridUI.TryGetInventoryGrid(out InventoryGrid targetGrid) ||
+            !sourceGrid.ContainsItem(item)) return false;
+        int steps = item.CanRotate ? ((rotationSteps % 4) + 4) % 4 : 0;
+        if (!targetGrid.CanPlaceItem(item, targetX, targetY, steps)) return false;
+        int sourceX = item.GridX, sourceY = item.GridY, sourceSteps = item.RotationSteps;
+        if (!RemoveItemFromThisGrid(item)) return false;
+        if (targetGridUI.TryMoveItem(item, targetX, targetY, steps)) return true;
+        TryMoveItem(item, sourceX, sourceY, sourceSteps);
+        return false;
+    }
+
     /// <summary>
     /// 別のGrid UIへ、同じInventoryItemを移動します。
     /// 武器のStoredMagazineAmmoなど個別情報も維持されます。
@@ -780,6 +822,14 @@ public class InventoryGridUI : MonoBehaviour
                 itemUIs[item] = itemUI;
             }
 
+            // Shop専用の見た目を各ItemUIへ渡す。ほかのInventoryGridには影響しない。
+            itemUI.ConfigureExpeditionMedievalTheme(
+                useExpeditionMedievalTheme,
+                medievalItemSprite,
+                medievalSelectedItemSprite,
+                medievalItemTint,
+                medievalSelectedTint,
+                medievalStackTextTint);
             itemUI.Setup(item, this);
             itemUI.transform.SetAsLastSibling();
         }
@@ -1037,8 +1087,11 @@ public class InventoryGridUI : MonoBehaviour
         cellRect.anchoredPosition = GetCellPosition(x, y);
 
         Image cellImage = cellObject.GetComponent<Image>();
-        cellImage.sprite = GetDefaultSprite();
-        cellImage.color = cellColor;
+        cellImage.sprite = useExpeditionMedievalTheme && medievalCellSprite != null
+            ? medievalCellSprite : GetDefaultSprite();
+        cellImage.type = useExpeditionMedievalTheme && medievalCellSprite != null
+            ? Image.Type.Sliced : Image.Type.Simple;
+        cellImage.color = useExpeditionMedievalTheme ? medievalCellTint : cellColor;
         cellImage.raycastTarget = false;
     }
 

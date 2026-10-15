@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a44f6dd40e211344dba3470e62e47293, type: 3}
+  m_Name: KnifeWeaponItem
+  m_EditorClassIdentifier: Assembly-CSharp::MeleeWeaponItemData
+  itemId: melee_knife
+  displayName: "\u30CA\u30A4\u30D5"
+  description: "\u30CA\u30A4\u30D5\uFF1A\u5DE6\u30AF\u30EA\u30C3\u30AF\u3067\u65AC\u6483\u3067\u304D\u308B\u8FD1\u63A5\u6B66\u5668\u3002"
+  icon: {fileID: -215207649970881936, guid: aaece71ab4353d24f946d4f8da6166d7, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  width: 2
+  height: 1
+  canRotate: 1
+  maxStack: 1
+  purchasePrice: 0
+  sellPrice: 0
+  canSellToShop: 1
+  weight: 0.7
+  canDiscard: 1
+  weaponPrefab: {fileID: 408442501913211460, guid: 8bdb4884625c1e4418b59c3384a2d2d4, type: 3}
+  fireMode: 0
+  fireInterval: 0.15
+  cockingType: 0
+  cockingStartDelay: 0.15
+  cockingDuration: 0.65
+  cockingSound: {fileID: 0}
+  cockingAnimationTrigger: Cocking
+  pelletCount: 1
+  pelletSpreadAngle: 0
+  compatibleAmmo: {fileID: 0}
+  compatibleAmmoCaliberId: 
+  maxDurability: 100
+  durabilityLossPerShot: 0.1
+  jamStartDurabilityPercent: 0.5
+  jamChanceAtStart: 0.01
+  maxJamChanceAtZeroDurability: 0.25
+  jamClearDuration: 1.25
+  accuracyPenaltyStartDurabilityPercent: 0.6
+  maxSpreadAngleAtZeroDurability: 6
+  reloadPenaltyStartDurabilityPercent: 0.6
+  maxReloadDurationMultiplierAtZeroDurability: 1.75
+  fullRepairCost: 5000
+  minimumRepairCost: 100
+  attackDamage: 14
+  attackReach: 1.35
+  attackArcDegrees: 80
+  swingDuration: 0.28
+  hitStartDelay: 0.1
+  hitWindowSeconds: 0.15
+  attackInterval: 0.38
+  usableWhileCarryingNpc: 1
+  durabilityLossPerAttack: 0.15
+  visualSwingArc: 85
+  swingSound: {fileID: 0}
+  hitSound: {fileID: 0}
+  brokenSound: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

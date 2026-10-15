@@ -24,6 +24,7 @@ GameObject:
   - component: {fileID: -3306380577386758920}
   - component: {fileID: 1300606734183223303}
   - component: {fileID: -8523245872794274485}
+  - component: {fileID: 7726147249647635326}
   m_Layer: 16
   m_Name: "\u533B\u8005"
   m_TagString: Untagged
@@ -46,6 +47,7 @@ Transform:
   m_Children:
   - {fileID: 9142152259850596530}
   - {fileID: 2353120621873901314}
+  - {fileID: 2362575285936525489}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &1184478112241566850
@@ -345,7 +347,7 @@ MonoBehaviour:
   carryableObject: {fileID: 24528342207108349}
   characterHealth: {fileID: 7472805106831161681}
   detailAnchor: {fileID: 0}
-  displayName: "\u751F\u5B58\u8005"
+  displayName: "\u533B\u8005"
   occupation: "\u4E00\u822C\u4EBA"
   condition: 0
   overrideWithDeathState: 0
@@ -490,6 +492,26 @@ MonoBehaviour:
   poisonTickSeconds: 4
   stabilizedPoisonIntervalMultiplier: 5
   showDebugLogs: 0
+--- !u!114 &7726147249647635326
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 862909085402662033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456f0322f38ddef42baac56a88bc79b1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractableOutline2D
+  visualRoot: {fileID: 6394677455136154941}
+  targetSprites: []
+  playerTag: Player
+  whiteSilhouetteMaterial: {fileID: 2100000, guid: 32fbf9af3aaf1414787e430f4fa48745, type: 2}
+  outlineThickness: 0.035
+  pulse: 1
+  pulseSpeed: 2
+  minimumAlpha: 0.7
 --- !u!1 &1133281558187549016
 GameObject:
   m_ObjectHideFlags: 0
@@ -791,3 +813,71 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6394677455136154941}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7858467190520902471
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2362575285936525489}
+  - component: {fileID: 3215136771028694645}
+  m_Layer: 16
+  m_Name: OutlineSensor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &2362575285936525489
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7858467190520902471}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6394677455136154941}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!58 &3215136771028694645
+CircleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7858467190520902471}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0.08359337}
+  m_Radius: 0.58359337

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// 固定枠の在庫から、プレイヤーまたは救出NPCへ回復効果を適用します。
@@ -9,6 +9,8 @@ using UnityEngine;
 public sealed class MedicalKitTreatment2D : MonoBehaviour
 {
     [Header("Playerの参照（空なら自動検索）")]
+    [Tooltip("プレイヤーのTransform。救急キットがManager/InventoryManager配下にある場合は指定推奨。未設定ならPlayerタグ等から自動検索します。")]
+    [SerializeField] private Transform playerRootOverride;
     [SerializeField] private CharacterHealth playerHealth;
     [SerializeField] private PlayerStatusConditionController playerConditions;
     [SerializeField] private PlayerConsumableUseController useAnimation;
@@ -18,14 +20,105 @@ public sealed class MedicalKitTreatment2D : MonoBehaviour
 
     private void Awake() { Resolve(); }
 
+    /// <summary>
+    /// MedicalKitInventory2DはInventoryManagerに置かれることがあるため、
+    /// このObjectの子だけではなくシーン上の実際のPlayerを探します。
+    /// NPC治療は引き続き引数npcを対象にし、この参照は使いません。
+    /// </summary>
     private void Resolve()
     {
-        if (playerHealth == null) playerHealth = GetComponent<CharacterHealth>();
-        if (playerHealth == null) playerHealth = GetComponentInChildren<CharacterHealth>(true);
-        if (playerConditions == null) playerConditions = GetComponent<PlayerStatusConditionController>();
-        if (playerConditions == null) playerConditions = GetComponentInChildren<PlayerStatusConditionController>(true);
-        if (useAnimation == null) useAnimation = GetComponent<PlayerConsumableUseController>();
-        if (useAudioSource == null) useAudioSource = GetComponent<AudioSource>();
+        if (useAudioSource == null)
+            useAudioSource = GetComponent<AudioSource>();
+
+        Transform playerRoot = FindPlayerRoot();
+        if (playerRoot == null)
+            return;
+
+        // Inspectorで設定された参照は維持。未設定・破棄時だけ補完します。
+        if (playerHealth == null)
+            playerHealth = FindComponentOnPlayer<CharacterHealth>(playerRoot);
+        if (playerConditions == null)
+            playerConditions = FindComponentOnPlayer<PlayerStatusConditionController>(playerRoot);
+        if (useAnimation == null)
+            useAnimation = FindComponentOnPlayer<PlayerConsumableUseController>(playerRoot);
+    }
+
+    private Transform FindPlayerRoot()
+    {
+        // Player Root Overrideを指定した場合は最優先。
+        if (playerRootOverride != null)
+            return playerRootOverride;
+
+        // シリアライズ済みのプレイヤー参照を優先。
+        if (playerConditions != null)
+            return playerConditions.transform;
+        if (playerHealth != null)
+            return playerHealth.transform;
+        if (useAnimation != null)
+            return useAnimation.transform;
+
+        // Kit自身をPlayerに付けている既存構成も引き続き使用可能。
+        PlayerStatusConditionController localConditions =
+            GetComponent<PlayerStatusConditionController>() ??
+            GetComponentInParent<PlayerStatusConditionController>();
+        if (localConditions != null)
+        {
+            playerConditions = localConditions;
+            return localConditions.transform;
+        }
+
+        // Manager上のKitからでも、PlayerタグのGameObjectを優先して特定。
+        try
+        {
+            GameObject taggedPlayer = GameObject.FindGameObjectWithTag("Player");
+            if (taggedPlayer != null)
+                return taggedPlayer.transform;
+        }
+        catch (UnityException)
+        {
+            // Playerタグ未登録のプロジェクトでも例外で使用処理を止めない。
+        }
+
+        // TagなしでもPlayer固有コンポーネントから特定可能。
+        PlayerStatusConditionController sceneConditions =
+            FindAnyObjectByType<PlayerStatusConditionController>();
+        if (sceneConditions != null)
+        {
+            playerConditions = sceneConditions;
+            return sceneConditions.transform;
+        }
+
+        PlayerConsumableUseController sceneUseAnimation =
+            FindAnyObjectByType<PlayerConsumableUseController>();
+        if (sceneUseAnimation != null)
+        {
+            useAnimation = sceneUseAnimation;
+            return sceneUseAnimation.transform;
+        }
+
+        return null;
+    }
+
+    private static T FindComponentOnPlayer<T>(Transform root) where T : Component
+    {
+        if (root == null) return null;
+        T target = root.GetComponent<T>();
+        if (target == null) target = root.GetComponentInParent<T>();
+        if (target == null) target = root.GetComponentInChildren<T>(true);
+        return target;
+    }
+
+    [ContextMenu("診断：プレイヤーの治療先を確認")]
+    private void DiagnosePlayerTreatmentTarget()
+    {
+        Resolve();
+        Debug.Log(
+            "[MedicalKitTreatment][参照診断] " +
+            "PlayerRoot=" + (FindPlayerRoot() != null ? FindPlayerRoot().name : "なし") +
+            " / Health=" + (playerHealth != null ? playerHealth.name : "なし") +
+            " / Conditions=" + (playerConditions != null ? playerConditions.name : "なし") +
+            " / UseAnimation=" + (useAnimation != null ? useAnimation.name : "なし"),
+            this);
     }
 
     /// <summary>
@@ -54,7 +147,11 @@ public sealed class MedicalKitTreatment2D : MonoBehaviour
         CharacterHealth health = npc != null ? npc.Health : playerHealth;
         if (health == null || health.IsDead)
         {
-            message = "治療対象のHealthが未設定、または死亡しています";
+            message = npc == null
+                ? (health == null
+                    ? "プレイヤーのHealthが見つかりません。MedicalKitTreatment2DのPlayer Root OverrideにPlayerを設定してください"
+                    : "死亡中は使用できません")
+                : "治療対象のHealthが未設定、または死亡しています";
             return false;
         }
         // NPCは医療用品ごとに決めた症状だけを処置できる。
@@ -185,6 +282,9 @@ public sealed class MedicalKitTreatment2D : MonoBehaviour
             StatusConditionType newlyStabilized =
                 npc.StabilizedSymptoms & ~treatmentBeforeFlags;
             RescueNpcTreatmentResultSession2D.RecordSuccessfulTreatment(npc, newlyStabilized);
+
+            // NPCの3秒処置完了後、実際に治療が成功した場合だけ1回通知。
+            GameEventLogManager2D.NpcTreated(data.DisplayName);
         }
 
         if (useAnimation != null) useAnimation.BeginConsumableUse(data);

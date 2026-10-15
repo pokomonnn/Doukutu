@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -34,6 +34,13 @@ public class ExpeditionResultCollector2D : MonoBehaviour
     private List<ItemData> additionalTreasureItems =
         new List<ItemData>();
 
+    [Header("洞窟のお金アイテム")]
+    [Tooltip("洞窟内で拾うお金のItemDataを割り当てます。必須です。Max StackはItemData側で1500にしてください。")]
+    [SerializeField] private ItemData expeditionMoneyItem;
+
+    [Tooltip("お金アイテム1個あたりの金額です。通常は1Gです。")]
+    [SerializeField, Min(1)] private int goldPerMoneyItem = 1;
+
     [Header("デバッグ")]
     [SerializeField] private bool showDebugLogs = true;
 
@@ -43,6 +50,132 @@ public class ExpeditionResultCollector2D : MonoBehaviour
         new Dictionary<ItemData, int>();
 
     private bool rescueProgressRecorded;
+    private bool moneyConvertedForThisExpedition;
+
+    /// <summary>
+    /// CaveExitElevator2Dからのみ呼ぶ想定です。
+    /// 先にCollectAndStoreResultで探索結果を記録し、町へ移る直前に現金を清算します。
+    /// 成功時、プレイヤーのバッグから現金だけ除去し、GameSessionManagerの所持金へ加算します。
+    /// 保存済みインベントリを上書きされないよう、シーン退出前のCaptureより先に実行してください。
+    /// </summary>
+    public bool TryConvertMoneyBeforeExit(out int recoveredMoney)
+    {
+        recoveredMoney = 0;
+        if (moneyConvertedForThisExpedition)
+        {
+            recoveredMoney = ExpeditionRecoveredMoneySession.GetAmount(LastCollectedResult);
+            return true;
+        }
+
+        FindReferences();
+        if (expeditionMoneyItem == null)
+        {
+            LogWarning("Expedition Money Itemが未設定です。お金の取り逃しを防ぐため退出を中止します。Inspectorでお金用ItemDataを設定してください。");
+            return false;
+        }
+
+        if (playerInventory == null || playerInventory.Grid == null)
+        {
+            LogWarning("プレイヤーのInventoryControllerを見つけられません。現金を安全に精算できないため退出を中止します。");
+            return false;
+        }
+
+        if (LastCollectedResult == null)
+        {
+            LogWarning("探索結果が集計されていません。現金精算は実行できません。");
+            return false;
+        }
+
+        var cashItems = new List<InventoryItem>();
+        long moneyTotal = 0;
+        foreach (InventoryItem item in playerInventory.Grid.Items)
+        {
+            if (item == null || item.ItemData == null || item.Amount <= 0 ||
+                !IsMoneyItem(item.ItemData))
+            {
+                continue;
+            }
+            cashItems.Add(item);
+            moneyTotal += (long)item.Amount * Mathf.Max(1, goldPerMoneyItem);
+        }
+
+        if (moneyTotal == 0)
+        {
+            ExpeditionRecoveredMoneySession.Record(LastCollectedResult, 0);
+            moneyConvertedForThisExpedition = true;
+            Log("現金回収は0Gでした。");
+            return true;
+        }
+
+        GameSessionManager session = GameSessionManager.Instance;
+        if (session == null)
+        {
+            session = FindAnyObjectByType<GameSessionManager>(FindObjectsInactive.Include);
+        }
+        if (session == null)
+        {
+            LogWarning("GameSessionManagerがないため、現金の加算ができません。退出を中止します。");
+            return false;
+        }
+
+        session.EnsureMoneyInitialized();
+        if (moneyTotal > (long)int.MaxValue - session.CurrentMoney)
+        {
+            LogWarning("所持金の整数上限を超えるため、現金の精算と退出を中止します。");
+            return false;
+        }
+
+        // 元のItem本体と配置を維持したまま退避し、失敗したら戻せるようにします。
+        var removed = new List<InventoryItem>();
+        foreach (InventoryItem item in cashItems)
+        {
+            if (!playerInventory.RemoveItem(item))
+            {
+                RestoreRemovedMoneyItems(removed);
+                LogWarning("お金アイテムの削除に失敗したため、精算と退出を中止しました。");
+                return false;
+            }
+            removed.Add(item);
+        }
+
+        recoveredMoney = (int)moneyTotal;
+        if (!session.AddMoney(recoveredMoney))
+        {
+            RestoreRemovedMoneyItems(removed);
+            recoveredMoney = 0;
+            LogWarning("現金の所持金加算に失敗しました。可能な限り元のアイテムに戻しました。");
+            return false;
+        }
+
+        ExpeditionRecoveredMoneySession.Record(LastCollectedResult, recoveredMoney);
+        moneyConvertedForThisExpedition = true;
+        Log($"洞窟現金を精算しました。今回回収={recoveredMoney:N0}G / 町の所持金={session.CurrentMoney:N0}G / 消去スタック数={cashItems.Count}");
+        return true;
+    }
+
+    private void RestoreRemovedMoneyItems(List<InventoryItem> removed)
+    {
+        for (int i = removed.Count - 1; i >= 0; i--)
+        {
+            InventoryItem item = removed[i];
+            if (item != null &&
+                !playerInventory.TryMoveItem(item, item.GridX, item.GridY, item.IsRotated))
+            {
+                LogWarning($"現金アイテムのロールバックに失敗しました: {item.ItemData.DisplayName} / {item.Amount}");
+            }
+        }
+    }
+
+    private bool IsMoneyItem(ItemData itemData)
+    {
+        if (itemData == null || expeditionMoneyItem == null) return false;
+        if (itemData == expeditionMoneyItem) return true;
+
+        string actualId = itemData.ItemId;
+        string cashId = expeditionMoneyItem.ItemId;
+        return !string.IsNullOrWhiteSpace(actualId) &&
+            string.Equals(actualId.Trim(), cashId?.Trim(), System.StringComparison.OrdinalIgnoreCase);
+    }
 
     [ContextMenu("Collect Expedition Result")]
     public ExpeditionResultData CollectAndStoreResult()
@@ -208,7 +341,7 @@ public class ExpeditionResultCollector2D : MonoBehaviour
 
     private bool IsTreasure(ItemData itemData)
     {
-        if (itemData == null) return false;
+        if (itemData == null || IsMoneyItem(itemData)) return false;
 
         if (itemData.ItemType == InventoryItemType.Treasure)
         {
@@ -275,6 +408,7 @@ public class ExpeditionResultCollector2D : MonoBehaviour
 
     private void OnValidate()
     {
+        goldPerMoneyItem = Mathf.Max(1, goldPerMoneyItem);
         if (additionalTreasureItems == null)
         {
             additionalTreasureItems = new List<ItemData>();

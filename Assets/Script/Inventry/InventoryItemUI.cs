@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -108,6 +109,26 @@ public class InventoryItemUI : MonoBehaviour,
     [Tooltip("InventorySoundPlayerの取得先と再生要求を詳しくログへ出します。原因特定後はOFFにできます。") ]
     [SerializeField] private bool showSoundDiagnostics = true;
 
+    // このGrid専用のスキン設定。通常Inventoryや倉庫には適用しない。
+    private bool useExpeditionMedievalTheme;
+    private Sprite medievalItemSprite;
+    private Sprite medievalSelectedItemSprite;
+    private Color medievalItemTint = Color.white;
+    private Color medievalSelectedTint = Color.white;
+    private Color medievalAmountTint = Color.white;
+
+    public void ConfigureExpeditionMedievalTheme(
+        bool enabled, Sprite itemSprite, Sprite selectedSprite,
+        Color itemTint, Color selectedTint, Color amountTint)
+    {
+        useExpeditionMedievalTheme = enabled;
+        medievalItemSprite = itemSprite;
+        medievalSelectedItemSprite = selectedSprite;
+        medievalItemTint = itemTint;
+        medievalSelectedTint = selectedTint;
+        medievalAmountTint = amountTint;
+    }
+
     private InventoryItem inventoryItem;
     private InventoryGridUI gridUI;
     private InventorySoundPlayer soundPlayer;
@@ -125,6 +146,10 @@ public class InventoryItemUI : MonoBehaviour,
     private Text amountText;
     private CanvasGroup canvasGroup;
 
+    // 形状の占有マスだけ背景を描くためのセル。
+    private RectTransform customShapeRoot;
+    private readonly List<Image> customBackgroundCells = new List<Image>();
+
     private Canvas rootCanvas;
     private Transform originalParent;
 
@@ -139,6 +164,11 @@ public class InventoryItemUI : MonoBehaviour,
     // ドラッグ中だけ使用する「仮の向き」
     // ドロップ成功時だけ、本当のInventoryItemへ反映する
     private bool dragIsRotated;
+    // IrregularShapesV2: R increments 0 -> 1 -> 2 -> 3 -> 0.
+    private int dragRotationSteps;
+    [SerializeField, Range(0.06f, 0.5f)] private float rotationAnimationSeconds = 0.15f;
+    private Coroutine rotationAnimation;
+    private float visualIconAngle;
 
     private static Sprite defaultSprite;
 
@@ -238,7 +268,7 @@ public class InventoryItemUI : MonoBehaviour,
             inventoryItem.GridY
         );
 
-        ApplyVisuals(inventoryItem.IsRotated);
+        ApplyVisuals(inventoryItem.RotationSteps);
 
         gameObject.name = $"ItemUI_{inventoryItem.ItemData.ItemId}";
     }
@@ -495,23 +525,61 @@ public class InventoryItemUI : MonoBehaviour,
             return;
         }
 
-        // プレイヤーインベントリでは従来どおり装備・使用・捨てる。
-        // 箱・ショップ在庫側は、誤操作防止のため詳細表示だけにする。
-        if (gridUI.IsPlayerInventory &&
-            gridUI.Controller != null)
+        // 応急ItemBoxだけは『使用する・情報・戻る』専用メニュー。
+        // Inspectorで明示的に有効化した箱にのみ適用する。
+        bool openedEmergencyMenu = false;
+        if (gridUI.IsItemBoxInventory && gridUI.ItemBox != null)
         {
-            contextMenuUI.Show(
-                inventoryItem,
-                gridUI.Controller,
-                eventData.position
-            );
+            ItemBoxUIController boxController =
+                gridUI.GetComponentInParent<ItemBoxUIController>();
+
+            if (boxController == null ||
+                !boxController.UsesEmergencyItemMenuFor(gridUI.ItemBox))
+            {
+                // ControllerがCanvasの別階層にあるシーンにも対応。
+                ItemBoxUIController[] candidates =
+                    Object.FindObjectsByType<ItemBoxUIController>(
+                        FindObjectsInactive.Exclude,
+                        FindObjectsSortMode.None);
+                foreach (ItemBoxUIController candidate in candidates)
+                {
+                    if (candidate != null &&
+                        candidate.UsesEmergencyItemMenuFor(gridUI.ItemBox))
+                    {
+                        boxController = candidate;
+                        break;
+                    }
+                }
+            }
+
+            if (boxController != null &&
+                boxController.UsesEmergencyItemMenuFor(gridUI.ItemBox))
+            {
+                contextMenuUI.ShowEmergencyBoxItem(
+                    inventoryItem,
+                    gridUI.ItemBox,
+                    boxController.GetPlayerInventoryForEmergencyMenu(),
+                    eventData.position);
+                openedEmergencyMenu = true;
+            }
         }
-        else
+
+        // 通常のInventoryと箱／ショップの右クリック挙動は維持。
+        if (!openedEmergencyMenu)
         {
-            contextMenuUI.ShowReadOnlyItem(
-                inventoryItem,
-                eventData.position
-            );
+            if (gridUI.IsPlayerInventory && gridUI.Controller != null)
+            {
+                contextMenuUI.Show(
+                    inventoryItem,
+                    gridUI.Controller,
+                    eventData.position);
+            }
+            else
+            {
+                contextMenuUI.ShowReadOnlyItem(
+                    inventoryItem,
+                    eventData.position);
+            }
         }
 
         Log(
@@ -564,6 +632,9 @@ public class InventoryItemUI : MonoBehaviour,
 
         // ドラッグ開始時の向きを保存
         dragIsRotated = inventoryItem.IsRotated;
+        dragRotationSteps = inventoryItem.RotationSteps;
+        if (rotationAnimation != null) { StopCoroutine(rotationAnimation); rotationAnimation = null; }
+        visualIconAngle = -90f * dragRotationSteps;
 
         // 掴んだマスを保存
         if (gridUI.TryGetGridPosition(
@@ -574,7 +645,7 @@ public class InventoryItemUI : MonoBehaviour,
             dragCellOffset =
                 clickedGridPosition - inventoryItem.GridPosition;
 
-            Vector2Int itemSize = GetSize(dragIsRotated);
+            Vector2Int itemSize = GetSize(dragRotationSteps);
 
             dragCellOffset.x = Mathf.Clamp(
                 dragCellOffset.x,
@@ -613,7 +684,7 @@ public class InventoryItemUI : MonoBehaviour,
         itemRect.anchorMax = new Vector2(0.5f, 0.5f);
         itemRect.pivot = new Vector2(0f, 1f);
 
-        ApplyVisuals(dragIsRotated);
+        ApplyVisuals(dragRotationSteps);
 
         transform.SetAsLastSibling();
 
@@ -623,9 +694,9 @@ public class InventoryItemUI : MonoBehaviour,
 
         Log(
             $"ドラッグ開始：{inventoryItem.ItemData.DisplayName} / " +
-            $"向き={(dragIsRotated ? "回転" : "通常")} / " +
-            $"サイズ={GetSize(dragIsRotated).x}×" +
-            $"{GetSize(dragIsRotated).y}"
+            $"向き={dragRotationSteps * 90}度 / " +
+            $"サイズ={GetSize(dragRotationSteps).x}×" +
+            $"{GetSize(dragRotationSteps).y}"
         );
     }
 
@@ -731,7 +802,7 @@ public class InventoryItemUI : MonoBehaviour,
                     inventoryItem,
                     targetPosition.x,
                     targetPosition.y,
-                    dragIsRotated
+                    dragRotationSteps
                 );
             }
             else
@@ -741,7 +812,7 @@ public class InventoryItemUI : MonoBehaviour,
                     targetGridUI,
                     targetPosition.x,
                     targetPosition.y,
-                    dragIsRotated
+                    dragRotationSteps
                 );
             }
 
@@ -857,7 +928,7 @@ public class InventoryItemUI : MonoBehaviour,
             equipped =
                 equipmentSlotUI.TryEquipDroppedItem(
                     inventoryItem,
-                    dragIsRotated,
+                    dragRotationSteps,
                     out EquipmentResult result
                 );
 
@@ -1145,79 +1216,50 @@ public class InventoryItemUI : MonoBehaviour,
 
     private void TryRotateDuringDrag()
     {
-        if (inventoryItem == null ||
-            inventoryItem.ItemData == null)
+        if (inventoryItem == null || inventoryItem.ItemData == null) return;
+        if (!inventoryItem.CanRotate) { soundPlayer?.PlayFailed(); return; }
+        Vector2Int oldSize = GetSize(dragRotationSteps);
+        int nextSteps = (dragRotationSteps + 1) & 3;
+        // R rotates clockwise: pointer keeps holding the same occupied cell.
+        dragCellOffset = new Vector2Int(oldSize.y - 1 - dragCellOffset.y, dragCellOffset.x);
+        dragRotationSteps = nextSteps;
+        dragIsRotated = (nextSteps & 1) != 0;
+        Vector2Int size = GetSize(nextSteps);
+        dragCellOffset.x = Mathf.Clamp(dragCellOffset.x, 0, size.x - 1);
+        dragCellOffset.y = Mathf.Clamp(dragCellOffset.y, 0, size.y - 1);
+        float fromAngle = visualIconAngle;
+        ApplyVisuals(nextSteps); // cells snap immediately so placement guidance is accurate.
+        if (rotationAnimation != null) StopCoroutine(rotationAnimation);
+        rotationAnimation = StartCoroutine(AnimateIconRotation(fromAngle, fromAngle - 90f, nextSteps));
+        UpdateDragPosition(Input.mousePosition);
+        soundPlayer?.PlayRotate();
+    }
+
+    private IEnumerator AnimateIconRotation(float from, float to, int finalSteps)
+    {
+        float duration = Mathf.Max(0.01f, rotationAnimationSeconds);
+        float time = 0f;
+        while (time < duration)
         {
-            return;
+            time += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(time / duration);
+            float eased = t * t * (3f - 2f * t);
+            visualIconAngle = Mathf.LerpUnclamped(from, to, eased);
+            if (iconImage != null)
+            {
+                iconImage.rectTransform.localRotation = Quaternion.Euler(0f, 0f, visualIconAngle);
+                float pop = 1f + 0.09f * Mathf.Sin(t * Mathf.PI);
+                iconImage.rectTransform.localScale = new Vector3(pop, pop, 1f);
+            }
+            yield return null;
         }
-
-        if (!inventoryItem.CanRotate)
+        visualIconAngle = -90f * finalSteps;
+        if (iconImage != null)
         {
-            PlayInventorySound("Failed", player => player.PlayFailed());
-
-            Log(
-                $"Rキー検知：{inventoryItem.ItemData.DisplayName} は " +
-                "Can Rotate がオフです。"
-            );
-
-            return;
+            iconImage.rectTransform.localRotation = Quaternion.Euler(0f, 0f, visualIconAngle);
+            iconImage.rectTransform.localScale = Vector3.one;
         }
-
-        bool previousRotation = dragIsRotated;
-        Vector2Int previousSize = GetSize(previousRotation);
-
-        dragIsRotated = !dragIsRotated;
-
-        Vector2Int newSize = GetSize(dragIsRotated);
-
-        // 掴んでいるマスの位置を、回転後の形に合わせる
-        if (!previousRotation && dragIsRotated)
-        {
-            // 通常 → 90度回転
-            dragCellOffset = new Vector2Int(
-                previousSize.y - 1 - dragCellOffset.y,
-                dragCellOffset.x
-            );
-        }
-        else
-        {
-            // 90度回転 → 通常
-            dragCellOffset = new Vector2Int(
-                dragCellOffset.y,
-                previousSize.x - 1 - dragCellOffset.x
-            );
-        }
-
-        dragCellOffset.x = Mathf.Clamp(
-            dragCellOffset.x,
-            0,
-            newSize.x - 1
-        );
-
-        dragCellOffset.y = Mathf.Clamp(
-            dragCellOffset.y,
-            0,
-            newSize.y - 1
-        );
-
-        // 表示だけを回転する
-        // InventoryItem本体はドロップ成功まで変更しない
-        ApplyVisuals(dragIsRotated);
-
-        Vector2 mousePosition = new Vector2(
-            Input.mousePosition.x,
-            Input.mousePosition.y
-        );
-
-        UpdateDragPosition(mousePosition);
-
-        PlayInventorySound("Rotate", player => player.PlayRotate());
-
-        Log(
-            $"Rキー回転成功：{inventoryItem.ItemData.DisplayName} / " +
-            $"サイズ {previousSize.x}×{previousSize.y} → " +
-            $"{newSize.x}×{newSize.y}"
-        );
+        rotationAnimation = null;
     }
 
     private void UpdateDragPosition(Vector2 screenPosition)
@@ -1248,6 +1290,8 @@ public class InventoryItemUI : MonoBehaviour,
     private void FinishDrag()
     {
         isDragging = false;
+        if (rotationAnimation != null) { StopCoroutine(rotationAnimation); rotationAnimation = null; }
+        if (iconImage != null) iconImage.rectTransform.localScale = Vector3.one;
 
         canvasGroup.alpha = 1f;
         canvasGroup.blocksRaycasts = true;
@@ -1309,7 +1353,7 @@ public class InventoryItemUI : MonoBehaviour,
         lastUnsellableVisualState = isUnsellable;
         hasSellVisualState = true;
 
-        ApplyVisuals(inventoryItem.IsRotated);
+        ApplyVisuals(inventoryItem.RotationSteps);
     }
 
     /// <summary>
@@ -1405,7 +1449,7 @@ public class InventoryItemUI : MonoBehaviour,
         lastPurchaseSelectedVisualState = isSelected;
         hasPurchaseSelectedVisualState = true;
 
-        ApplyVisuals(inventoryItem.IsRotated);
+        ApplyVisuals(inventoryItem.RotationSteps);
     }
 
     /// <summary>
@@ -1478,7 +1522,7 @@ public class InventoryItemUI : MonoBehaviour,
             true;
 
         ApplyVisuals(
-            inventoryItem.IsRotated
+            inventoryItem.RotationSteps
         );
     }
 
@@ -1537,7 +1581,11 @@ public class InventoryItemUI : MonoBehaviour,
             !(inventoryItem.ItemData is WeaponItemData);
     }
 
-    private void ApplyVisuals(bool isRotated)
+    private Vector2Int GetSize(int rotationSteps) =>
+        inventoryItem == null || inventoryItem.ItemData == null
+            ? Vector2Int.one : inventoryItem.ItemData.GetSize(rotationSteps);
+
+    private void ApplyVisuals(int rotationSteps)
     {
         if (inventoryItem == null ||
             inventoryItem.ItemData == null ||
@@ -1546,7 +1594,7 @@ public class InventoryItemUI : MonoBehaviour,
             return;
         }
 
-        Vector2Int itemSize = GetSize(isRotated);
+        Vector2Int itemSize = GetSize(rotationSteps);
 
         itemRect.sizeDelta = gridUI.GetItemPixelSize(
             itemSize.x,
@@ -1565,12 +1613,22 @@ public class InventoryItemUI : MonoBehaviour,
         bool isRepairUnavailable =
             IsUnavailableForWeaponRepair();
 
+        // 選択時は真鍮の縁取り、それ以外は古い革張りのアイテム背景。
+        if (useExpeditionMedievalTheme && backgroundImage != null)
+        {
+            bool selected = isRepairSelected || isPurchaseSelected;
+            Sprite sprite = selected && medievalSelectedItemSprite != null
+                ? medievalSelectedItemSprite : medievalItemSprite;
+            backgroundImage.sprite = sprite != null ? sprite : GetDefaultSprite();
+            backgroundImage.type = sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+        }
+
         // 修理選択色を最優先。
         // 修理中の武器以外は次に灰色を優先します。
         if (isRepairSelected)
         {
-            backgroundImage.color =
-                repairSelectedBackgroundColor;
+            backgroundImage.color = useExpeditionMedievalTheme
+                ? medievalSelectedTint : repairSelectedBackgroundColor;
         }
         else if (isRepairUnavailable)
         {
@@ -1579,8 +1637,8 @@ public class InventoryItemUI : MonoBehaviour,
         }
         else if (isPurchaseSelected)
         {
-            backgroundImage.color =
-                purchaseSelectedBackgroundColor;
+            backgroundImage.color = useExpeditionMedievalTheme
+                ? medievalSelectedTint : purchaseSelectedBackgroundColor;
         }
         else if (isUnsellable)
         {
@@ -1589,7 +1647,32 @@ public class InventoryItemUI : MonoBehaviour,
         }
         else
         {
-            backgroundImage.color = backgroundColor;
+            if (!(useExpeditionMedievalTheme && inventoryItem.ItemData.HasCustomShape))
+                UpdateCustomShapeBackground(rotationSteps);
+        }
+
+        // 不規則形状は選択中も占有セルだけ描画・クリック可能にする。
+        if (useExpeditionMedievalTheme && inventoryItem.ItemData.HasCustomShape)
+        {
+            UpdateCustomShapeBackground(rotationSteps);
+            Color currentTint = isRepairSelected || isPurchaseSelected
+                ? medievalSelectedTint
+                : isRepairUnavailable ? repairUnavailableBackgroundColor
+                : isUnsellable ? unsellableBackgroundColor
+                : medievalItemTint;
+            Sprite currentSprite = isRepairSelected || isPurchaseSelected
+                ? (medievalSelectedItemSprite != null ? medievalSelectedItemSprite : medievalItemSprite)
+                : medievalItemSprite;
+            foreach (Image cell in customBackgroundCells)
+            {
+                if (cell == null || !cell.gameObject.activeSelf) continue;
+                cell.color = currentTint;
+                if (currentSprite != null)
+                {
+                    cell.sprite = currentSprite;
+                    cell.type = Image.Type.Sliced;
+                }
+            }
         }
 
         Sprite icon = inventoryItem.ItemData.Icon;
@@ -1629,7 +1712,7 @@ public class InventoryItemUI : MonoBehaviour,
         iconImage.rectTransform.localRotation = Quaternion.Euler(
             0f,
             0f,
-            isRotated ? -90f : 0f
+            -90f * rotationSteps
         );
 
         bool shouldShowAmount =
@@ -1662,9 +1745,81 @@ public class InventoryItemUI : MonoBehaviour,
                 amountText.color =
                     isUnsellable
                         ? unsellableAmountTextColor
-                        : Color.white;
+                        : (useExpeditionMedievalTheme ? medievalAmountTint : Color.white);
             }
         }
+    }
+
+    /// <summary>
+    /// アイテムの背景だけをセル単位の形状に切り替える。
+    /// クリック判定も占有セルだけにするため、くぼみは空いている。
+    /// </summary>
+    private void UpdateCustomShapeBackground(int rotationSteps)
+    {
+        bool custom = inventoryItem.ItemData.HasCustomShape;
+        backgroundImage.color = custom ? Color.clear
+            : (useExpeditionMedievalTheme ? medievalItemTint : backgroundColor);
+        backgroundImage.raycastTarget = !custom;
+
+        if (!custom)
+        {
+            if (customShapeRoot != null)
+                customShapeRoot.gameObject.SetActive(false);
+            return;
+        }
+
+        if (customShapeRoot == null)
+        {
+            GameObject root = new GameObject("CustomShapeCells", typeof(RectTransform));
+            root.transform.SetParent(transform, false);
+            customShapeRoot = root.GetComponent<RectTransform>();
+            customShapeRoot.anchorMin = new Vector2(0f, 1f);
+            customShapeRoot.anchorMax = new Vector2(0f, 1f);
+            customShapeRoot.pivot = new Vector2(0f, 1f);
+            customShapeRoot.SetAsFirstSibling();
+        }
+
+        customShapeRoot.gameObject.SetActive(true);
+        customShapeRoot.anchoredPosition = Vector2.zero;
+        customShapeRoot.sizeDelta = itemRect.sizeDelta;
+
+        int count = 0;
+        foreach (Vector2Int cell in inventoryItem.ItemData.GetOccupiedCells(rotationSteps))
+        {
+            Image cellImage;
+            if (count >= customBackgroundCells.Count)
+            {
+                GameObject cellObject = new GameObject(
+                    "ShapeCell", typeof(RectTransform), typeof(Image));
+                cellObject.transform.SetParent(customShapeRoot, false);
+                cellImage = cellObject.GetComponent<Image>();
+                cellImage.sprite = GetDefaultSprite();
+                cellImage.raycastTarget = true;
+                customBackgroundCells.Add(cellImage);
+            }
+            else
+            {
+                cellImage = customBackgroundCells[count];
+            }
+
+            cellImage.gameObject.SetActive(true);
+            if (useExpeditionMedievalTheme && medievalItemSprite != null)
+            {
+                cellImage.sprite = medievalItemSprite;
+                cellImage.type = Image.Type.Sliced;
+            }
+            cellImage.color = useExpeditionMedievalTheme ? medievalItemTint : backgroundColor;
+            RectTransform rect = cellImage.rectTransform;
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.sizeDelta = new Vector2(gridUI.CellSize, gridUI.CellSize);
+            rect.anchoredPosition = gridUI.GetCellPosition(cell.x, cell.y);
+            count++;
+        }
+
+        for (int i = count; i < customBackgroundCells.Count; i++)
+            customBackgroundCells[i].gameObject.SetActive(false);
     }
 
     private void FindSoundPlayer()
@@ -1835,7 +1990,10 @@ public class InventoryItemUI : MonoBehaviour,
             }
         }
 
-        backgroundImage.sprite = GetDefaultSprite();
+        backgroundImage.sprite = useExpeditionMedievalTheme && medievalItemSprite != null
+            ? medievalItemSprite : GetDefaultSprite();
+        backgroundImage.type = useExpeditionMedievalTheme && medievalItemSprite != null
+            ? Image.Type.Sliced : Image.Type.Simple;
         backgroundImage.raycastTarget = true;
 
         if (iconImage == null)

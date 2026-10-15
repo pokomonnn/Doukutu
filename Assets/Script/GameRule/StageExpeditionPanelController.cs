@@ -144,6 +144,17 @@ public class StageExpeditionPanelController : MonoBehaviour
     [SerializeField]
     private Button closeButton;
 
+    [Header("出撃前補充画面（新規）")]
+    [Tooltip("ON: 出撃パネルのボタンは『次へ』となり、補充画面を経由します。設定が不完全なら誤出撃しないよう停止します。")]
+    [SerializeField] private bool useSupplyPreparationScreen = true;
+
+    [Tooltip("別階層（出撃パネルの子ではない）に置いた出撃補充画面Controllerを指定します。")]
+    [SerializeField] private ExpeditionSupplyPanelController2D supplyPanelController;
+
+    [Tooltip("ONなら出撃選択パネルのDepart Buttonに表示される文字を『次へ』に変更します。")]
+    [SerializeField] private bool autoSetNextButtonText = true;
+    [SerializeField] private string nextButtonLabel = "次へ";
+
     [Header("パネルを開く演出")]
     [Tooltip("オンなら、パネルを小さい状態から広げて表示します。")]
     [SerializeField]
@@ -197,6 +208,11 @@ public class StageExpeditionPanelController : MonoBehaviour
     private Coroutine departureCoroutine;
     private Vector3 panelBaseScale = Vector3.one;
     private bool isDeparting;
+    private bool showingSupplyScreen;
+    private CanvasGroup supplyHiddenCanvasGroup;
+    private float savedPanelAlpha = 1f;
+    private bool savedPanelInteractable = true;
+    private bool savedPanelBlocksRaycasts = true;
 
     private int selectedEntryPointIndex = -1;
 
@@ -244,7 +260,11 @@ public class StageExpeditionPanelController : MonoBehaviour
     public bool IsOpen =>
         panelRoot != null &&
         panelRoot.activeSelf &&
-        selectedStageData != null;
+        selectedStageData != null &&
+        !showingSupplyScreen;
+
+    public GameObject PanelRoot => panelRoot;
+    public bool IsShowingSupplyScreen => showingSupplyScreen;
 
     /// <summary>
     /// 将来のミッションUIなどが、ステージ選択を検知するためのイベントです。
@@ -333,8 +353,10 @@ public class StageExpeditionPanelController : MonoBehaviour
             return;
         }
 
+        RestorePanelAfterSupply();
         selectedStageData = stageData;
         selectedTransitionButton = transitionButton;
+        RefreshDepartButtonLabel();
 
         // 前回出撃時の選択が残っていても、新しい出撃パネルを開いた時点で破棄します。
         ExpeditionEntrySelectionSession.Clear();
@@ -371,45 +393,119 @@ public class StageExpeditionPanelController : MonoBehaviour
     }
 
     /// <summary>
-    /// 出撃パネルの「出発する」Buttonから呼ばれます。
-    /// 既存SceneTransitionButtonを通すため、
-    /// 今までのシーン移動前保存処理を維持できます。
+    /// これまでの『出撃』ボタンを『次へ』として使用する入口。
+    /// 出撃先の保存・ミッションの自動受注・Scene遷移はここでは実行しません。
     /// </summary>
     public void Depart()
     {
-        if (isDeparting) return;
+        if (isDeparting || showingSupplyScreen || !CanStartDeparture()) return;
 
+        if (!useSupplyPreparationScreen)
+        {
+            TryStartFinalDeparture();
+            return;
+        }
+
+        if (supplyPanelController == null)
+        {
+            Debug.LogError("[StageExpeditionPanelController] 出撃用補充画面が未設定です。Supply Panel Controller を設定してください。誤出撃防止のため移動しません。", this);
+            return;
+        }
+
+        if (!supplyPanelController.OpenForStage(this)) return;
+        HidePanelForSupply();
+    }
+
+    /// <summary>補充画面から戻る。選択中のステージ・出撃地点・ミッションを維持します。</summary>
+    public void ReturnFromSupply()
+    {
+        if (isDeparting) return;
+        RestorePanelAfterSupply();
+        if (departButton != null) departButton.interactable = true;
+        if (closeButton != null) closeButton.interactable = true;
+        SetEntryPointButtonsInteractable(true);
+        SetMissionButtonsInteractable(true);
+    }
+
+    /// <summary>補充画面の最後の『出撃する』ボタンからのみ呼び出します。</summary>
+    public bool StartFinalDepartureFromSupply()
+    {
+        if (!showingSupplyScreen || !useSupplyPreparationScreen)
+        {
+            Debug.LogWarning("[StageExpeditionPanelController] 補充画面を経由していないため出撃を中止しました。", this);
+            return false;
+        }
+        return TryStartFinalDeparture();
+    }
+
+    private bool CanStartDeparture()
+    {
         if (selectedStageData == null)
         {
             Debug.LogWarning("[StageExpeditionPanelController] 出発先ステージが選択されていません。", this);
-            return;
+            return false;
         }
-
         if (selectedTransitionButton == null)
         {
-            Debug.LogWarning("[StageExpeditionPanelController] 出発用SceneTransitionButtonが見つかりません。", this);
-            return;
+            Debug.LogWarning("[StageExpeditionPanelController] SceneTransitionButtonが設定されていません。", this);
+            return false;
         }
-
-        if (selectedStageData.EntryPointCount > 0 &&
-            !HasValidSelectedEntryPoint())
+        if (string.IsNullOrWhiteSpace(selectedTransitionButton.TargetSceneName) ||
+            !Application.CanStreamedLevelBeLoaded(selectedTransitionButton.TargetSceneName))
         {
-            Debug.LogWarning(
-                "[StageExpeditionPanelController] " +
-                "出撃地点が設定されていますが、有効な出撃地点が選択されていません。" +
-                "StageExpeditionDataの出撃地点IDとButton設定を確認してください。",
-                this
-            );
-            return;
+            Debug.LogWarning("[StageExpeditionPanelController] 移動先SceneがBuild Settingsに登録されていません：" + selectedTransitionButton.TargetSceneName, this);
+            return false;
+        }
+        if (selectedStageData.EntryPointCount > 0 && !HasValidSelectedEntryPoint())
+        {
+            Debug.LogWarning("[StageExpeditionPanelController] 有効な出撃地点が選択されていません。", this);
+            return false;
+        }
+        return true;
+    }
+
+    private bool TryStartFinalDeparture()
+    {
+        if (isDeparting || !isActiveAndEnabled || !CanStartDeparture()) return false;
+        departureCoroutine = StartCoroutine(DepartureRoutine());
+        return true;
+    }
+
+    private void HidePanelForSupply()
+    {
+        if (panelRoot == null) return;
+        supplyHiddenCanvasGroup = panelRoot.GetComponent<CanvasGroup>();
+        if (supplyHiddenCanvasGroup == null)
+        {
+            supplyHiddenCanvasGroup = panelRoot.AddComponent<CanvasGroup>();
         }
 
-        departureCoroutine = StartCoroutine(DepartureRoutine());
+        savedPanelAlpha = supplyHiddenCanvasGroup.alpha;
+        savedPanelInteractable = supplyHiddenCanvasGroup.interactable;
+        savedPanelBlocksRaycasts = supplyHiddenCanvasGroup.blocksRaycasts;
+        showingSupplyScreen = true;
+        supplyHiddenCanvasGroup.alpha = 0f;
+        supplyHiddenCanvasGroup.interactable = false;
+        supplyHiddenCanvasGroup.blocksRaycasts = false;
+        // panelRoot.SetActive(false) はしない。Controller自身が無効化されると出撃Coroutineを実行できないため。
+    }
+
+    private void RestorePanelAfterSupply()
+    {
+        showingSupplyScreen = false;
+        if (supplyHiddenCanvasGroup == null) return;
+        supplyHiddenCanvasGroup.alpha = savedPanelAlpha;
+        supplyHiddenCanvasGroup.interactable = savedPanelInteractable;
+        supplyHiddenCanvasGroup.blocksRaycasts = savedPanelBlocksRaycasts;
+        // 追加したCanvasGroupは残して再利用。Destroyの遅延で次回のOpenが壊れるのを防ぎます。
+        supplyHiddenCanvasGroup = null;
     }
 
     public void Close()
     {
-        if (isDeparting) return;
+        if (isDeparting || showingSupplyScreen) return;
 
+        RestorePanelAfterSupply();
         StopOpenAnimationAndRestoreScale();
         PlayCloseSound();
 
@@ -429,6 +525,7 @@ public class StageExpeditionPanelController : MonoBehaviour
 
     private void HideImmediate()
     {
+        RestorePanelAfterSupply();
         StopOpenAnimationAndRestoreScale();
 
         selectedStageData = null;
@@ -1741,6 +1838,19 @@ public class StageExpeditionPanelController : MonoBehaviour
             new string('☆', maxStars - clamped);
     }
 
+    private void RefreshDepartButtonLabel()
+    {
+        if (!useSupplyPreparationScreen || !autoSetNextButtonText || departButton == null) return;
+        string label = string.IsNullOrWhiteSpace(nextButtonLabel) ? "次へ" : nextButtonLabel;
+        TMP_Text tmp = departButton.GetComponentInChildren<TMP_Text>(true);
+        if (tmp != null) tmp.text = label;
+        else
+        {
+            Text legacy = departButton.GetComponentInChildren<Text>(true);
+            if (legacy != null) legacy.text = label;
+        }
+    }
+
     private void EnsureInitialized()
     {
         if (initialized)
@@ -1764,6 +1874,7 @@ public class StageExpeditionPanelController : MonoBehaviour
         }
 
         RegisterEntryPointButtonListeners();
+        RefreshDepartButtonLabel();
 
         initialized = true;
     }

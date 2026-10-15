@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 応急キット専用のアイテムメニュー（使用・取り出す・情報）。
+/// 応急キット専用のアイテムメニュー（使用する・情報のみ）。
 /// 通常InventoryContextMenuUIはInventoryGrid内のItemを前提とするため、
 /// 固定枠専用のメニューを別管理します。
 /// 自動生成のほか、既存コンテキストメニューと同じ外見の複製UIを任意に指定可能です。
@@ -24,11 +24,11 @@ public sealed class MedicalKitItemContextMenu2D : MonoBehaviour
 
     private RectTransform panelRoot;
     private TMP_FontAsset japaneseFont;
-    private Action useAction, takeAction, infoAction;
+    private Action useAction, infoAction;
     private int openedFrame;
     private bool listenersAttached;
     private const float MenuWidth = 188f;
-    private const float MenuHeight = 174f;
+    private const float MenuHeight = 132f;
 
     public void Configure(Transform panel, TMP_FontAsset font)
     {
@@ -36,12 +36,16 @@ public sealed class MedicalKitItemContextMenu2D : MonoBehaviour
         japaneseFont = font;
         if (menuRoot == null) BuildAutomaticMenu();
         if (itemNameText != null && japaneseFont != null) itemNameText.font = japaneseFont;
+        // 旧メニュー（3項目）をPrefabで使っている場合も、中央の操作を削除する。
+        // 通常Inventoryとは独立しているため、ほかの右クリックメニューは変更しない。
+        ResolveOptionalButtons();
+        ApplyTwoActionLayout();
         if (!listenersAttached)
         {
             if (useButton != null) useButton.onClick.AddListener(ClickUse);
-            if (takeButton != null) takeButton.onClick.AddListener(ClickTake);
+            // 取り出す/取り消す のボタンは廃止。旧Prefabに残っていても登録しない。
             if (informationButton != null) informationButton.onClick.AddListener(ClickInfo);
-            if (closeButton != null) closeButton.onClick.AddListener(Hide);
+            // 旧Prefabのキャンセルボタンはメニューに表示しない。
             listenersAttached = true;
         }
         Hide();
@@ -52,11 +56,12 @@ public sealed class MedicalKitItemContextMenu2D : MonoBehaviour
     {
         if (data == null || menuRoot == null) return;
         useAction = onUse;
-        takeAction = onTake;
+        // onTake引数はMedicalKitInventoryUI2Dとの既存API互換のため維持。
+        // メニューからの「取り出す」操作は行わない。
         infoAction = onInfo;
         if (itemNameText != null) itemNameText.text = data.DisplayName + " ×" + amount;
         if (useButton != null) useButton.interactable = amount > 0 && canUse;
-        if (takeButton != null) takeButton.interactable = amount > 0;
+        ApplyTwoActionLayout();
         menuRoot.gameObject.SetActive(true);
         menuRoot.SetAsLastSibling();
         Position(screenPosition);
@@ -67,7 +72,6 @@ public sealed class MedicalKitItemContextMenu2D : MonoBehaviour
     {
         if (menuRoot != null) menuRoot.gameObject.SetActive(false);
         useAction = null;
-        takeAction = null;
         infoAction = null;
     }
 
@@ -85,12 +89,10 @@ public sealed class MedicalKitItemContextMenu2D : MonoBehaviour
     private void OnDestroy()
     {
         if (useButton != null) useButton.onClick.RemoveListener(ClickUse);
-        if (takeButton != null) takeButton.onClick.RemoveListener(ClickTake);
         if (informationButton != null) informationButton.onClick.RemoveListener(ClickInfo);
         if (closeButton != null) closeButton.onClick.RemoveListener(Hide);
     }
     private void ClickUse() { Action action = useAction; Hide(); action?.Invoke(); }
-    private void ClickTake() { Action action = takeAction; Hide(); action?.Invoke(); }
     private void ClickInfo() { Action action = infoAction; Hide(); action?.Invoke(); }
 
     private void Position(Vector2 screenPoint)
@@ -126,10 +128,104 @@ public sealed class MedicalKitItemContextMenu2D : MonoBehaviour
         outline.effectDistance = new Vector2(1f,-1f);
         itemNameText = MakeText("ItemName", root.transform, new Vector2(7f,-8f),
             new Vector2(MenuWidth-14f,28f), 15f, TextAlignmentOptions.MidlineLeft);
-        useButton = MakeButton("UseButton", "使用", root.transform, 43f);
-        takeButton = MakeButton("TakeButton", "取り出す", root.transform, 84f);
-        informationButton = MakeButton("InformationButton", "情報", root.transform, 125f);
+        useButton = MakeButton("UseButton", "使用する", root.transform, 43f);
+        informationButton = MakeButton("InformationButton", "情報", root.transform, 84f);
         root.SetActive(false);
+    }
+
+    /// <summary>
+    /// 旧Prefabの「取り出す」「取り消す」等のボタンを、Inspectorで未指定でも検出します。
+    /// 専用メニューの子だけを対象とし、ほかのInventoryには触れません。
+    /// </summary>
+    private void ResolveOptionalButtons()
+    {
+        if (menuRoot == null) return;
+        Button[] buttons = menuRoot.GetComponentsInChildren<Button>(true);
+        foreach (Button button in buttons)
+        {
+            if (button == null) continue;
+            string objectName = button.name.ToLowerInvariant();
+            string caption = ReadButtonLabel(button);
+            if (useButton == null &&
+                (objectName.Contains("usebutton") || caption == "使用" || caption == "使用する"))
+                useButton = button;
+            if (informationButton == null &&
+                (objectName.Contains("informationbutton") || objectName.Contains("infobutton") || caption == "情報"))
+                informationButton = button;
+            if (takeButton == null &&
+                (objectName.Contains("takebutton") || objectName.Contains("cancelbutton") ||
+                 caption == "取り出す" || caption == "取り消す" || caption == "取消す" || caption == "キャンセル"))
+                takeButton = button;
+            if (closeButton == null &&
+                (objectName.Contains("closebutton") || caption == "閉じる"))
+                closeButton = button;
+        }
+    }
+
+    private static string ReadButtonLabel(Button button)
+    {
+        TMP_Text tmp = button.GetComponentInChildren<TMP_Text>(true);
+        if (tmp != null) return tmp.text.Trim();
+        Text legacy = button.GetComponentInChildren<Text>(true);
+        return legacy != null ? legacy.text.Trim() : "";
+    }
+
+    /// <summary>
+    /// 自動生成メニューとInspectorで指定した旧メニューの両方を2項目に統一します。
+    /// レイアウトを自動管理するPrefabの場合はSetActiveだけを変更します。
+    /// </summary>
+    private void ApplyTwoActionLayout()
+    {
+        if (menuRoot == null) return;
+        ResolveOptionalButtons();
+
+        if (takeButton != null) takeButton.gameObject.SetActive(false);
+        if (closeButton != null) closeButton.gameObject.SetActive(false);
+        // 名前/文言だけで作られた旧ボタン（参照未設定）も残さない。
+        Button[] buttons = menuRoot.GetComponentsInChildren<Button>(true);
+        foreach (Button button in buttons)
+        {
+            if (button == null || button == useButton || button == informationButton) continue;
+            string caption = ReadButtonLabel(button);
+            string nameLower = button.name.ToLowerInvariant();
+            if (caption == "取り出す" || caption == "取り消す" || caption == "取消す" ||
+                caption == "キャンセル" || caption == "閉じる" ||
+                nameLower.Contains("takebutton") || nameLower.Contains("cancelbutton") ||
+                nameLower.Contains("closebutton"))
+                button.gameObject.SetActive(false);
+        }
+
+        if (useButton != null)
+        {
+            useButton.gameObject.SetActive(true);
+            TMP_Text label = useButton.GetComponentInChildren<TMP_Text>(true);
+            if (label != null && label.text.Trim() == "使用") label.text = "使用する";
+            Text legacy = useButton.GetComponentInChildren<Text>(true);
+            if (legacy != null && legacy.text.Trim() == "使用") legacy.text = "使用する";
+        }
+        if (informationButton != null) informationButton.gameObject.SetActive(true);
+        // 既存Prefabの独自デザインは維持し、必要な箇所のみ位置と高さを調整。
+        RectTransform useRect = useButton != null ? useButton.GetComponent<RectTransform>() : null;
+        RectTransform infoRect = informationButton != null ? informationButton.GetComponent<RectTransform>() : null;
+        if (useRect == null || infoRect == null || useRect.parent != infoRect.parent) return;
+
+        RectTransform actionParent = useRect.parent as RectTransform;
+        if (actionParent == null) return;
+        if (actionParent.GetComponent<LayoutGroup>() != null) return;
+        if (actionParent.GetComponent<ContentSizeFitter>() != null) return;
+
+        // 上下2段に並べる。Buttonのサイズ・色・フォントは既存のまま。
+        Vector2 p = infoRect.anchoredPosition;
+        p.y = useRect.anchoredPosition.y - useRect.rect.height - 6f;
+        infoRect.anchoredPosition = p;
+
+        // 既存メニューに残る3段目分の余白を縮める。
+        if (actionParent == menuRoot)
+        {
+            float bottom = -infoRect.anchoredPosition.y + infoRect.rect.height + 7f;
+            menuRoot.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,
+                Mathf.Max(116f, bottom));
+        }
     }
 
     private Button MakeButton(string objectName, string caption, Transform parent, float topOffset)

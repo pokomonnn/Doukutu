@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Reflection;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -44,6 +45,21 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
     private static InventoryDragPlacementFeedback instance;
 
     private DragVisual activeDrag;
+
+    // IrregularShapesV2: highlights only occupied ShapeCell images, never the rectangular root.
+    private class HighlightState
+    {
+        public Image Image;
+        public Color Color;
+        public Outline Outline;
+        public bool HadOutline;
+        public bool OutlineEnabled;
+        public Color OutlineColor;
+        public Vector2 OutlineDistance;
+    }
+    private RectTransform highlightedOwner;
+    private readonly List<HighlightState> highlightStates = new List<HighlightState>();
+    private readonly List<Image> desiredImages = new List<Image>();
 
     private Image tintedImage;
     private Color tintedImageOriginalColor;
@@ -174,7 +190,7 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
                 item,
                 GetPrivateObject(itemUI, "gridUI") as InventoryGridUI,
                 GetPrivateValue(itemUI, "dragCellOffset", Vector2Int.zero),
-                GetPrivateValue(itemUI, "dragIsRotated", item.IsRotated)
+                GetPrivateValue(itemUI, "dragRotationSteps", item.RotationSteps)
             );
 
             return true;
@@ -234,7 +250,7 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
                 item,
                 null,
                 GetPrivateValue(handler, "dragCellOffset", Vector2Int.zero),
-                GetPrivateValue(handler, "dragIsRotated", item.IsRotated)
+                (GetPrivateValue(handler, "dragIsRotated", item.IsRotated) ? 1 : 0)
             );
 
             return true;
@@ -276,7 +292,7 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
             drag.SourceGridUI,
             targetPosition,
             pointerGridPosition,
-            drag.IsRotated
+            drag.RotationSteps
         );
 
         ApplyPlacementVisual(
@@ -406,7 +422,7 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
         InventoryGridUI sourceGridUI,
         Vector2Int targetPosition,
         Vector2Int pointerGridPosition,
-        bool isRotated)
+        int rotationSteps)
     {
         if (targetGridUI == null ||
             item == null ||
@@ -469,100 +485,92 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
             item,
             targetPosition.x,
             targetPosition.y,
-            isRotated
+            rotationSteps
         );
     }
 
-    private void ApplyPlacementVisual(
-        RectTransform itemRect,
-        bool canPlace)
+    private void ApplyPlacementVisual(RectTransform itemRect, bool canPlace)
     {
-        if (itemRect == null)
+        if (itemRect == null) return;
+        desiredImages.Clear();
+        var itemUI = itemRect.GetComponent<InventoryItemUI>();
+        bool custom = itemUI != null && itemUI.Item != null &&
+            itemUI.Item.ItemData != null && itemUI.Item.ItemData.HasCustomShape;
+        if (custom)
         {
-            return;
+            Transform root = itemRect.Find("CustomShapeCells");
+            if (root != null)
+            {
+                foreach (Image image in root.GetComponentsInChildren<Image>(false))
+                    if (image != null && image.isActiveAndEnabled) desiredImages.Add(image);
+            }
+        }
+        else
+        {
+            Image background = itemRect.GetComponent<Image>();
+            if (background != null) desiredImages.Add(background);
         }
 
-        Image image = itemRect.GetComponent<Image>();
-
-        if (image == null)
-        {
-            return;
-        }
-
-        if (tintedImage != image)
+        bool changed = highlightedOwner != itemRect || highlightStates.Count != desiredImages.Count;
+        if (!changed)
+            for (int i = 0; i < desiredImages.Count; i++)
+                if (highlightStates[i].Image != desiredImages[i]) { changed = true; break; }
+        if (changed)
         {
             RestoreItemVisualOnly();
-
-            tintedImage = image;
-            tintedImageOriginalColor = image.color;
-
-            activeOutline = image.GetComponent<Outline>();
-            activeOutlineWasAlreadyPresent = activeOutline != null;
-
-            if (activeOutline == null)
+            highlightedOwner = itemRect;
+            foreach (Image image in desiredImages)
             {
-                activeOutline = image.gameObject.AddComponent<Outline>();
-                activeOutlineWasEnabled = false;
-                activeOutlineOriginalColor = Color.clear;
-                activeOutlineOriginalDistance = Vector2.zero;
-            }
-            else
-            {
-                activeOutlineWasEnabled = activeOutline.enabled;
-                activeOutlineOriginalColor = activeOutline.effectColor;
-                activeOutlineOriginalDistance = activeOutline.effectDistance;
+                HighlightState state = new HighlightState();
+                state.Image = image;
+                state.Color = image.color;
+                state.Outline = image.GetComponent<Outline>();
+                state.HadOutline = state.Outline != null;
+                if (state.Outline == null) state.Outline = image.gameObject.AddComponent<Outline>();
+                else
+                {
+                    state.OutlineEnabled = state.Outline.enabled;
+                    state.OutlineColor = state.Outline.effectColor;
+                    state.OutlineDistance = state.Outline.effectDistance;
+                }
+                highlightStates.Add(state);
             }
         }
-
-        Color targetColor = canPlace
-            ? validPlacementColor
-            : invalidPlacementColor;
-
-        tintedImage.color = Color.Lerp(
-            tintedImageOriginalColor,
-            targetColor,
-            tintStrength
-        );
-
-        if (activeOutline != null)
+        Color target = canPlace ? validPlacementColor : invalidPlacementColor;
+        foreach (HighlightState state in highlightStates)
         {
-            activeOutline.enabled = outlineThickness > 0f;
-            activeOutline.effectColor = targetColor;
-            activeOutline.effectDistance = new Vector2(
-                outlineThickness,
-                -outlineThickness
-            );
+            if (state.Image == null) continue;
+            state.Image.color = Color.Lerp(state.Color, target, tintStrength);
+            if (state.Outline != null)
+            {
+                state.Outline.enabled = outlineThickness > 0f;
+                state.Outline.effectColor = target;
+                state.Outline.effectDistance = new Vector2(outlineThickness, -outlineThickness);
+            }
         }
     }
 
     private void RestoreItemVisualOnly()
     {
-        if (tintedImage != null)
+        foreach (HighlightState state in highlightStates)
         {
-            tintedImage.color = tintedImageOriginalColor;
-        }
-
-        if (activeOutline != null)
-        {
-            if (activeOutlineWasAlreadyPresent)
+            if (state.Image != null) state.Image.color = state.Color;
+            if (state.Outline != null)
             {
-                activeOutline.enabled = activeOutlineWasEnabled;
-                activeOutline.effectColor = activeOutlineOriginalColor;
-                activeOutline.effectDistance =
-                    activeOutlineOriginalDistance;
-            }
-            else
-            {
-                Destroy(activeOutline);
+                if (state.HadOutline)
+                {
+                    state.Outline.enabled = state.OutlineEnabled;
+                    state.Outline.effectColor = state.OutlineColor;
+                    state.Outline.effectDistance = state.OutlineDistance;
+                }
+                else
+                {
+                    Destroy(state.Outline);
+                }
             }
         }
-
-        tintedImage = null;
-        activeOutline = null;
-        activeOutlineWasAlreadyPresent = false;
-        activeOutlineWasEnabled = false;
-        activeOutlineOriginalColor = Color.clear;
-        activeOutlineOriginalDistance = Vector2.zero;
+        highlightStates.Clear();
+        highlightedOwner = null;
     }
 
     private void HideCursor()
@@ -691,7 +699,7 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
         public readonly InventoryItem Item;
         public readonly InventoryGridUI SourceGridUI;
         public readonly Vector2Int DragCellOffset;
-        public readonly bool IsRotated;
+        public readonly int RotationSteps;
 
         public DragVisual(
             Component source,
@@ -700,7 +708,7 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
             InventoryItem item,
             InventoryGridUI sourceGridUI,
             Vector2Int dragCellOffset,
-            bool isRotated)
+            int rotationSteps)
         {
             Source = source;
             ItemRect = itemRect;
@@ -708,7 +716,7 @@ public sealed class InventoryDragPlacementFeedback : MonoBehaviour
             Item = item;
             SourceGridUI = sourceGridUI;
             DragCellOffset = dragCellOffset;
-            IsRotated = isRotated;
+            RotationSteps = rotationSteps;
         }
     }
 

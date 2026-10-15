@@ -230,6 +230,16 @@ public class InventoryController : MonoBehaviour
         return moved;
     }
 
+
+    // IrregularShapesV2: preserves all 4 orientations through the usual notification path.
+    public bool TryMoveItem(InventoryItem item, int targetX, int targetY, int rotationSteps)
+    {
+        if (item == null) return false;
+        bool moved = inventoryGrid.TryPlaceItem(item, targetX, targetY, rotationSteps);
+        if (moved) NotifyInventoryChanged();
+        return moved;
+    }
+
     public bool CanMoveItemTo(
         InventoryItem item,
         int targetX,

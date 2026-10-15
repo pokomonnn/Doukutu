@@ -271,10 +271,27 @@ public class CaveExitElevator2D : MonoBehaviour
             return;
         }
 
-        CaptureSessionBeforeResult();
+        // まずResultの人数・お宝を記録します（現金をバッグから消す前）。
         CollectExpeditionResult();
 
-        Log($"リザルトSceneへ移動します: {resultSceneName}");
+        // 現金を町の所持金へ移してバッグから削除します。
+        // 失敗時はシーン移動を中止し、未精算のお金を失わないようにします。
+        if (expeditionResultCollector == null ||
+            !expeditionResultCollector.TryConvertMoneyBeforeExit(out int recoveredMoney))
+        {
+            transitionStarted = false;
+            SetPromptVisible(playerInside);
+            Debug.LogWarning(
+                "[CaveExitElevator2D] お金の精算に失敗しました。" +
+                " InspectorのExpeditionResultCollector2DとExpedition Money Item設定を確認してください。",
+                this
+            );
+            return;
+        }
+
+        // 現金削除後に保存するのが重要です。OnDisableでもこの状態が再保存されます。
+        CaptureSessionBeforeResult();
+        Log($"現金回収={recoveredMoney:N0}G / リザルトSceneへ移動します: {resultSceneName}");
         SceneManager.LoadScene(resultSceneName);
     }
 

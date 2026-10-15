@@ -27,6 +27,30 @@ public class ItemBoxUIController : MonoBehaviour
     [SerializeField]
     private InventoryController playerInventoryController;
 
+    [Header("応急ItemBox：アイテム選択メニュー")]
+    [Tooltip("ONの場合だけ『使用する・情報・戻る』メニューに切り替えます。通常のItemBoxはOFFのままにしてください。")]
+    [SerializeField] private bool enableEmergencyItemMenu = false;
+
+    [Tooltip("応急ItemBoxのItemBoxInventoryを指定すると、その箱を開いた時だけ専用メニューになります。空欄ならこのControllerが開く全Storage箱で適用します。")]
+    [SerializeField] private ItemBoxInventory emergencyMenuTargetItemBox;
+
+    /// <summary>この箱に応急専用のアイテムメニューを表示するか。</summary>
+    public bool UsesEmergencyItemMenuFor(ItemBoxInventory box)
+    {
+        return enableEmergencyItemMenu &&
+               IsOpen &&
+               box != null &&
+               box == currentItemBox &&
+               box.BoxKind == ItemBoxKind.Storage &&
+               (emergencyMenuTargetItemBox == null || emergencyMenuTargetItemBox == box);
+    }
+
+    /// <summary>実際にバッグを管理しているPlayerのInventoryController。</summary>
+    public InventoryController GetPlayerInventoryForEmergencyMenu()
+    {
+        return FindPlayerInventoryController() ? playerInventoryController : null;
+    }
+
     [Header("見出し")]
     [SerializeField] private TMP_Text titleText;
 

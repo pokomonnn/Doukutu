@@ -76,6 +76,9 @@ public class WeaponAim : MonoBehaviour
 
     public bool IsAimingLeft => currentIsAimingLeft;
 
+    // 近接武器もEquipmentVisualControllerの操作制限を共有する。
+    public bool CanUseEquippedWeapon => isGunEquipped && !IsInventoryOpen;
+
     private bool IsInventoryOpen =>
         inventoryPanel != null && inventoryPanel.activeInHierarchy;
 

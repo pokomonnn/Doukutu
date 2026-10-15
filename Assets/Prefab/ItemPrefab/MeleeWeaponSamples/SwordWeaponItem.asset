@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a44f6dd40e211344dba3470e62e47293, type: 3}
+  m_Name: SwordWeaponItem
+  m_EditorClassIdentifier: Assembly-CSharp::MeleeWeaponItemData
+  itemId: melee_sword
+  displayName: "\u5263"
+  description: "\u5263\uFF1A\u5DE6\u30AF\u30EA\u30C3\u30AF\u3067\u65AC\u6483\u3067\u304D\u308B\u8FD1\u63A5\u6B66\u5668\u3002"
+  icon: {fileID: 1805150700315187140, guid: dd2353310a7f78540b26e8c722974b7d, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  width: 4
+  height: 2
+  canRotate: 1
+  useCustomShape: 0
+  customShapeCells: []
+  maxStack: 1
+  purchasePrice: 0
+  sellPrice: 0
+  canSellToShop: 1
+  weight: 2
+  canDiscard: 1
+  weaponPrefab: {fileID: 4031658347823905323, guid: ff40a5aafca170b48adf9996051b7871, type: 3}
+  fireMode: 0
+  fireInterval: 0.15
+  cockingType: 0
+  cockingStartDelay: 0.15
+  cockingDuration: 0.65
+  cockingSound: {fileID: 0}
+  cockingAnimationTrigger: Cocking
+  pelletCount: 1
+  pelletSpreadAngle: 0
+  compatibleAmmo: {fileID: 0}
+  compatibleAmmoCaliberId: 
+  maxDurability: 100
+  durabilityLossPerShot: 0.1
+  jamStartDurabilityPercent: 0.5
+  jamChanceAtStart: 0.01
+  maxJamChanceAtZeroDurability: 0.25
+  jamClearDuration: 1.25
+  accuracyPenaltyStartDurabilityPercent: 0.6
+  maxSpreadAngleAtZeroDurability: 6
+  reloadPenaltyStartDurabilityPercent: 0.6
+  maxReloadDurationMultiplierAtZeroDurability: 1.75
+  fullRepairCost: 5000
+  minimumRepairCost: 100
+  attackDamage: 25
+  attackReach: 1.8
+  attackArcDegrees: 100
+  swingDuration: 0.39
+  hitStartDelay: 0.16
+  hitWindowSeconds: 0.15
+  attackInterval: 0.8
+  usableWhileCarryingNpc: 0
+  durabilityLossPerAttack: 0.15
+  visualSwingArc: 100
+  swingSound: {fileID: 0}
+  hitSound: {fileID: 0}
+  brokenSound: {fileID: 0}
+  references:
+    version: 2
+    RefIds: []

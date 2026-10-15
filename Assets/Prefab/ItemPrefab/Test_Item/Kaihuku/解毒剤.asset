@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c7363c6f7f8428479e31b34f1ba3e6b, type: 3}
+  m_Name: "\u89E3\u6BD2\u5264"
+  m_EditorClassIdentifier: Assembly-CSharp::AlcoholItemData
+  itemId: kaihuku_017
+  displayName: "\u89E3\u6BD2\u85AC"
+  description: "\u6BD2\u3092\u4E2D\u548C\u3059\u308B"
+  icon: {fileID: 7184411546793708450, guid: 8e2a45f0ac6428742bef34257218dccb, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  width: 1
+  height: 2
+  canRotate: 1
+  useCustomShape: 0
+  customShapeCells: []
+  maxStack: 3
+  purchasePrice: 40
+  sellPrice: 40
+  canSellToShop: 1
+  weight: 0.2
+  canDiscard: 1
+  healAmount: 5
+  foodRestoreAmount: 0
+  waterRestoreAmount: 10
+  torchRestoreAmount: 0
+  curedConditions: 4
+  slowdownDuration: 3
+  useMoveSpeedMultiplier: 0.5
+  consumeOnUse: 1
+  useSound: {fileID: 8300000, guid: d564dec4937db0246b4fc2033562008b, type: 3}
+  useAnimationTrigger: UseItem
+  alcoholPoints: 1
+  weightLimitBonusKg: 0
+  rescueCarrySpeedMultiplier: 1
+  foodDrainMultiplier: 1
+  sanityRecovery: 12
+  waterLoss: 6
+  drunkDurationSeconds: 45
+  drunkMoveSpeedMultiplier: 0.8
+  references:
+    version: 2
+    RefIds: []

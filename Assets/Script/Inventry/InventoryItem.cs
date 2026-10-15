@@ -12,6 +12,9 @@ public class InventoryItem
 
     [Header("状態")]
     [SerializeField] private bool isRotated;
+    // IrregularShapesV2: old items do not have hasFourWayRotation, so use their saved bool.
+    [SerializeField, HideInInspector] private int rotationSteps;
+    [SerializeField, HideInInspector] private bool hasFourWayRotation;
     [SerializeField, Min(1)] private int amount = 1;
 
     [Header("武器の残弾")]
@@ -202,7 +205,19 @@ public class InventoryItem
 
     public Vector2Int GridPosition => new Vector2Int(gridX, gridY);
 
-    public bool IsRotated => isRotated;
+    public int RotationSteps => hasFourWayRotation ? ((rotationSteps % 4) + 4) % 4 : (isRotated ? 1 : 0);
+    public bool IsRotated => (RotationSteps & 1) != 0;
+
+    // bool API compatibility. Do not discard a valid 180/270 orientation when its parity is unchanged.
+    public int ResolveLegacyRotation(bool legacyRotated) =>
+        IsRotated == legacyRotated ? RotationSteps : (legacyRotated ? 1 : 0);
+
+    public void SetRotationSteps(int steps)
+    {
+        rotationSteps = CanRotate ? ((steps % 4) + 4) % 4 : 0;
+        hasFourWayRotation = true;
+        isRotated = (rotationSteps & 1) != 0;
+    }
     public int Amount => amount;
 
     public Vector2Int Size
@@ -214,7 +229,7 @@ public class InventoryItem
                 return Vector2Int.one;
             }
 
-            return itemData.GetSize(isRotated);
+            return itemData.GetSize(RotationSteps);
         }
     }
 
@@ -265,12 +280,8 @@ public class InventoryItem
 
     public bool TryRotate()
     {
-        if (!CanRotate)
-        {
-            return false;
-        }
-
-        isRotated = !isRotated;
+        if (!CanRotate) return false;
+        SetRotationSteps(RotationSteps + 1);
         return true;
     }
 

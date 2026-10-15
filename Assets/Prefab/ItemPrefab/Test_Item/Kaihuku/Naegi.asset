@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: add0153c34f19f349bebf1c476c638d4, type: 3}
   m_Name: Naegi
   m_EditorClassIdentifier: Assembly-CSharp::ConsumableItemData
-  itemId: Consumable_001
-  displayName: Naegi
+  itemId: Consumable_016
+  displayName: "\u526F\u6728"
   description: "\t\t"
   icon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
   localizedDisplayName:
@@ -37,6 +37,8 @@ MonoBehaviour:
   width: 1
   height: 1
   canRotate: 1
+  useCustomShape: 0
+  customShapeCells: []
   maxStack: 1
   purchasePrice: 80
   sellPrice: 60
@@ -47,7 +49,7 @@ MonoBehaviour:
   foodRestoreAmount: 0
   waterRestoreAmount: 0
   torchRestoreAmount: 0
-  curedConditions: -1
+  curedConditions: 2
   slowdownDuration: 3
   useMoveSpeedMultiplier: 0.5
   consumeOnUse: 1

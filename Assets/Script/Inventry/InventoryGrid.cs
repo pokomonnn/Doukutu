@@ -84,43 +84,29 @@ public class InventoryGrid
     }
 
     // 指定した向きで、その位置へ置けるか確認する
-    public bool CanPlaceItem(
-        InventoryItem item,
-        int targetX,
-        int targetY,
-        bool isRotated)
+    public bool CanPlaceItem(InventoryItem item, int targetX, int targetY, bool isRotated)
+    {
+        return CanPlaceItem(item, targetX, targetY,
+            item != null ? item.ResolveLegacyRotation(isRotated) : 0);
+    }
+
+    // IrregularShapesV2: 0,1,2,3 = up,right,down,left.
+    public bool CanPlaceItem(InventoryItem item, int targetX, int targetY, int rotationSteps)
     {
         EnsureSlotMap();
-
-        if (item == null || item.ItemData == null)
-        {
+        if (item == null || item.ItemData == null) return false;
+        int steps = item.CanRotate ? ((rotationSteps % 4) + 4) % 4 : 0;
+        Vector2Int size = item.ItemData.GetSize(steps);
+        if (targetX < 0 || targetY < 0 || targetX + size.x > width || targetY + size.y > height)
             return false;
-        }
-
-        // 回転不可アイテムなら、常に通常向きとして扱う
-        bool finalRotated = item.CanRotate && isRotated;
-        Vector2Int itemSize = item.ItemData.GetSize(finalRotated);
-
-        for (int y = targetY; y < targetY + itemSize.y; y++)
+        foreach (Vector2Int cell in item.ItemData.GetOccupiedCells(steps))
         {
-            for (int x = targetX; x < targetX + itemSize.x; x++)
-            {
-                // グリッド外にはみ出していたら置けない
-                if (!IsInsideGrid(x, y))
-                {
-                    return false;
-                }
-
-                InventoryItem occupiedItem = slotMap[x, y];
-
-                // 自分自身以外のアイテムが入っていたら置けない
-                if (occupiedItem != null && occupiedItem != item)
-                {
-                    return false;
-                }
-            }
+            int x = targetX + cell.x;
+            int y = targetY + cell.y;
+            if (!IsInsideGrid(x, y)) return false;
+            InventoryItem occupied = slotMap[x, y];
+            if (occupied != null && occupied != item) return false;
         }
-
         return true;
     }
 
@@ -136,46 +122,23 @@ public class InventoryGrid
     }
 
     // アイテムを指定位置・指定方向で配置・移動する
-    public bool TryPlaceItem(
-        InventoryItem item,
-        int targetX,
-        int targetY,
-        bool isRotated)
+    public bool TryPlaceItem(InventoryItem item, int targetX, int targetY, bool isRotated)
+    {
+        return TryPlaceItem(item, targetX, targetY,
+            item != null ? item.ResolveLegacyRotation(isRotated) : 0);
+    }
+
+    public bool TryPlaceItem(InventoryItem item, int targetX, int targetY, int rotationSteps)
     {
         EnsureSlotMap();
-
-        if (item == null || item.ItemData == null)
-        {
-            return false;
-        }
-
-        bool finalRotated = item.CanRotate && isRotated;
-
-        if (!CanPlaceItem(item, targetX, targetY, finalRotated))
-        {
-            return false;
-        }
-
-        // 初めて置くアイテムなら一覧へ追加
-        if (!items.Contains(item))
-        {
-            items.Add(item);
-        }
-
-        // 前の場所を空ける
+        if (item == null || item.ItemData == null) return false;
+        int steps = item.CanRotate ? ((rotationSteps % 4) + 4) % 4 : 0;
+        if (!CanPlaceItem(item, targetX, targetY, steps)) return false;
+        if (!items.Contains(item)) items.Add(item);
         ClearItemFromSlots(item);
-
-        // 必要なら回転状態を変更
-        if (item.IsRotated != finalRotated)
-        {
-            item.TryRotate();
-        }
-
+        item.SetRotationSteps(steps);
         item.SetGridPosition(targetX, targetY);
-
-        // 新しい場所を使用済みにする
         FillItemSlots(item);
-
         return true;
     }
 
@@ -191,7 +154,7 @@ public class InventoryGrid
             item,
             item.GridX,
             item.GridY,
-            !item.IsRotated
+            (item.RotationSteps + 1) % 4
         );
     }
 
@@ -418,7 +381,7 @@ public class InventoryGrid
                 continue;
             }
 
-            if (!CanPlaceItem(item, item.GridX, item.GridY, item.IsRotated))
+            if (!CanPlaceItem(item, item.GridX, item.GridY, item.RotationSteps))
             {
                 Debug.LogWarning(
                     $"InventoryGrid: {item.ItemData.DisplayName} の配置データが不正です。"
@@ -463,17 +426,13 @@ public class InventoryGrid
 
     private void FillItemSlots(InventoryItem item)
     {
-        Vector2Int itemSize = item.Size;
-
-        for (int y = item.GridY; y < item.GridY + itemSize.y; y++)
+        // 占有するマスだけを登録。T字・十字のくぼみは空きマスとして残る。
+        foreach (Vector2Int cell in item.ItemData.GetOccupiedCells(item.RotationSteps))
         {
-            for (int x = item.GridX; x < item.GridX + itemSize.x; x++)
-            {
-                if (IsInsideGrid(x, y))
-                {
-                    slotMap[x, y] = item;
-                }
-            }
+            int x = item.GridX + cell.x;
+            int y = item.GridY + cell.y;
+            if (IsInsideGrid(x, y))
+                slotMap[x, y] = item;
         }
     }
 

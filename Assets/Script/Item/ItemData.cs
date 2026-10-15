@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Localization;
 
@@ -61,6 +62,11 @@ public class ItemData : ScriptableObject
     [SerializeField, Min(1)] private int height = 1;
     [SerializeField] private bool canRotate = true;
 
+    // 四角形アイテムとの互換性のため、初期状態では無効。
+    [SerializeField, HideInInspector] private bool useCustomShape = false;
+    [SerializeField, HideInInspector] private List<Vector2Int> customShapeCells =
+        new List<Vector2Int>();
+
     [Header("スタック設定")]
     [SerializeField, Min(1)] private int maxStack = 1;
 
@@ -113,6 +119,48 @@ public class ItemData : ScriptableObject
     public int Width => width;
     public int Height => height;
     public bool CanRotate => canRotate;
+
+    // Inspectorでカスタム形状を有効化したアイテムだけ、不規則なマスを使う。
+    public bool HasCustomShape =>
+        useCustomShape && customShapeCells != null && customShapeCells.Count > 0;
+
+    /// <summary>
+    /// (0,0)が左上。返すのは実際に占有するマスのみ。
+    /// 通常アイテムは従来どおり幅×高さの長方形を返す。
+    /// </summary>
+    // IrregularShapesV2 ItemData : 4-way rotation, y axis goes downward.
+    public IEnumerable<Vector2Int> GetOccupiedCells(bool isRotated)
+    {
+        return GetOccupiedCells(isRotated ? 1 : 0);
+    }
+
+    public IEnumerable<Vector2Int> GetOccupiedCells(int rotationSteps)
+    {
+        int w = Mathf.Max(1, width);
+        int h = Mathf.Max(1, height);
+        int steps = canRotate ? ((rotationSteps % 4) + 4) % 4 : 0;
+        if (HasCustomShape)
+        {
+            foreach (Vector2Int cell in customShapeCells)
+            {
+                if (cell.x < 0 || cell.y < 0 || cell.x >= w || cell.y >= h) continue;
+                int x = cell.x, y = cell.y, cw = w, ch = h;
+                for (int i = 0; i < steps; i++)
+                {
+                    int nx = ch - 1 - y;
+                    int ny = x;
+                    x = nx; y = ny;
+                    int tmp = cw; cw = ch; ch = tmp;
+                }
+                yield return new Vector2Int(x, y);
+            }
+            yield break;
+        }
+        Vector2Int size = GetSize(steps);
+        for (int y = 0; y < size.y; y++)
+            for (int x = 0; x < size.x; x++)
+                yield return new Vector2Int(x, y);
+    }
     public int MaxStack => maxStack;
 
     public int PurchasePrice => purchasePrice;
@@ -150,6 +198,12 @@ public class ItemData : ScriptableObject
         }
 
         return new Vector2Int(width, height);
+    }
+
+    public Vector2Int GetSize(int rotationSteps)
+    {
+        int steps = canRotate ? ((rotationSteps % 4) + 4) % 4 : 0;
+        return (steps & 1) != 0 ? new Vector2Int(height, width) : new Vector2Int(width, height);
     }
 
     private void SubscribeLocalizedText()
@@ -253,6 +307,18 @@ public class ItemData : ScriptableObject
         width = Mathf.Max(1, width);
         height = Mathf.Max(1, height);
         maxStack = Mathf.Max(1, maxStack);
+
+        if (customShapeCells == null)
+            customShapeCells = new List<Vector2Int>();
+
+        // サイズ変更後に範囲外になったセルを除去。
+        customShapeCells.RemoveAll(c =>
+            c.x < 0 || c.y < 0 || c.x >= width || c.y >= height);
+
+        // 意図しない重複セルを除去。
+        var unique = new HashSet<Vector2Int>(customShapeCells);
+        if (unique.Count != customShapeCells.Count)
+            customShapeCells = new List<Vector2Int>(unique);
 
         purchasePrice = Mathf.Max(0, purchasePrice);
         sellPrice = Mathf.Max(0, sellPrice);
