@@ -12,32 +12,44 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8db1281e025442a4480693497d8ea673, type: 3}
   m_Name: "\u5546\u4EBAitem"
   m_EditorClassIdentifier: Assembly-CSharp::MerchantShopData
-  shopId: merchant_shop
-  shopName: "\u5546\u5E97"
-  purchasePriceMultiplier: 1
-  resetStockEachOpen: 0
+  facilityId: merchant_shop
+  facilityName: "\u5546\u5E97"
+  startingLevel: 1
+  upgradeLevels: []
   items:
   - itemData: {fileID: 11400000, guid: a3b808ca916280a46816c5033eac419a, type: 2}
-    quantityPerPurchase: 1
+    quantityPerPurchase: 90
     unitPriceOverride: 5
     initialStock: -1
   - itemData: {fileID: 11400000, guid: fb52aa05e33bca54e9a1f901280855d0, type: 2}
-    quantityPerPurchase: 1
+    quantityPerPurchase: 90
     unitPriceOverride: 10
     initialStock: -1
   - itemData: {fileID: 0}
     quantityPerPurchase: 1
     unitPriceOverride: 0
     initialStock: 0
-  - itemData: {fileID: 11400000, guid: c9fd4e26b48a0ab4995b954c5847b9c7, type: 2}
-    quantityPerPurchase: 1
+  - itemData: {fileID: 11400000, guid: dcd133068a3ee03498c747425d2ebeec, type: 2}
+    quantityPerPurchase: 900
     unitPriceOverride: 500
     initialStock: -1
   - itemData: {fileID: 11400000, guid: 4e7046421b99b8d47bd6599f6af96914, type: 2}
     quantityPerPurchase: 1
     unitPriceOverride: 150
     initialStock: -1
-  - itemData: {fileID: 11400000, guid: 59d3f0fec4f9cde41820b132c33ef8ea, type: 2}
+  - itemData: {fileID: 11400000, guid: 61d2d6c189187e043a868d11648d7907, type: 2}
     quantityPerPurchase: 1
     unitPriceOverride: 300
     initialStock: -1
+  - itemData: {fileID: 11400000, guid: 16e2922abe3689b46aeb2bb8baeef860, type: 2}
+    quantityPerPurchase: 1
+    unitPriceOverride: 300
+    initialStock: -1
+  resetStockEachOpen: 0
+  maxPurchaseAmount: 999
+  allowAllSellItemTypes: 1
+  acceptedSellItemTypes: 
+  acceptedSpecificItems: []
+  rejectedSpecificItems: []
+  rejectedItemMessageFormat: "{0}\u3067\u306F\u300C{1}\u300D\u3092\u8CB7\u3044\u53D6\u308A\u307E\u305B\u3093\u3002"
+  purchasePriceMultiplier: 1

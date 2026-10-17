@@ -166,6 +166,8 @@ GameObject:
   - component: {fileID: 5338500716690516690}
   - component: {fileID: 882593144795792138}
   - component: {fileID: 7175326880533122628}
+  - component: {fileID: 3951596669424845509}
+  - component: {fileID: 8253274800154545641}
   m_Layer: 11
   m_Name: Enemy_Boss
   m_TagString: Untagged
@@ -639,6 +641,40 @@ MonoBehaviour:
   targetIdentity: {fileID: 882593144795792138}
   compassAnchor: {fileID: 0}
   showDebugLogs: 0
+--- !u!114 &3951596669424845509
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3040853378183444072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99e6ae13165e3af418b14e09fa5daf06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionMember2D
+  factionId: monsters
+  monsterType: 1
+  retaliateWhenAttacked: 1
+--- !u!114 &8253274800154545641
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3040853378183444072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bd308b9789dc954392c28b9d0e874db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionEnemyTargeting2D
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  scanInterval: 0.35
+  retaliationDuration: 9
+  printTargetChanges: 0
+  drawRangeGizmo: 1
 --- !u!1 &4184479503974072702
 GameObject:
   m_ObjectHideFlags: 0

@@ -497,6 +497,7 @@ public class ExpeditionTradeAutoLayoutWindow : EditorWindow
         SetThemeImage(root, backdrop);
         foreach (string n in new[] { "MerchantGridBG", "PlayerGridBG", "WeaponSlot", "MedicalKitItems" })
             SetThemeImage(FindThemeObject(root, n), panel);
+        EnsureWeaponDisplay(root, itemSlot);
         foreach (string n in new[] { "QuantitySliderArea", "SellValueBG", "BuyValueBG", "NetValueBG" })
             SetThemeImage(FindThemeObject(root, n), inset);
         for (int i = 0; i < 3; i++) SetThemeImage(FindThemeObject(root, "MedicalSlot" + i), inset);
@@ -617,6 +618,134 @@ public class ExpeditionTradeAutoLayoutWindow : EditorWindow
         SetColor(so, "medievalStackTextTint", Ink);
         so.ApplyModifiedProperties();
         EditorUtility.SetDirty(grid);
+    }
+
+    /// <summary>
+    /// 装備中の武器の表示枠が消えた／プレビュー参照が外れた場合も修復する。
+    /// 装備データ自体は既存のExpeditionEquippedWeaponPreview2Dが更新する。
+    /// </summary>
+    [MenuItem("Tools/2D Shooter/出撃補充/武器表示枠を修復")]
+    private static void RepairWeaponDisplayMenu()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+        {
+            EditorUtility.DisplayDialog("Playモードを終了", "Playモードを終了してから実行してください。", "OK");
+            return;
+        }
+        GameObject root = Named(SceneManager.GetActiveScene(), "ExpeditionSupplyPanel_LAYOUT_V2");
+        if (root == null)
+        {
+            EditorUtility.DisplayDialog("対象なし", "出撃補充画面が見つかりません。", "OK");
+            return;
+        }
+        EnsureWeaponDisplay(root, BuildFlatSprite("WeaponSlot", Hex("#303435"), Hex("#777670")));
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        EditorUtility.DisplayDialog("武器表示枠の修復", "装備武器プレビューの枠と参照を修復しました。装備武器が反映されないときは ExpeditionEquippedWeaponPreview2D.cs の確認が必要です。", "OK");
+    }
+
+    private static void EnsureWeaponDisplay(GameObject root, Sprite slotSprite)
+    {
+        GameObject slot = FindThemeObject(root, "WeaponSlot");
+        if (slot == null)
+        {
+            // 過去のUI更新で武器枠が消えていても、元の座標に復旧する。
+            slot = new GameObject("WeaponSlot", typeof(RectTransform), typeof(Image));
+            Undo.RegisterCreatedObjectUndo(slot, "装備武器枠の復旧");
+            slot.transform.SetParent(root.transform, false);
+            Place(slot.GetComponent<RectTransform>(), 378f, 35f, 241f, 101f);
+            Image panelImage = slot.GetComponent<Image>();
+            panelImage.color = Hex("#1A2021");
+            panelImage.raycastTarget = false;
+        }
+        if (!slot.activeSelf)
+        {
+            Undo.RecordObject(slot, "武器表示枠を有効にする");
+            slot.SetActive(true);
+        }
+        if (FindThemeObject(slot, "WeaponGridLabel") == null)
+        {
+            GameObject headerGo = new GameObject("WeaponGridLabel", typeof(RectTransform), typeof(TextMeshProUGUI));
+            Undo.RegisterCreatedObjectUndo(headerGo, "装備武器見出しを復旧");
+            headerGo.transform.SetParent(slot.transform, false);
+            TMP_Text header = headerGo.GetComponent<TMP_Text>();
+            header.text = "装備中の武器";
+            header.fontSize = 15;
+            header.color = Ink;
+            header.alignment = TextAlignmentOptions.Center;
+            header.raycastTarget = false;
+            TMP_Text sample = FindThemeObject(root, "StatusText")?.GetComponent<TMP_Text>();
+            if (sample != null && sample.font != null) header.font = sample.font;
+            Place(header.rectTransform, 14f, 5f, 210f, 30f);
+        }
+        Transform frame = slot.transform.Find("WeaponGridFrame");
+        GameObject frameGo;
+        if (frame == null)
+        {
+            frameGo = new GameObject("WeaponGridFrame", typeof(RectTransform), typeof(Image));
+            Undo.RegisterCreatedObjectUndo(frameGo, "武器グリッドの背景枠を生成");
+            frameGo.transform.SetParent(slot.transform, false);
+        }
+        else frameGo = frame.gameObject;
+        RectTransform frameRect = frameGo.GetComponent<RectTransform>();
+        Undo.RecordObject(frameRect, "武器枠位置");
+        Place(frameRect, 11, 37, 67, 59);
+        frameRect.SetAsFirstSibling();
+        Image image = frameGo.GetComponent<Image>();
+        Undo.RecordObject(image, "武器枠の色");
+        image.sprite = slotSprite;
+        image.type = slotSprite != null && slotSprite.border.sqrMagnitude > 0f ? Image.Type.Sliced : Image.Type.Simple;
+        image.color = Color.white;
+        image.raycastTarget = false;
+        GameObject iconGo = FindThemeObject(slot, "EquippedWeaponIcon");
+        GameObject nameGo = FindThemeObject(slot, "EquippedWeaponName");
+        if (iconGo == null)
+        {
+            iconGo = new GameObject("EquippedWeaponIcon", typeof(RectTransform), typeof(Image));
+            Undo.RegisterCreatedObjectUndo(iconGo, "装備アイコンを復旧");
+            iconGo.transform.SetParent(slot.transform, false);
+        }
+        if (nameGo == null)
+        {
+            nameGo = new GameObject("EquippedWeaponName", typeof(RectTransform), typeof(TextMeshProUGUI));
+            Undo.RegisterCreatedObjectUndo(nameGo, "装備名を復旧");
+            nameGo.transform.SetParent(slot.transform, false);
+            TMP_Text txt = nameGo.GetComponent<TMP_Text>();
+            txt.fontSize = 16;
+            txt.text = "武器：未装備";
+            txt.color = Ink;
+            txt.raycastTarget = false;
+            // 同シーンの日本語文字が出るよう既存の日本語フォントを継承。
+            TMP_Text sample = FindThemeObject(root, "StatusText")?.GetComponent<TMP_Text>();
+            if (sample != null && sample.font != null) txt.font = sample.font;
+        }
+        if (iconGo != null && iconGo.TryGetComponent(out Image icon))
+        {
+            Undo.RecordObject(icon.rectTransform, "装備アイコン位置");
+            Place(icon.rectTransform, 16, 42, 57, 49);
+            Undo.RecordObject(icon, "装備アイコン");
+            icon.preserveAspect = true;
+            icon.raycastTarget = false;
+            if (icon.sprite != null) icon.enabled = true;
+        }
+        if (nameGo != null && nameGo.TryGetComponent(out TMP_Text name))
+        {
+            Undo.RecordObject(name.rectTransform, "装備名位置");
+            Place(name.rectTransform, 84, 51, 147, 37);
+            name.raycastTarget = false;
+        }
+        ExpeditionEquippedWeaponPreview2D preview = slot.GetComponent<ExpeditionEquippedWeaponPreview2D>();
+        if (preview == null) preview = Undo.AddComponent<ExpeditionEquippedWeaponPreview2D>(slot);
+        if (preview != null)
+        {
+            SerializedObject so = new SerializedObject(preview);
+            if (iconGo != null) Obj(so, "weaponIcon", iconGo.GetComponent<Image>());
+            if (nameGo != null) Obj(so, "weaponNameText", nameGo.GetComponent<TMP_Text>());
+            so.ApplyModifiedProperties();
+            Undo.RecordObject(preview, "装備武器プレビューを有効にする");
+            preview.enabled = true;
+        }
+        // テーマのパネルより上へ（RectTransformは変更しない）。
+        slot.transform.SetAsLastSibling();
     }
 
     private static void ApplyTradeSelectionColors(GameObject root)

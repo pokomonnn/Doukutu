@@ -112,6 +112,29 @@ public class EquipmentSlotUI : MonoBehaviour
         );
     }
 
+    /// <summary>
+    /// ドラッグ中のプレビュー用。実際の装備可否と同じ枠・サイズ・移動元ルールで判定。
+    /// Inventoryの移動や装備状態は一切変更しない。
+    /// </summary>
+    public bool CanPreviewEquip(InventoryItem item, int rotationSteps, InventoryGridUI sourceGrid)
+    {
+        if (item == null || item.ItemData == null || sourceGrid == null ||
+            !sourceGrid.ContainsItem(item) || !FindEquipmentController()) return false;
+        if (equipmentController.IsSlotOccupied(slotType)) return false;
+        if (!equipmentController.TryGetEquipmentSlot(item.ItemData, out EquipmentSlotType target) ||
+            target != slotType || item.Amount != 1) return false;
+        bool permitted = sourceGrid.IsPlayerInventory &&
+                         sourceGrid.Controller == equipmentController.InventoryController;
+        if (!permitted && sourceGrid.IsItemBoxInventory)
+        {
+            ItemBoxInventory box = sourceGrid.ItemBox;
+            permitted = box != null && box.AllowsDirectEquipToEquipmentSlot && box.ContainsItem(item);
+        }
+        if (!permitted) return false;
+        Vector2Int size = item.ItemData.GetSize(item.CanRotate ? rotationSteps : 0);
+        return size.x <= slotWidth && size.y <= slotHeight;
+    }
+
     public void RefreshSlotVisual()
     {
         RefreshVisual();

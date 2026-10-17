@@ -166,6 +166,8 @@ GameObject:
   - component: {fileID: 5338500716690516690}
   - component: {fileID: 882593144795792138}
   - component: {fileID: 7175326880533122628}
+  - component: {fileID: 8900777087368921749}
+  - component: {fileID: 2212155598998536941}
   m_Layer: 11
   m_Name: Enemy_Big_Mission
   m_TagString: Untagged
@@ -397,7 +399,7 @@ MonoBehaviour:
   giveUpAfterFailedJumps: 1
   maxFailedJumpAttemptsBeforeGivingUp: 2
   enableBuiltInMeleeAttack: 1
-  attackDistance: 0.8
+  attackDistance: 2
   attackDamage: 20
   attackInterval: 1
   stopWhileAttacking: 1
@@ -639,6 +641,40 @@ MonoBehaviour:
   targetIdentity: {fileID: 882593144795792138}
   compassAnchor: {fileID: 0}
   showDebugLogs: 0
+--- !u!114 &8900777087368921749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3040853378183444072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99e6ae13165e3af418b14e09fa5daf06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionMember2D
+  factionId: adventurers
+  monsterType: 0
+  retaliateWhenAttacked: 1
+--- !u!114 &2212155598998536941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3040853378183444072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bd308b9789dc954392c28b9d0e874db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionEnemyTargeting2D
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  scanInterval: 0.35
+  retaliationDuration: 9
+  printTargetChanges: 0
+  drawRangeGizmo: 1
 --- !u!1 &4184479503974072702
 GameObject:
   m_ObjectHideFlags: 0

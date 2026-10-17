@@ -25,6 +25,10 @@ public class SaveGameData
     public string SavedSceneName = string.Empty;
     public int Money;
 
+    // KARMA_STEP1_FIELD
+    // 旧セーブにない場合はロード時に初期値0へ復元する。
+    public SavedKarmaReputationData KarmaReputation = new SavedKarmaReputationData();
+
     /// <summary>これまで町へ持ち帰った死亡NPCの累計人数です。</summary>
     public int TotalDeadNpcCount;
 

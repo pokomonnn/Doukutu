@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7765266c7576ada4d8c59db0c35fdc1f, type: 3}
+  m_Name: Treasure_11
+  m_EditorClassIdentifier: Assembly-CSharp::TreasureItemData
+  itemId: item_0018
+  displayName: "\u9769\u306E\u6C34\u888B"
+  description: "\u539A\u624B\u306E\u9769\u3067\u4F5C\u3089\u308C\u305F\u6C34\u888B\u3002\u4F7F\u3044\u8FBC\u307E\u308C\u3066\u3044\u308B\u304C\u3001\u307E\u3060\u5341\u5206\u306B\u4F7F\u7528\u3067\u304D\u308B\u3002"
+  icon: {fileID: 21300000, guid: cc681c4f476520a488c620550eeb37ff, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  width: 1
+  height: 2
+  canRotate: 1
+  useCustomShape: 0
+  customShapeCells: []
+  maxStack: 1
+  purchasePrice: 12
+  sellPrice: 12
+  canSellToShop: 1
+  weight: 0.3
+  canDiscard: 1
+  references:
+    version: 2
+    RefIds: []

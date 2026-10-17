@@ -1048,6 +1048,8 @@ public class GameSessionManager : MonoBehaviour
     /// </summary>
     public void ResetForNewGame()
     {
+        // KARMA_STEP1_RESET
+        PlayerKarmaReputation2D.GetOrCreate(this).ResetToDefaults();
         currentMoney = 0;
         hasInitializedMoney = false;
         totalDeadNpcCount = 0;
@@ -2764,6 +2766,9 @@ public class GameSessionManager : MonoBehaviour
             $"SkillSlots={saveData.SkillCards.UnlockedSlotCount}"
         );
 
+        // KARMA_STEP1_SAVE
+        saveData.KarmaReputation = PlayerKarmaReputation2D.GetOrCreate(this).CreateSaveData();
+
         return saveData;
     }
 
@@ -3101,6 +3106,9 @@ public class GameSessionManager : MonoBehaviour
             saveData.SkillCards,
             itemDataDatabase
         );
+
+        // KARMA_STEP1_LOAD
+        PlayerKarmaReputation2D.GetOrCreate(this).RestoreFromSaveData(saveData.KarmaReputation);
 
         NotifyMoneyChanged();
         NotifyDeadNpcCountChanged();

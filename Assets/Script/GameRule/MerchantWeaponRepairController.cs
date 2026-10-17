@@ -51,6 +51,7 @@ public class MerchantWeaponRepairController : MonoBehaviour
     [Header("サウンド")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip repairSuccessSound;
+    [SerializeField] private AudioClip weaponSelectSound;
     [SerializeField, Range(0f, 1f)] private float repairSoundVolume = 1f;
 
     [Header("表示文言")]
@@ -186,15 +187,6 @@ public class MerchantWeaponRepairController : MonoBehaviour
     {
         FindReferences();
 
-        if (playerInventoryGridUI != null &&
-            townPlayerInventory != null &&
-            townPlayerInventory.InventoryController != null)
-        {
-            playerInventoryGridUI.BindPlayerInventory(
-                townPlayerInventory.InventoryController
-            );
-        }
-
         currentStock = stockInventory;
         selectedWeapon = null;
 
@@ -219,6 +211,17 @@ public class MerchantWeaponRepairController : MonoBehaviour
 
             RefreshUI();
             return false;
+        }
+
+        // 新しい修理画面は普段非表示。GridがAwake/OnEnableで初期化された後に
+        // BindPlayerInventoryを実行しないと、初回表示時に参照が未初期化になる。
+        if (playerInventoryGridUI != null &&
+            townPlayerInventory != null &&
+            townPlayerInventory.InventoryController != null)
+        {
+            playerInventoryGridUI.BindPlayerInventory(
+                townPlayerInventory.InventoryController
+            );
         }
 
         ActiveInstance = this;
@@ -526,6 +529,10 @@ public class MerchantWeaponRepairController : MonoBehaviour
             return;
         }
 
+        if (selectedWeapon != weaponItem)
+        {
+            PlaySelectSound();
+        }
         selectedWeapon = weaponItem;
         SetStatus(string.Empty);
         RefreshUI();
@@ -761,6 +768,12 @@ public class MerchantWeaponRepairController : MonoBehaviour
                     FindObjectsInactive.Include
                 );
         }
+    }
+
+    private void PlaySelectSound()
+    {
+        if (audioSource == null || weaponSelectSound == null) return;
+        audioSource.PlayOneShot(weaponSelectSound, Mathf.Clamp01(repairSoundVolume));
     }
 
     private void PlayRepairSound()

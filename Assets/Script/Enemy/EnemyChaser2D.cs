@@ -883,7 +883,13 @@ public class EnemyChaser2D : MonoBehaviour
 
         bool wasInvincible = playerHealth.IsInvincible;
 
-        playerHealth.TakeDamage(attackDamage);
+        // FACTION_STEP3_DAMAGE_START
+        FactionEnemyTargeting2D factionStep3Attacker = GetComponent<FactionEnemyTargeting2D>();
+        if (factionStep3Attacker != null && factionStep3Attacker.isActiveAndEnabled)
+            FactionCombatDamage2D.DealDamage(playerHealth, attackDamage, transform);
+        else
+            playerHealth.TakeDamage(attackDamage);
+        // FACTION_STEP3_DAMAGE_END
         nextAttackTime = Time.time + attackInterval;
 
         // ダメージが無敵で無効化された場合も、敵が攻撃動作をした事実は残します。
@@ -931,6 +937,24 @@ public class EnemyChaser2D : MonoBehaviour
 
     private void FindPlayer()
     {
+        // FACTION_STEP3_TARGET_START
+        FactionEnemyTargeting2D factionStep3 = GetComponent<FactionEnemyTargeting2D>();
+        if (factionStep3 != null && factionStep3.isActiveAndEnabled)
+        {
+            Transform previousFactionTarget = playerTransform;
+            factionStep3.ResolveTarget(playerTransform, detectionDistance,
+                Mathf.Max(detectionDistance, loseTargetDistance),
+                out playerTransform, out playerHealth);
+            if (previousFactionTarget != playerTransform)
+            {
+                hasDetectedPlayer = false;
+                ClearPathBlock();
+                failedJumpAttempts = 0;
+                isRecoveringFromWallHit = false;
+            }
+            return;
+        }
+        // FACTION_STEP3_TARGET_END
         if (playerTransform == null)
         {
             PlayerMove playerMove =

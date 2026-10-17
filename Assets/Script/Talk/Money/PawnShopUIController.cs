@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
@@ -32,6 +32,11 @@ public class PawnShopUIController : MonoBehaviour
 
     [Header("購入システム")]
     [SerializeField] private MerchantPurchaseController merchantPurchaseController;
+
+    [Header("町の一体型売買UI（v3.1 / 任意）")]
+    [Tooltip("指定時は希少品店・武器商人を同じ一体型決済画面で開きます。未設定なら旧タブ式のままです。")]
+    [SerializeField] private TownUnifiedTradeScreen2D unifiedTownTradeScreen;
+    [SerializeField] private bool useUnifiedTownTrade = true;
 
     [Header("Player Inventory接続")]
     [Tooltip(
@@ -88,6 +93,7 @@ public class PawnShopUIController : MonoBehaviour
     public bool IsSellTabActive =>
         isOpen &&
         !isRepairMode &&
+        !isUnifiedTradeMode &&
         sellPanel != null &&
         sellPanel.activeInHierarchy;
 
@@ -184,6 +190,7 @@ public class PawnShopUIController : MonoBehaviour
     private bool isOpen;
     private bool purchaseAvailable;
     private bool isRepairMode;
+    private bool isUnifiedTradeMode;
     private bool isApplicationQuitting;
 
     private void Awake()
@@ -228,7 +235,7 @@ public class PawnShopUIController : MonoBehaviour
         FindReferences();
         SetupTabButtons();
 
-        if (pawnShopPanel == null)
+        if (pawnShopPanel == null && !(useUnifiedTownTrade && unifiedTownTradeScreen != null))
         {
             LogWarning("Pawn Shop Panelが未設定です。");
             return;
@@ -243,6 +250,37 @@ public class PawnShopUIController : MonoBehaviour
                 "現在会話中のMerchantStockInventoryが見つからないため、" +
                 "購入・売却画面を開けません。"
             );
+            return;
+        }
+
+        // 町の一体型売買画面が設定されている場合は、従来タブ式の
+        // Purchase/Sell Controllerを開かず、出撃補充と同じ差額決済を使用する。
+        if (useUnifiedTownTrade && unifiedTownTradeScreen != null)
+        {
+            if (!TryReturnCartBeforeLeaving())
+            {
+                LogWarning("以前の売却カートをPlayerへ戻せないため画面を開きません。");
+                return;
+            }
+
+            merchantPurchaseController?.CloseShop();
+            weaponRepairController?.CloseRepairShop();
+            SetPanelVisible(false);
+            isRepairMode = false;
+            isUnifiedTradeMode = false;
+
+            bool opened = unifiedTownTradeScreen.Open(stock);
+            if (!opened)
+            {
+                LogWarning("一体型売買画面を開けませんでした。UIのGrid/Bridge参照を確認してください。");
+                return;
+            }
+
+            isUnifiedTradeMode = true;
+            purchaseAvailable = true;
+            isOpen = true;
+            ActiveInstance = this;
+            Log("一体型売買画面を開きました。店舗=" + stock.ShopName);
             return;
         }
 
@@ -350,6 +388,13 @@ public class PawnShopUIController : MonoBehaviour
             return;
         }
 
+        // 先に一体型売買画面を安全に閉じる。
+        if (isUnifiedTradeMode)
+        {
+            unifiedTownTradeScreen?.Close();
+            isUnifiedTradeMode = false;
+        }
+
         // 前回、売却カートへItemを残したまま別画面へ進んだ場合は先に戻す。
         ReturnOldSellCartIfNeeded();
 
@@ -407,7 +452,7 @@ public class PawnShopUIController : MonoBehaviour
 
     public void ShowPurchaseTab()
     {
-        if (isRepairMode)
+        if (isRepairMode || isUnifiedTradeMode)
         {
             return;
         }
@@ -424,7 +469,7 @@ public class PawnShopUIController : MonoBehaviour
 
     public void ShowSellTab()
     {
-        if (isRepairMode)
+        if (isRepairMode || isUnifiedTradeMode)
         {
             return;
         }
@@ -453,7 +498,24 @@ public class PawnShopUIController : MonoBehaviour
             return false;
         }
 
-        CaptureTownInventory();
+        // 統合UIと旧タブUIでは使用するPlayerGridが異なる場合がある。
+        // 統合UIは「生成時に指定したPlayerTradeInventoryBridge」から保存し、
+        // 古い売却タブのGridを保存して状態を上書きしない。
+        if (isUnifiedTradeMode)
+        {
+            unifiedTownTradeScreen?.CapturePlayerSession();
+        }
+        else
+        {
+            CaptureTownInventory();
+        }
+
+        // 一体型売買画面の未決済選択を解除し、非表示へ戻す。
+        if (isUnifiedTradeMode)
+        {
+            unifiedTownTradeScreen?.Close();
+            isUnifiedTradeMode = false;
+        }
 
         merchantPurchaseController?.CloseShop();
         weaponRepairController?.CloseRepairShop();

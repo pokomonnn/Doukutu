@@ -313,6 +313,45 @@ public class ItemBoxInventory : MonoBehaviour
     /// <summary>
     /// セーブデータから箱の中身を完全復元します。
     /// </summary>
+    /// <summary>
+    /// 収納済みのInventoryItem個体・位置・回転・武器状態を維持したまま縦の行数だけ拡張します。
+    /// 町の自宅保管箱やMerchant商品棚に限り、明示的に呼び出してください。
+    /// 保存済みの古い高さでRestoreされた後でも拡張できます。
+    /// </summary>
+    public bool EnsureGridHeightAtLeast(int minimumHeight)
+    {
+        minimumHeight = Mathf.Max(1, minimumHeight);
+        gridHeight = Mathf.Max(gridHeight, minimumHeight);
+        EnsureInitialized();
+
+        if (inventoryGrid == null || inventoryGrid.Height >= minimumHeight)
+            return true;
+
+        int oldWidth = inventoryGrid.Width;
+        int oldHeight = inventoryGrid.Height;
+        var snapshot = new List<InventoryItem>(inventoryGrid.Items);
+        inventoryGrid.Initialize(Mathf.Max(1, oldWidth), minimumHeight, true);
+        foreach (InventoryItem item in snapshot)
+        {
+            if (item == null || item.ItemData == null) continue;
+            if (inventoryGrid.TryPlaceItem(item, item.GridX, item.GridY, item.IsRotated))
+                continue;
+
+            // サイズを拡張するだけなら通常失敗しないが、想定外のデータでも
+            // 元のサイズへ戻し、アイテムを消した状態を確定させない。
+            Debug.LogError("ItemBoxInventory: Grid拡張時にItemの復元に失敗しました。旧Gridへ戻します。", this);
+            inventoryGrid.Initialize(Mathf.Max(1, oldWidth), Mathf.Max(1, oldHeight), true);
+            foreach (InventoryItem old in snapshot)
+            {
+                if (old != null && old.ItemData != null)
+                    inventoryGrid.TryPlaceItem(old, old.GridX, old.GridY, old.IsRotated);
+            }
+            return false;
+        }
+        NotifyInventoryChanged();
+        return true;
+    }
+
     public void RestoreInventoryFromSave(
         int savedWidth,
         int savedHeight,

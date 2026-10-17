@@ -1,0 +1,249 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e29e096d4c9a6b0488c0ad36ad81b6ea, type: 3}
+  m_Name: stage1_DungeonLoot
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonLootStageProfile2D
+  sceneName: stage1
+  stageItems:
+  - item: {fileID: 11400000, guid: bf974bef747c14a4c98ca4697374ef32, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 2de9c35856d0f8c49b41e624e76b48ac, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 2a7b205fa16f0804693118440c8bed47, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 7d88621b8ae5f8841868f17881572c82, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: d4937261a8aa0444c8efc55f8684f226, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 42f3f60972752cc458ecb91ca8c09d67, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: ec847cff2b69dce42a92d4ee9831b632, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 8b40dd3dc4640224ea61944f09c17ebc, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 0}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 0}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 056243be8f132bb41bf08f340afd2c1c, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 5f6b95c92584c814faee61c606ce8559, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: eef4584fb68c97c4d9633bf5159f6750, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 37461526cf7f32f40bbc9eb21792f151, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 3e51b58887e81ea43b12a0da593440d2, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 1a45e816f14b8164fb323b98bc3580a5, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 8aa14a2daf53edf45b7593ca60b59c6a, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: d325fabaf44f068438e3afcf09344903, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 344c07909548e9e4f936bae0da8c35e5, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: b94507d31f0e9f7458ea5050fd730678, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 3a65d4a8b8d2a5a449dbc27f0c770a94, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: b02bd82eefc60764999619ce9e88a113, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: ea4579549a15b734bb834844bddefb25, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: fd0d03f7159755042b20d1169b563dc6, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: e0d39b2bd145ca9438b5a59dcc10acba, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: f3835b2d6e5ac284a8c2df2d89ac793f, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 2ffc827a45106174da93501e67510f46, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: e9da217c0e463b84998c50834150abdd, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 1b311ca47cfdd40489ea194b40f75a7d, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  - item: {fileID: 11400000, guid: 1ad894b4b42ed2b46aac9d4b4f40b9e1, type: 2}
+    weight: 3
+    minAmount: 1
+    maxAmount: 1
+  boxes:
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: 8c97d3c818fb9e74baa765fe694f198d, type: 3}
+    prefabKey: 22e3fb211b204301a3ee6e3f2e02f058
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: de1bd08fa05a5894889b7e632dfec031, type: 3}
+    prefabKey: e172418513a44f8cb92110eb0a5edd35
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: 5da10b5bb015b3047941084e4ed063b8, type: 3}
+    prefabKey: 4feb8fa38bef4fac94c244abd7651503
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: 46635b28674519a4b8eadca4d7433070, type: 3}
+    prefabKey: 60735d804dac4903a6d31f8e8e09a74e
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: fc27e088ba130fb418acc663e5cb6dc0, type: 3}
+    prefabKey: 71e23d44c4d842b0b661688b2a78ec54
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: 74a0a3e28b5cad641a7cf1e962a548c0, type: 3}
+    prefabKey: 11f12a479bec4b7a80b22ee42c979baa
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: 2bd687891ed75274489e66f36cf29f2d, type: 3}
+    prefabKey: e86c3cfd1b5645fabfe72f760db2b33d
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: 3e4d7c797e3ee4d48929935c1082f5fe, type: 3}
+    prefabKey: 2141bad4afe84e64825082fddc97e3fe
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: 33691d758a81f0445a977511f98d1a10, type: 3}
+    prefabKey: e7e30bf7f2eb4e36b09096fe8174ea4b
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: 33691d758a81f0445a977511f98d1a10, type: 3}
+    prefabKey: e7e30bf7f2eb4e36b09096fe8174ea4b
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: 71814cd55346c294688a024c5762c01b, type: 3}
+    prefabKey: 489f5652514f4e3da47b12652d2ed5df
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: 0005ad9be50f59a479f036b97f305648, type: 3}
+    prefabKey: 877a65c350b2481c85609081498822a4
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: 0874e19940fd2b7418aa25b1589a9c16, type: 3}
+    prefabKey: a558f236f53c45359366895b26bff43d
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []
+  - itemBoxPrefab: {fileID: 5934614553322763888, guid: b520ccafe4f6eb744932b2c2c9ad328d, type: 3}
+    prefabKey: 31f02ab2778d4a899abb9a2a36a70de4
+    enabled: 1
+    emptyChancePercent: 10
+    minDraws: 2
+    maxDraws: 5
+    useOwnItemTable: 0
+    ownItemTable: []

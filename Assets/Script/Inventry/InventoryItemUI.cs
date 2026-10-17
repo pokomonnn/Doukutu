@@ -193,6 +193,11 @@ public class InventoryItemUI : MonoBehaviour,
 
     public InventoryItem Item => inventoryItem;
 
+    // v3.3: 装備スロットの事前判定で、ドラッグ中のアイテム情報を参照します。
+    public static InventoryItemUI ActiveDragUI { get; private set; }
+    public InventoryGridUI DragSourceGrid => isDragging ? gridUI : null;
+    public int DragRotationSteps => dragRotationSteps;
+
     private void Update()
     {
         // 商人ShopのOpen / Closeや商人変更時に、
@@ -341,6 +346,7 @@ public class InventoryItemUI : MonoBehaviour,
 
     private void OnDisable()
     {
+        if (ActiveDragUI == this) ActiveDragUI = null;
         InventoryItemTooltipUI.HideFor(inventoryItem);
     }
 
@@ -628,6 +634,7 @@ public class InventoryItemUI : MonoBehaviour,
         }
 
         isDragging = true;
+        ActiveDragUI = this;
         originalParent = transform.parent;
 
         // ドラッグ開始時の向きを保存
@@ -1289,6 +1296,7 @@ public class InventoryItemUI : MonoBehaviour,
 
     private void FinishDrag()
     {
+        if (ActiveDragUI == this) ActiveDragUI = null;
         isDragging = false;
         if (rotationAnimation != null) { StopCoroutine(rotationAnimation); rotationAnimation = null; }
         if (iconImage != null) iconImage.rectTransform.localScale = Vector3.one;

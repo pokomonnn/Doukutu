@@ -40,6 +40,12 @@ public class ExpeditionSupplyPanelController2D : MonoBehaviour
         new Keyframe(1f, 1f, 0f, 0f));
     [SerializeField] private bool hidePanelOnAwake = true;
 
+    [Header("戻るときの縮小アニメーション")]
+    [SerializeField] private bool playCloseAnimation = true;
+    [SerializeField, Min(0.05f)] private float closeDuration = 0.25f;
+    [SerializeField, Range(0.5f, 1f)] private float closeEndScale = 0.88f;
+    [SerializeField] private AnimationCurve closeEase = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
     [Header("出撃時の暗転演出")]
     [Tooltip("出撃ボタンを押した後、画面全体を黒くしてから出撃処理を開始します。")]
     [SerializeField] private bool playDepartureFade = true;
@@ -54,12 +60,21 @@ public class ExpeditionSupplyPanelController2D : MonoBehaviour
     [SerializeField] private AudioClip closeClip;
     [Tooltip("補充画面側から鳴らす任意の出撃SE。旧UI生成時は決済SEが割り当てられています。")]
     [SerializeField] private AudioClip departClip;
-    [Tooltip("通常はOFF。出撃先のStageExpeditionPanelController側で出撃SEを鳴らすため、補充画面側のSEは二重再生しません。専用SEを別途鳴らしたい場合だけONにしてください。")]
-    [SerializeField] private bool playAdditionalDepartureClip = false;
+    [Tooltip("旧版のInspector値の互換用。現在は使用しません（決済SEの誤再生防止）。")]
+    [SerializeField, HideInInspector] private bool playAdditionalDepartureClip = false;
     [SerializeField, Range(0f, 1f)] private float soundVolume = 0.85f;
+
+    [Header("出撃音の互換設定")]
+    [Tooltip("Stage側のDepart Soundが空の場合だけ使用する予備の出撃SEです。決済音は指定しないでください。")]
+    [SerializeField] private AudioClip immediateDepartureClip;
+    // v2.6のInspector値を保持するだけ。v2.7はStage側と直接連携するためミュート不要。
+    [SerializeField, HideInInspector] private AudioSource stageDepartureAudioSource;
+    [SerializeField, HideInInspector] private bool suppressDelayedStageDepartureSound = true;
+    [SerializeField, HideInInspector, Min(0f)] private float stageAudioMuteGraceSeconds = 2f;
 
     private StageExpeditionPanelController stagePanel;
     private Coroutine openCoroutine;
+    private bool closingInProgress;
     private CanvasGroup group;
     private RectTransform panelRect;
     private Vector2 originalPosition;
@@ -105,7 +120,7 @@ public class ExpeditionSupplyPanelController2D : MonoBehaviour
 
     public bool OpenForStage(StageExpeditionPanelController origin)
     {
-        if (isOpen || departureInProgress || origin == null || origin.CurrentStageData == null || supplyPanelRoot == null) return false;
+        if (isOpen || closingInProgress || departureInProgress || origin == null || origin.CurrentStageData == null || supplyPanelRoot == null) return false;
         if (origin.PanelRoot != null &&
             (origin.PanelRoot == supplyPanelRoot || supplyPanelRoot.transform.IsChildOf(origin.PanelRoot.transform)))
         {
@@ -118,6 +133,7 @@ public class ExpeditionSupplyPanelController2D : MonoBehaviour
         isOpen = true;
         supplyPanelRoot.SetActive(true);
         supplyPanelRoot.transform.SetAsLastSibling();
+        EnsureWeaponPreviewVisible();
         if (stageNameText != null) stageNameText.text = origin.CurrentStageData.StageName;
         if (entryPointNameText != null)
             entryPointNameText.text = origin.SelectedEntryPoint != null
@@ -127,8 +143,11 @@ public class ExpeditionSupplyPanelController2D : MonoBehaviour
         if (unifiedTrade != null && !unifiedTrade.OpenTrade(supplyMerchantStock))
             Debug.LogWarning("[ExpeditionSupply] 通常売買の接続に失敗しました。Inventoryと商人Stockの参照を確認してください。", this);
         medicalKitSupplyShop?.RefreshUI();
-        if (backButton != null) backButton.interactable = true;
-        if (finalDepartButton != null) finalDepartButton.interactable = true;
+        // TradeのInventory接続後に装備武器欄を再更新する。
+        ExpeditionEquippedWeaponPreview2D preview =
+            supplyPanelRoot.GetComponentInChildren<ExpeditionEquippedWeaponPreview2D>(true);
+        if (preview != null) preview.Refresh();
+        SetSupplyButtonsInteractable(true);
         Play(openClip);
         if (openCoroutine != null) StopCoroutine(openCoroutine);
         if (group != null)
@@ -179,7 +198,7 @@ public class ExpeditionSupplyPanelController2D : MonoBehaviour
 
     public void BackToStage()
     {
-        if (!isOpen || departureInProgress) return;
+        if (!isOpen || closingInProgress || departureInProgress) return;
         if (existingPawnShop != null && existingPawnShop.IsOpen && !existingPawnShop.TryClosePawnShop())
         {
             SetStatus("売却カートが閉じられません。Inventoryの空きを確認してください。");
@@ -187,17 +206,105 @@ public class ExpeditionSupplyPanelController2D : MonoBehaviour
         }
         if (openCoroutine != null) StopCoroutine(openCoroutine);
         openCoroutine = null;
+        closingInProgress = true;
+        SetSupplyButtonsInteractable(false);
+        if (group != null)
+        {
+            group.interactable = false;
+            group.blocksRaycasts = false;
+        }
+        Play(closeClip); // 押した瞬間に鳴らす。
+        if (playCloseAnimation && panelRect != null && group != null)
+            StartCoroutine(CloseRoutine());
+        else
+            FinishClose();
+    }
+
+    private IEnumerator CloseRoutine()
+    {
+        float elapsed = 0f;
+        float duration = Mathf.Max(0.05f, closeDuration);
+        float beginningAlpha = group != null ? group.alpha : 1f;
+        Vector3 beginningScale = panelRect.localScale;
+        Vector2 beginningPosition = panelRect.anchoredPosition;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float eased = closeEase != null ? Mathf.Clamp01(closeEase.Evaluate(t)) : t;
+            group.alpha = Mathf.Lerp(beginningAlpha, 0f, eased);
+            panelRect.localScale = Vector3.Lerp(beginningScale, originalScale * closeEndScale, eased);
+            panelRect.anchoredPosition = Vector2.Lerp(beginningPosition,
+                originalPosition + new Vector2(0f, startYOffset * 0.25f), eased);
+            yield return null;
+        }
+        FinishClose();
+    }
+
+    private void FinishClose()
+    {
         unifiedTrade?.CloseTrade();
-        Play(closeClip);
         isOpen = false;
-        supplyPanelRoot.SetActive(false);
+        if (supplyPanelRoot != null) supplyPanelRoot.SetActive(false);
+        // 次回開いたときは必ず等倍・正位置からアニメーションを開始する。
+        if (panelRect != null)
+        {
+            panelRect.localScale = originalScale;
+            panelRect.anchoredPosition = originalPosition;
+        }
+        if (group != null) group.alpha = 1f;
+        closingInProgress = false;
         stagePanel?.ReturnFromSupply();
+    }
+
+    private void SetSupplyButtonsInteractable(bool interactable)
+    {
+        if (backButton != null) backButton.interactable = interactable;
+        if (finalDepartButton != null) finalDepartButton.interactable = interactable;
+        if (openNormalItemShopButton != null) openNormalItemShopButton.interactable = interactable;
+    }
+
+    /// <summary>
+    /// 自動生成UIの武器表示領域が非表示になっていれば復元する。
+    /// 装備データを読み取ってアイコンを更新するのは既存の
+    /// ExpeditionEquippedWeaponPreview2D の責務（このクラスはデータを捏造しない）。
+    /// </summary>
+    private void EnsureWeaponPreviewVisible()
+    {
+        if (supplyPanelRoot == null) return;
+        Transform slot = supplyPanelRoot.transform.Find("WeaponSlot");
+        if (slot == null)
+        {
+            // 旧Sceneで階層が1段変わっている場合にも対応。
+            Transform[] descendants = supplyPanelRoot.GetComponentsInChildren<Transform>(true);
+            foreach (Transform candidate in descendants)
+                if (candidate != null && candidate.name == "WeaponSlot")
+                {
+                    slot = candidate;
+                    break;
+                }
+        }
+        if (slot == null)
+        {
+            Debug.LogWarning("[ExpeditionSupply] WeaponSlot が見つかりません。UI生成スクリプトとシーンを確認してください。", this);
+            return;
+        }
+        if (!slot.gameObject.activeSelf) slot.gameObject.SetActive(true);
+        // 古いシーンでPreviewが欠けてもWeaponSlotを作り直さずに復旧。
+        ExpeditionEquippedWeaponPreview2D preview =
+            slot.GetComponent<ExpeditionEquippedWeaponPreview2D>();
+        if (preview == null)
+            preview = slot.gameObject.AddComponent<ExpeditionEquippedWeaponPreview2D>();
+        preview.enabled = true;
+        preview.Refresh();
+        // パネルは元の座標のまま、装飾パーツより前面に置いて見切れを防ぐ。
+        slot.SetAsLastSibling();
     }
 
     public void DepartToDungeon()
     {
         // 多重クリックや別画面からの連続呼び出しを防止。
-        if (!isOpen || stagePanel == null || departureInProgress) return;
+        if (!isOpen || closingInProgress || stagePanel == null || departureInProgress) return;
         if (openCoroutine != null) return;
 
         // 暗転前に既存の出撃条件をチェック。未決済なら何も変更しない。
@@ -214,18 +321,22 @@ public class ExpeditionSupplyPanelController2D : MonoBehaviour
             return;
         }
 
+        // Stage側の正規のSEを、フェード開始より前（押した瞬間）に鳴らす。
+        // 同時に出撃地点・遷移先の検証を行うので、無効な出撃は暗転しない。
+        if (!stagePanel.TryPlayDepartureSoundImmediatelyFromSupply(
+                immediateDepartureClip, audioSource, soundVolume))
+        {
+            SetStatus("出撃できません。ステージ・出撃地点を確認してください。");
+            return;
+        }
+
         departureInProgress = true;
         if (finalDepartButton != null) finalDepartButton.interactable = false;
         if (backButton != null) backButton.interactable = false;
         if (openNormalItemShopButton != null) openNormalItemShopButton.interactable = false;
 
-        // 旧自動生成UIは departClip に決済SE（checkoutSfx）を設定していました。
-        // StageExpeditionPanelController が鳴らす出撃SEと重ならないよう、
-        // 補充画面からの追加SEは明示的にONにした場合だけ再生します。
-        if (playAdditionalDepartureClip)
-        {
-            Play(departClip);
-        }
+        // Stage側がSEの再生済み状態を管理するため二重再生しない。
+        // 旧departClip（決済音）は引き続き一切使用しない。
         StartCoroutine(DepartureRoutine());
     }
 
@@ -263,7 +374,9 @@ public class ExpeditionSupplyPanelController2D : MonoBehaviour
         {
             try
             {
-                departed = stagePanel.StartFinalDepartureFromSupply();
+                // Stage側は黒画面を再作成せず、出撃の保存と遷移だけ実行する。
+                departed = stagePanel.StartFinalDepartureFromSupply(
+                    playDepartureFade && fadeGroup != null);
             }
             catch (System.Exception ex)
             {
@@ -279,6 +392,8 @@ public class ExpeditionSupplyPanelController2D : MonoBehaviour
             yield break;
         }
 
+        // 出撃できなかった場合、次回の押下で正しくSEを再生する。
+        if (stagePanel != null) stagePanel.CancelPreparedDepartureSoundFromSupply();
         // 出撃を開始できなかった場合は元の画面へ戻して再操作可能にする。
         SetStatus("出撃できません。ステージ・出撃地点を確認してください。");
         if (fadeGroup != null)

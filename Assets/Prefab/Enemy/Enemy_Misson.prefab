@@ -20,6 +20,8 @@ GameObject:
   - component: {fileID: 6478227019497572792}
   - component: {fileID: 5250892082723332857}
   - component: {fileID: 283579110190223422}
+  - component: {fileID: 7822792394860289182}
+  - component: {fileID: 968011671671984534}
   m_Layer: 11
   m_Name: Enemy_Misson
   m_TagString: Untagged
@@ -188,6 +190,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 20
   invincibilityDuration: 0.5
+  enableDamageDebugLog: 1
+  includePlayerDamageInDebugLog: 0
+  logBlockedDamage: 1
   audioSource: {fileID: 0}
   damageSound: {fileID: 0}
   damageSoundVolume: 0.8
@@ -213,6 +218,9 @@ MonoBehaviour:
     m_Bits: 64
   moveSpeed: 2.2
   stopDistance: 0.55
+  combatMovementStyle: 0
+  keepDistanceMinimum: 3
+  keepDistanceMaximum: 6
   avoidDeepCliffs: 1
   cliffCheckLayers:
     serializedVersion: 2
@@ -243,6 +251,7 @@ MonoBehaviour:
   successfulJumpForwardDistance: 0.35
   giveUpAfterFailedJumps: 1
   maxFailedJumpAttemptsBeforeGivingUp: 2
+  enableBuiltInMeleeAttack: 1
   attackDistance: 0.8
   attackDamage: 10
   attackInterval: 1
@@ -271,6 +280,8 @@ MonoBehaviour:
   enemyChaser: {fileID: 8963955655255748397}
   hitReaction: {fileID: 7829546619540381589}
   dropTable: {fileID: 6545879127159440864}
+  rangedAttack: {fileID: 0}
+  sanityAura: {fileID: 0}
   additionalBehavioursToDisable: []
   deathTriggerName: 
   enableDeathSlide: 1
@@ -332,6 +343,8 @@ MonoBehaviour:
   knockbackSpeed: 4.5
   upwardKnockbackSpeed: 0.35
   hitStunDuration: 0.14
+  knockbackResistance: 0
+  hitStunResistance: 0
   enableHitFlash: 1
   flashDuration: 0.14
   flashCount: 2
@@ -379,11 +392,15 @@ MonoBehaviour:
   health: {fileID: 1330806160280863954}
   enemyRigidbody: {fileID: 5730843804474000369}
   enemyChaser: {fileID: 8963955655255748397}
+  rangedAttack: {fileID: 0}
+  sanityAura: {fileID: 0}
   isMovingBoolName: IsMoving
   hasTargetBoolName: HasTarget
   moveSpeedFloatName: MoveSpeed
   movingSpeedThreshold: 0.03
   attackTriggerName: Attack
+  rangedAttackTriggerName: RangedAttack
+  specialAttackTriggerName: SpecialAttack
   hitTriggerName: Hit
   deathTriggerName: Die
   resetMovementBoolsOnDeath: 1
@@ -424,5 +441,40 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MissionEnemyTarget2D
   characterHealth: {fileID: 1330806160280863954}
+  targetIdentity: {fileID: 0}
   compassAnchor: {fileID: 0}
   showDebugLogs: 0
+--- !u!114 &7822792394860289182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4091758793337104988}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99e6ae13165e3af418b14e09fa5daf06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionMember2D
+  factionId: monsters
+  monsterType: 1
+  retaliateWhenAttacked: 1
+--- !u!114 &968011671671984534
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4091758793337104988}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bd308b9789dc954392c28b9d0e874db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionEnemyTargeting2D
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  scanInterval: 0.35
+  retaliationDuration: 9
+  printTargetChanges: 0
+  drawRangeGizmo: 1

@@ -1170,6 +1170,7 @@ GameObject:
   - component: {fileID: 8034558912045858771}
   - component: {fileID: 2116929210091504896}
   - component: {fileID: 8068436586029113970}
+  - component: {fileID: 1711992967331033626}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -2482,6 +2483,21 @@ MonoBehaviour:
   hungerDebuff: {fileID: 0}
   overLimitDebuff: {fileID: 0}
   showDebugLogs: 1
+--- !u!114 &1711992967331033626
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6641261635897217815}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99e6ae13165e3af418b14e09fa5daf06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionMember2D
+  factionId: player
+  monsterType: 0
+  retaliateWhenAttacked: 0
 --- !u!1 &6718992130171538360
 GameObject:
   m_ObjectHideFlags: 0

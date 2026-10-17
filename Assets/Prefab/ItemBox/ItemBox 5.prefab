@@ -47,6 +47,7 @@ GameObject:
   - component: {fileID: 4861455253024811835}
   - component: {fileID: 7290886218217426457}
   - component: {fileID: 3003640536789904251}
+  - component: {fileID: 2489633414781683531}
   m_Layer: 0
   m_Name: ItemBox 5
   m_TagString: Untagged
@@ -385,3 +386,17 @@ MonoBehaviour:
   pulse: 1
   pulseSpeed: 2
   minimumAlpha: 0.7
+--- !u!114 &2489633414781683531
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5934614553322763888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f387e934f4cf0a94a83699d5493b1adb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonLootBoxMarker2D
+  prefabKey: 11f12a479bec4b7a80b22ee42c979baa
+  debugLog: 0

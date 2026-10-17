@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -208,6 +208,9 @@ public class StageExpeditionPanelController : MonoBehaviour
     private Coroutine departureCoroutine;
     private Vector3 panelBaseScale = Vector3.one;
     private bool isDeparting;
+    // 補充画面からの出撃SEを押下時点で先行再生したか。
+    // Stage側のDepartureRoutineで重複再生しないためのフラグ。
+    private bool departureSoundPlayedEarlyForSupply;
     private bool showingSupplyScreen;
     private CanvasGroup supplyHiddenCanvasGroup;
     private float savedPanelAlpha = 1f;
@@ -306,6 +309,7 @@ public class StageExpeditionPanelController : MonoBehaviour
         }
 
         isDeparting = false;
+        departureSoundPlayedEarlyForSupply = false;
     }
 
     private void OnDestroy()
@@ -372,6 +376,7 @@ public class StageExpeditionPanelController : MonoBehaviour
         RefreshMissionSection();
 
         isDeparting = false;
+        departureSoundPlayedEarlyForSupply = false;
         ResetDepartureFade();
 
         if (departButton != null)
@@ -421,21 +426,76 @@ public class StageExpeditionPanelController : MonoBehaviour
     {
         if (isDeparting) return;
         RestorePanelAfterSupply();
+        departureSoundPlayedEarlyForSupply = false;
         if (departButton != null) departButton.interactable = true;
         if (closeButton != null) closeButton.interactable = true;
         SetEntryPointButtonsInteractable(true);
         SetMissionButtonsInteractable(true);
     }
 
-    /// <summary>補充画面の最後の『出撃する』ボタンからのみ呼び出します。</summary>
+    /// <summary>
+    /// 補充画面の「出撃する」押下直後に呼ぶ。
+    /// Stageで設定されている本来の出撃SEを今すぐ再生し、
+    /// 暗転後にDepartureRoutineで同じ音が重複しないよう記録する。
+    /// 引数はStageに出撃SEがない旧Sceneだけのフォールバック。
+    /// </summary>
+    public bool TryPlayDepartureSoundImmediatelyFromSupply(
+        AudioClip fallbackClip = null,
+        AudioSource fallbackSource = null,
+        float fallbackVolume = 1f)
+    {
+        if (!useSupplyPreparationScreen || !showingSupplyScreen ||
+            isDeparting || !isActiveAndEnabled || !CanStartDeparture())
+            return false;
+
+        if (departureSoundPlayedEarlyForSupply) return false;
+
+        if (departSound != null)
+        {
+            PlayDepartSound();
+        }
+        else if (fallbackClip != null)
+        {
+            if (fallbackSource != null && fallbackSource.isActiveAndEnabled)
+                fallbackSource.PlayOneShot(fallbackClip, Mathf.Clamp01(fallbackVolume));
+            else
+                PlayDetachedUISound(fallbackClip, fallbackVolume);
+        }
+        else
+        {
+            Debug.LogWarning(
+                "[StageExpeditionPanelController] 出撃SEが未設定です。InspectorのDepart Soundを確認してください。",
+                this);
+        }
+
+        departureSoundPlayedEarlyForSupply = true;
+        return true;
+    }
+
+    /// <summary>補充画面で出撃開始を取り消したときの先行SEフラグ解除。</summary>
+    public void CancelPreparedDepartureSoundFromSupply()
+    {
+        if (!isDeparting) departureSoundPlayedEarlyForSupply = false;
+    }
+
+    /// <summary>旧呼び出し元との互換性を維持します。</summary>
     public bool StartFinalDepartureFromSupply()
+    {
+        return StartFinalDepartureFromSupply(false);
+    }
+
+    /// <summary>
+    /// 既に補充画面で全面暗転済みなら、Stage側の2回目の暗転と待機を省略。
+    /// 出撃地点保存・ミッション受注・既存SceneTransitionはそのまま実行。
+    /// </summary>
+    public bool StartFinalDepartureFromSupply(bool supplyFadeAlreadyCompleted)
     {
         if (!showingSupplyScreen || !useSupplyPreparationScreen)
         {
             Debug.LogWarning("[StageExpeditionPanelController] 補充画面を経由していないため出撃を中止しました。", this);
             return false;
         }
-        return TryStartFinalDeparture();
+        return TryStartFinalDeparture(supplyFadeAlreadyCompleted);
     }
 
     private bool CanStartDeparture()
@@ -464,10 +524,10 @@ public class StageExpeditionPanelController : MonoBehaviour
         return true;
     }
 
-    private bool TryStartFinalDeparture()
+    private bool TryStartFinalDeparture(bool supplyFadeAlreadyCompleted = false)
     {
         if (isDeparting || !isActiveAndEnabled || !CanStartDeparture()) return false;
-        departureCoroutine = StartCoroutine(DepartureRoutine());
+        departureCoroutine = StartCoroutine(DepartureRoutine(supplyFadeAlreadyCompleted));
         return true;
     }
 
@@ -543,9 +603,11 @@ public class StageExpeditionPanelController : MonoBehaviour
         }
     }
 
-    private IEnumerator DepartureRoutine()
+    private IEnumerator DepartureRoutine(bool supplyFadeAlreadyCompleted)
     {
         isDeparting = true;
+        bool skipSound = departureSoundPlayedEarlyForSupply;
+        departureSoundPlayedEarlyForSupply = false;
 
         PrepareEntryPointSelectionForDeparture();
 
@@ -559,36 +621,48 @@ public class StageExpeditionPanelController : MonoBehaviour
         SetEntryPointButtonsInteractable(false);
         SetMissionButtonsInteractable(false);
 
-        PlayDepartSound();
-        EnsureDepartureFadeVisual();
+        if (!skipSound) PlayDepartSound();
 
-        if (departureFadeCanvasGroup != null)
+        // 補充画面側は既に最前面に黒いCanvasを持っているので、
+        // Stageの別Canvasを生成して画面を二重に暗転させる必要はない。
+        if (!supplyFadeAlreadyCompleted)
         {
-            departureFadeCanvasGroup.alpha = 0f;
-            departureFadeCanvasGroup.blocksRaycasts = true;
-            departureFadeCanvasGroup.interactable = true;
-            departureFadeCanvasGroup.transform.SetAsLastSibling();
-        }
-
-        float delay = Mathf.Max(0f, departureDelaySeconds);
-        float fadeDuration = Mathf.Max(0.01f, departureFadeDuration);
-        float totalDuration = Mathf.Max(delay, fadeDuration);
-        float elapsed = 0f;
-
-        while (elapsed < totalDuration)
-        {
-            elapsed += Time.unscaledDeltaTime;
+            EnsureDepartureFadeVisual();
 
             if (departureFadeCanvasGroup != null)
             {
-                float fadeT = Mathf.Clamp01(elapsed / fadeDuration);
-                departureFadeCanvasGroup.alpha = Mathf.SmoothStep(0f, 1f, fadeT);
+                departureFadeCanvasGroup.alpha = 0f;
+                departureFadeCanvasGroup.blocksRaycasts = true;
+                departureFadeCanvasGroup.interactable = true;
+                departureFadeCanvasGroup.transform.SetAsLastSibling();
             }
 
+            float delay = Mathf.Max(0f, departureDelaySeconds);
+            float fadeDuration = Mathf.Max(0.01f, departureFadeDuration);
+            float totalDuration = Mathf.Max(delay, fadeDuration);
+            float elapsed = 0f;
+
+            while (elapsed < totalDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+
+                if (departureFadeCanvasGroup != null)
+                {
+                    float fadeT = Mathf.Clamp01(elapsed / fadeDuration);
+                    departureFadeCanvasGroup.alpha = Mathf.SmoothStep(0f, 1f, fadeT);
+                }
+
+                yield return null;
+            }
+
+            if (departureFadeCanvasGroup != null) departureFadeCanvasGroup.alpha = 1f;
+        }
+        else
+        {
+            // Stage側の処理を1フレーム分離し、ボタンのOnClick中に
+            // シーンが即時破棄されることを防ぐ（補充画面の黒Canvasは維持）。
             yield return null;
         }
-
-        if (departureFadeCanvasGroup != null) departureFadeCanvasGroup.alpha = 1f;
 
         SceneTransitionButton transitionButton = selectedTransitionButton;
         departureCoroutine = null;

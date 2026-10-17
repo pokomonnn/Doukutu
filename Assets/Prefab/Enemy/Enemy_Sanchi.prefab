@@ -133,6 +133,8 @@ GameObject:
   - component: {fileID: 7005886438022472650}
   - component: {fileID: 5338500716690516690}
   - component: {fileID: 2069411104809567984}
+  - component: {fileID: 6146756731377757198}
+  - component: {fileID: 3374383641696993389}
   m_Layer: 11
   m_Name: Enemy_Sanchi
   m_TagString: Untagged
@@ -600,6 +602,40 @@ MonoBehaviour:
     m_Bits: 0
   showRangeGizmo: 1
   showLogs: 0
+--- !u!114 &6146756731377757198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3040853378183444072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99e6ae13165e3af418b14e09fa5daf06, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionMember2D
+  factionId: monsters
+  monsterType: 1
+  retaliateWhenAttacked: 1
+--- !u!114 &3374383641696993389
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3040853378183444072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bd308b9789dc954392c28b9d0e874db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionEnemyTargeting2D
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  scanInterval: 0.35
+  retaliationDuration: 9
+  printTargetChanges: 0
+  drawRangeGizmo: 1
 --- !u!1 &3293852923392645633
 GameObject:
   m_ObjectHideFlags: 0

@@ -199,7 +199,7 @@ MonoBehaviour:
   damage: 10
   targetLayers:
     serializedVersion: 2
-    m_Bits: 65544
+    m_Bits: 67592
   hitOnlyOncePerTarget: 1
   destroyOnHit: 1
   enableContinuousHitSweep: 1
