@@ -1171,6 +1171,7 @@ GameObject:
   - component: {fileID: 2116929210091504896}
   - component: {fileID: 8068436586029113970}
   - component: {fileID: 1711992967331033626}
+  - component: {fileID: 7995952958108774340}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -2395,7 +2396,7 @@ MonoBehaviour:
   npcSlot0Treats: 4
   npcSlot1Treats: 2
   npcSlot2Treats: 1
-  showDebugLogs: 1
+  showDebugLogs: 0
   allowedItems:
   - {fileID: 11400000, guid: c9fd4e26b48a0ab4995b954c5847b9c7, type: 2}
   - {fileID: 11400000, guid: 0d2dd774c2af1554fb1d5a54475d3883, type: 2}
@@ -2498,6 +2499,26 @@ MonoBehaviour:
   factionId: player
   monsterType: 0
   retaliateWhenAttacked: 0
+--- !u!114 &7995952958108774340
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6641261635897217815}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd18cf7c36d09c34f8721e9d3e393e7e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterAINoiseEmitter2D
+  autoFootsteps: 1
+  minimumWalkingSpeed: 0.3
+  footstepInterval: 0.55
+  footstepHearingRadius: 4
+  gunshotAudioSources:
+  - {fileID: 0}
+  gunshotHearingRadius: 314.9
+  debugLogs: 1
 --- !u!1 &6718992130171538360
 GameObject:
   m_ObjectHideFlags: 0

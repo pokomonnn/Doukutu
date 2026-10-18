@@ -135,6 +135,10 @@ GameObject:
   - component: {fileID: 6628874356456904786}
   - component: {fileID: 3861166298326218043}
   - component: {fileID: 6221461511517068568}
+  - component: {fileID: 2059634020017738441}
+  - component: {fileID: 7775196102900000240}
+  - component: {fileID: 6583845886693845767}
+  - component: {fileID: 8746000767295557961}
   m_Layer: 16
   m_Name: "\u30C9\u30EF\u30FC\u30D5"
   m_TagString: Untagged
@@ -409,7 +413,7 @@ MonoBehaviour:
   deathSound: {fileID: 0}
   deathSoundVolume: 0.9
   deathSoundSpatialBlend: 0
-  destroyAfterDeath: 1
+  destroyAfterDeath: 0
   destroyDelay: 1.2
   onEnemyDied:
     m_PersistentCalls:
@@ -515,6 +519,125 @@ MonoBehaviour:
   factionId: dwarves
   monsterType: 0
   retaliateWhenAttacked: 1
+--- !u!114 &2059634020017738441
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4616794928283158267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd91a2548950a8c4c9570fbb31199cb9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterWander2D
+  mode: 1
+  moveSpeed: 1.2
+  wanderRadius: 4
+  minWaitSeconds: 1
+  maxWaitSeconds: 3
+  arrivalDistance: 0.25
+  returnHomeAfterCombat: 1
+  patrolPoints: []
+  pingPongPatrol: 0
+  avoidDeepCliffs: 1
+  groundLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  forwardProbe: 0.14
+  cliffProbeDistance: 6
+  maxSafeDrop: 4.5
+  turnAroundAtWalls: 1
+  approachHostilesWithGuard: 1
+  guardApproachSpeed: 1.6
+  useDropPositionAsHome: 1
+  waitAfterDrop: 2
+  spriteRenderer: {fileID: 0}
+  spriteFacesRightByDefault: 1
+  drawGizmos: 1
+  printStateChanges: 0
+--- !u!114 &7775196102900000240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4616794928283158267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bd308b9789dc954392c28b9d0e874db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionEnemyTargeting2D
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  scanInterval: 0.35
+  retaliationDuration: 9
+  printTargetChanges: 1
+  drawRangeGizmo: 1
+--- !u!114 &6583845886693845767
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4616794928283158267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e35ecf3c1c3ab34c97dd0fcde07cef6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterAIInvestigation2D
+  hearFootsteps: 1
+  hearGunshots: 1
+  investigateUnknownSources: 0
+  onlyInvestigateHostileSources: 1
+  searchAfterLosingTarget: 1
+  investigationMoveSpeed: 1.7
+  arrivalDistanceX: 0.35
+  searchRadius: 1.6
+  searchPointCount: 3
+  searchPauseSeconds: 1
+  maxInvestigationSeconds: 15
+  reportHostileToAllies: 1
+  respondToAllyAlerts: 1
+  allyAlertRadius: 10
+  alertCooldownSeconds: 5
+  showGizmo: 1
+  debugLogs: 0
+--- !u!114 &8746000767295557961
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4616794928283158267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd9798b72d6603a459995378c6cd5023, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterAIFearFlee2D
+  fleeWhenLowHealth: 1
+  fleeHealthRatio: 0.2562
+  stopFleeHealthRatio: 0.2765
+  fearResponse: 0
+  fearStartDistance: 4.5
+  threatScanDistance: 7
+  reactToIncomingHostility: 1
+  threatLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  fleeSpeed: 3.4
+  panicHoldSeconds: 2.5
+  calmDownSeconds: 1.2
+  rescanInterval: 0.18
+  characterAnimator: {fileID: 0}
+  fleeingBoolName: IsFleeing
+  coweringBoolName: IsCowering
+  debugLogs: 0
+  showGizmo: 1
 --- !u!1 &6017319517165086994
 GameObject:
   m_ObjectHideFlags: 0

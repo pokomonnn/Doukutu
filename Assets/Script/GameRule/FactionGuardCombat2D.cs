@@ -26,10 +26,18 @@ public sealed class FactionGuardCombat2D : MonoBehaviour
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private bool spriteFacesRightByDefault = true;
 
+    // CharacterWander2Dが近接攻撃可能な距離まで接近するための公開値。
+    // Guardの攻撃・派閥判定そのものは従来どおり。
+    public float AttackDistance => attackDistance;
+    public Transform CurrentTarget => selected;
+
     public event Action AttackPerformed;
 
     private FactionEnemyTargeting2D targeting;
     private CharacterHealth ownHealth;
+    private CarryableObject2D carryable;
+    private CharacterAIFearFlee2D fearAI;
+    private CharacterAIPersonality2D personalityAI;
     private Transform selected;
     private float nextAttackTime;
 
@@ -37,6 +45,9 @@ public sealed class FactionGuardCombat2D : MonoBehaviour
     {
         targeting = GetComponent<FactionEnemyTargeting2D>();
         ownHealth = GetComponent<CharacterHealth>();
+        carryable = GetComponent<CarryableObject2D>();
+        fearAI = GetComponent<CharacterAIFearFlee2D>();
+        personalityAI = GetComponent<CharacterAIPersonality2D>();
         if (spriteRenderer == null) spriteRenderer = GetComponentInChildren<SpriteRenderer>(true);
         if (animator == null) animator = GetComponentInChildren<Animator>(true);
     }
@@ -44,9 +55,13 @@ public sealed class FactionGuardCombat2D : MonoBehaviour
     private void Start()
     {
         // リフレクションによる曖昧な判別ではなく、コンポーネントで二重実行を防ぐ。
-        if (GetComponent<EnemyChaser2D>() != null)
+        // Chaserが存在するだけでGuardを停止すると、ChaserをOFFにして
+        // CharacterWander2Dを使用するNPCも攻撃できなくなってしまう。
+        // Chaserが有効で移動・攻撃を制御する場合だけGuardを停止する。
+        EnemyChaser2D chaser = GetComponent<EnemyChaser2D>();
+        if (chaser != null && chaser.isActiveAndEnabled)
         {
-            Debug.LogWarning("[Faction STEP3] EnemyChaser2DとFactionGuardCombat2Dを同じNPCに追加しないでください。Guard側を停止します。", this);
+            Debug.LogWarning("[Faction STEP3] EnemyChaser2Dが有効のため、二重攻撃防止でFactionGuardCombat2Dを停止します。", this);
             enabled = false;
         }
     }
@@ -54,6 +69,17 @@ public sealed class FactionGuardCombat2D : MonoBehaviour
     private void Update()
     {
         if (ownHealth == null || ownHealth.IsDead || targeting == null) return;
+        // 運搬中やエレベーター予約中は攻撃できない。
+        if (carryable != null && carryable.IsReserved)
+        {
+            selected = null;
+            return;
+        }
+        if (fearAI != null && fearAI.isActiveAndEnabled && fearAI.IsReacting)
+        {
+            selected = null;
+            return;
+        }
         targeting.ResolveTarget(selected, detectionDistance, loseDistance,
             out Transform target, out CharacterHealth health);
         selected = target;
@@ -74,7 +100,8 @@ public sealed class FactionGuardCombat2D : MonoBehaviour
             if (wall.collider != null) return;
         }
 
-        nextAttackTime = Time.time + attackInterval;
+        nextAttackTime = Time.time + attackInterval *
+            (personalityAI != null ? personalityAI.AttackIntervalMultiplier : 1f);
         FactionCombatDamage2D.DealDamage(health, attackDamage, transform);
         if (animator != null && !string.IsNullOrEmpty(attackTriggerName))
         {

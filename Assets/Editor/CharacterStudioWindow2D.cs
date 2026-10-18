@@ -353,6 +353,11 @@ public sealed partial class CharacterStudioWindow2D : EditorWindow
 
     private void DrawAI()
     {
+        DrawWanderAISettings();
+        DrawInvestigationAISettings();
+        DrawCharacterAIStep3Settings();
+        DrawCharacterAIStep4Settings();
+        EditorGUILayout.Space(8);
         EnemyChaser2D chaser = draft.GetComponent<EnemyChaser2D>();
         if (chaser == null)
         {

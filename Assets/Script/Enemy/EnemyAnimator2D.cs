@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -257,14 +257,15 @@ public class EnemyAnimator2D : MonoBehaviour
             ? Mathf.Abs(enemyRigidbody.linearVelocity.x)
             : 0f;
 
-        bool isMoving = enemyChaser != null
+        // 有効なChaserが移動を一元管理する。ChaserのないNPC（または無効化された
+        // Chaserを持つNPC）では物理速度を使用し、徘徊時もWalk/Moveへ遷移する。
+        bool chaserControlsMotion = enemyChaser != null && enemyChaser.isActiveAndEnabled;
+        bool isMoving = chaserControlsMotion
             ? enemyChaser.IsActivelyMoving
             : horizontalSpeed > movingSpeedThreshold;
 
-        // Rigidbodyの押し出しだけでChaseへ切り替わらないよう、
-        // EnemyChaser2Dがある場合はその追跡状態を優先します。
-        bool hasTarget = enemyChaser != null &&
-            enemyChaser.HasDetectedPlayer;
+        // 徘徊中はHasTarget=false。攻撃対象を発見した場合だけtrueにする。
+        bool hasTarget = chaserControlsMotion && enemyChaser.HasDetectedPlayer;
 
         SetBoolIfExists(isMovingBoolName, isMoving);
         SetBoolIfExists(hasTargetBoolName, hasTarget);

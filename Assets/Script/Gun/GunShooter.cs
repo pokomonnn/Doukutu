@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -85,6 +85,13 @@ public class GunShooter : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField] private float shotVolume = 1f;
 
+    [Header("AI STEP2：銃声通知")]
+    [Tooltip("Player の CharacterAINoiseEmitter2D を指定。未設定なら親オブジェクトや Player タグから自動取得します。")]
+    [SerializeField] private CharacterAINoiseEmitter2D gunshotNoiseEmitter;
+
+    [Tooltip("AIへの銃声通知先が見つからない場合、Consoleに一度警告を出します。")]
+    [SerializeField] private bool warnIfGunshotEmitterMissing = true;
+
     [Range(0f, 1f)]
     [SerializeField] private float reloadVolume = 1f;
 
@@ -136,6 +143,7 @@ public class GunShooter : MonoBehaviour
 
     private float nextFireTime;
     private float nextEmptySoundTime;
+    private bool hasWarnedMissingGunshotEmitter;
     private bool isReloading;
     private int reloadToken;
     private bool isJammed;
@@ -471,12 +479,59 @@ public class GunShooter : MonoBehaviour
             );
         }
 
+        // STEP2: 弾が正常に生成されたときだけ、射撃1回につき銃声を1回通知。
+        // 散弾銃でもPellet数分の重複通知は行わない。
+        NotifyGunshotToAI();
+
         // 散弾数に関係なく、1回の射撃につき耐久は1回だけ減らす。
         ApplyDurabilityLossForShot();
 
         if (RequiresCocking)
         {
             StartCocking();
+        }
+    }
+
+    /// <summary>
+    /// 正常な発砲後に、銃声をCharacter AI STEP2へ通知します。
+    /// AudioSource.PlayOneShotの再生検出に依存しないため、連射時も1発ずつ通知できます。
+    /// </summary>
+    private void NotifyGunshotToAI()
+    {
+        if (gunshotNoiseEmitter == null)
+        {
+            // 銃がPlayerの子オブジェクトなら、通常はここで見つかります。
+            gunshotNoiseEmitter = GetComponentInParent<CharacterAINoiseEmitter2D>();
+        }
+
+        if (gunshotNoiseEmitter == null)
+        {
+            // 銃PrefabがPlayer階層の外にある構成への互換対応。
+            // ただしNPC用の銃には利用せず、必要なら上のInspector参照を明示してください。
+            GameObject playerObject = GameObject.FindGameObjectWithTag("Player");
+            if (playerObject != null)
+            {
+                gunshotNoiseEmitter = playerObject.GetComponent<CharacterAINoiseEmitter2D>();
+                if (gunshotNoiseEmitter == null)
+                {
+                    gunshotNoiseEmitter = playerObject.GetComponentInChildren<CharacterAINoiseEmitter2D>(true);
+                }
+            }
+        }
+
+        if (gunshotNoiseEmitter != null && gunshotNoiseEmitter.isActiveAndEnabled)
+        {
+            hasWarnedMissingGunshotEmitter = false;
+            gunshotNoiseEmitter.EmitGunshot();
+        }
+        else if (warnIfGunshotEmitterMissing && !hasWarnedMissingGunshotEmitter)
+        {
+            hasWarnedMissingGunshotEmitter = true;
+            Debug.LogWarning(
+                "[GunShooter / AI STEP2] CharacterAINoiseEmitter2D が見つからないか無効です。" +
+                " Playerに有効なEmitterを追加し、必要なら銃の『Gunshot Noise Emitter』へ参照を割り当ててください。",
+                this
+            );
         }
     }
 

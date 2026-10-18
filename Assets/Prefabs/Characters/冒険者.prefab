@@ -203,6 +203,8 @@ GameObject:
   - component: {fileID: 7011041457953364825}
   - component: {fileID: 1134839042321666356}
   - component: {fileID: 7447585903670931638}
+  - component: {fileID: 710054892973546715}
+  - component: {fileID: 7070360285632802457}
   m_Layer: 16
   m_Name: "\u5192\u967A\u8005"
   m_TagString: Untagged
@@ -477,7 +479,7 @@ MonoBehaviour:
   deathSound: {fileID: 0}
   deathSoundVolume: 0.9
   deathSoundSpatialBlend: 0
-  destroyAfterDeath: 1
+  destroyAfterDeath: 0
   destroyDelay: 1.2
   onEnemyDied:
     m_PersistentCalls:
@@ -732,10 +734,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FactionEnemyTargeting2D
   targetLayers:
     serializedVersion: 2
-    m_Bits: 2097023
+    m_Bits: 4294967295
   scanInterval: 0.35
   retaliationDuration: 9
-  printTargetChanges: 0
+  printTargetChanges: 1
   drawRangeGizmo: 1
 --- !u!114 &7447585903670931638
 MonoBehaviour:
@@ -756,3 +758,72 @@ MonoBehaviour:
   randomOffset: {x: 0.12, y: 0.08}
   combineSameDamageGroup: 1
   combineWindow: 0.12
+--- !u!114 &710054892973546715
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6655855515560875666}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd91a2548950a8c4c9570fbb31199cb9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterWander2D
+  mode: 1
+  moveSpeed: 1.2
+  wanderRadius: 4
+  minWaitSeconds: 1
+  maxWaitSeconds: 3
+  arrivalDistance: 0.25
+  returnHomeAfterCombat: 1
+  patrolPoints: []
+  pingPongPatrol: 0
+  avoidDeepCliffs: 1
+  groundLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  forwardProbe: 0.14
+  cliffProbeDistance: 6
+  maxSafeDrop: 4.5
+  turnAroundAtWalls: 1
+  approachHostilesWithGuard: 1
+  guardApproachSpeed: 1.6
+  useDropPositionAsHome: 1
+  waitAfterDrop: 2
+  spriteRenderer: {fileID: 0}
+  spriteFacesRightByDefault: 1
+  drawGizmos: 1
+  printStateChanges: 1
+--- !u!114 &7070360285632802457
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6655855515560875666}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e35ecf3c1c3ab34c97dd0fcde07cef6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterAIInvestigation2D
+  hearFootsteps: 1
+  hearGunshots: 1
+  investigateUnknownSources: 0
+  onlyInvestigateHostileSources: 1
+  searchAfterLosingTarget: 1
+  investigationMoveSpeed: 1.7
+  arrivalDistanceX: 0.35
+  searchRadius: 1.6
+  searchPointCount: 3
+  searchPauseSeconds: 1
+  maxInvestigationSeconds: 15
+  reportHostileToAllies: 1
+  respondToAllyAlerts: 1
+  allyAlertRadius: 10
+  alertCooldownSeconds: 5
+  showGizmo: 1
+  debugLogs: 0

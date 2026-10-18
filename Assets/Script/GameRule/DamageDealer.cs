@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider2D))]
@@ -62,6 +62,12 @@ public class DamageDealer : MonoBehaviour
 
     private Collider2D damageCollider;
     private Rigidbody2D bulletRigidbody;
+
+    // STEP3: 発射した本人と、派閥ごとの有効ダメージ対象を記録する。
+    // ConfigureShooter未呼び出しの既存弾は、従来のDamageDealer挙動を維持する。
+    private CharacterHealth shooterHealth;
+    private FactionMember2D shooterFaction;
+    private bool filterTargetsByFaction;
 
     public int BaseDamage => Mathf.Max(1, damage);
     public int CurrentDamage => runtimeDamage >= 0
@@ -236,6 +242,109 @@ public class DamageDealer : MonoBehaviour
         runtimeDamageGroupId = Mathf.Max(0, damageGroupId);
     }
 
+    /// <summary>
+    /// 弾を発射した直後に、EnemyRangedAttack2Dから呼び出します。
+    /// 1) 発射者自身のHPへのダメージを無効化
+    /// 2) 発射者と弾とのCollider2D同士の物理接触を無視
+    /// 3) NPC/Enemyが発射した場合、STEP2の派閥ルールに敵対する対象だけダメージを許可
+    ///
+    /// Playerの発射弾に対して将来使う場合も、自傷防止は有効です。
+    /// Player→NPCの攻撃可否は現行FactionRules2Dで定義されていないため、
+    /// Playerの弾にはNPC→Player用の敵対判定を強制しません。
+    /// </summary>
+    public void ConfigureShooter(Transform shooter, bool useFactionFilter = true)
+    {
+        shooterHealth = null;
+        shooterFaction = null;
+        filterTargetsByFaction = false;
+
+        if (shooter == null)
+        {
+            return;
+        }
+
+        shooterHealth = shooter.GetComponentInParent<CharacterHealth>();
+        if (shooterHealth == null)
+        {
+            shooterHealth = shooter.GetComponentInChildren<CharacterHealth>(true);
+        }
+
+        shooterFaction = shooter.GetComponentInParent<FactionMember2D>();
+        if (shooterFaction == null)
+        {
+            shooterFaction = shooter.GetComponentInChildren<FactionMember2D>(true);
+        }
+
+        // NPC→PlayerとNPC→NPCは既存FactionHostility2Dで判定。
+        // Player→NPCには別ルールが必要なので、現状の挙動を壊さない。
+        filterTargetsByFaction = useFactionFilter &&
+            shooterFaction != null && !shooterFaction.IsPlayer;
+
+        // 弾が射手のColliderに触れて落下・消滅するのも防ぐ。
+        // 発射者が複数Collider、弾が複数Colliderを持つPrefabも対応。
+        Transform shooterBody = shooterHealth != null
+            ? shooterHealth.transform
+            : (shooterFaction != null ? shooterFaction.transform : shooter);
+
+        Collider2D[] bodyColliders =
+            shooterBody.GetComponentsInChildren<Collider2D>(true);
+        Collider2D[] projectileColliders =
+            transform.root.GetComponentsInChildren<Collider2D>(true);
+
+        foreach (Collider2D projectileCol in projectileColliders)
+        {
+            if (projectileCol == null || !projectileCol.enabled ||
+                !projectileCol.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            foreach (Collider2D bodyCol in bodyColliders)
+            {
+                if (bodyCol == null || !bodyCol.enabled ||
+                    !bodyCol.gameObject.activeInHierarchy ||
+                    projectileCol == bodyCol)
+                {
+                    continue;
+                }
+
+                Physics2D.IgnoreCollision(projectileCol, bodyCol, true);
+            }
+        }
+    }
+
+    private bool CanDamageTarget(CharacterHealth targetHealth)
+    {
+        if (targetHealth == null)
+        {
+            return false;
+        }
+
+        // 発射者と命中対象が同じCharacterHealthなら必ず無効。
+        if (shooterHealth != null && targetHealth == shooterHealth)
+        {
+            return false;
+        }
+
+        if (!filterTargetsByFaction)
+        {
+            return true;
+        }
+
+        FactionMember2D targetFaction =
+            targetHealth.GetComponentInParent<FactionMember2D>();
+        if (targetFaction == null)
+        {
+            targetFaction =
+                targetHealth.GetComponentInChildren<FactionMember2D>(true);
+        }
+
+        // 発射者の派閥が設定済みなら、所属未設定の対象も誤射しない。
+        return targetFaction != null &&
+            shooterFaction != null &&
+            FactionHostility2D.IsHostile(shooterFaction, targetFaction);
+    }
+
     private void RecalculateRuntimeDamage()
     {
         float ammoMultiplier = runtimeAmmoData != null
@@ -280,6 +389,12 @@ public class DamageDealer : MonoBehaviour
             other.GetComponentInParent<CharacterHealth>();
 
         if (targetHealth == null || targetHealth.IsDead)
+        {
+            return false;
+        }
+
+        // Triggerと高速弾CircleCastの両方で、射手本人と中立・友好勢力を除外。
+        if (!CanDamageTarget(targetHealth))
         {
             return false;
         }

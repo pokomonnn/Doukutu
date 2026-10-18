@@ -21,6 +21,8 @@ GameObject:
   - component: {fileID: 7961225873750801932}
   - component: {fileID: 4998156840074596225}
   - component: {fileID: 7086114750657792662}
+  - component: {fileID: 5042054109872170749}
+  - component: {fileID: 2002005539219792721}
   m_Layer: 11
   m_Name: "\u30B9\u30B1\u30EB\u30C8\u30F3"
   m_TagString: Untagged
@@ -401,6 +403,65 @@ MonoBehaviour:
   randomOffset: {x: 0.12, y: 0.08}
   combineSameDamageGroup: 1
   combineWindow: 0.12
+--- !u!114 &5042054109872170749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 471402222051626551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd91a2548950a8c4c9570fbb31199cb9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterWander2D
+  mode: 1
+  moveSpeed: 1.2
+  wanderRadius: 4
+  minWaitSeconds: 1
+  maxWaitSeconds: 3
+  arrivalDistance: 0.25
+  returnHomeAfterCombat: 1
+  patrolPoints: []
+  pingPongPatrol: 0
+  avoidDeepCliffs: 1
+  groundLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  forwardProbe: 0.14
+  cliffProbeDistance: 6
+  maxSafeDrop: 4.5
+  turnAroundAtWalls: 1
+  approachHostilesWithGuard: 1
+  guardApproachSpeed: 1.6
+  useDropPositionAsHome: 1
+  waitAfterDrop: 2
+  spriteRenderer: {fileID: 0}
+  spriteFacesRightByDefault: 1
+  drawGizmos: 1
+  printStateChanges: 0
+--- !u!114 &2002005539219792721
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 471402222051626551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bd308b9789dc954392c28b9d0e874db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FactionEnemyTargeting2D
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  scanInterval: 0.35
+  retaliationDuration: 9
+  printTargetChanges: 1
+  drawRangeGizmo: 1
 --- !u!1 &1817734335871667786
 GameObject:
   m_ObjectHideFlags: 0

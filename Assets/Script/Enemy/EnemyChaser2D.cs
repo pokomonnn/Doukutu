@@ -176,9 +176,13 @@ public class EnemyChaser2D : MonoBehaviour
     public bool IsActivelyMoving =>
         !IsDead() &&
         !IsHitStunned &&
-        hasDetectedPlayer &&
-        !isTargetBlockedByPath &&
-        !isRecoveringFromWallHit &&
+        ((fearAI != null && fearAI.IsFleeing && !isRecoveringFromWallHit) ||
+        (hasDetectedPlayer
+            ? (!isTargetBlockedByPath && !isRecoveringFromWallHit)
+            : (wanderAI != null && wanderAI.isActiveAndEnabled &&
+                wanderAI.IsActivelyMoving && !isRecoveringFromWallHit) ||
+                (investigationAI != null && investigationAI.isActiveAndEnabled &&
+                 investigationAI.IsInvestigating && !isRecoveringFromWallHit))) &&
         Mathf.Abs(desiredHorizontalSpeed) > 0.01f;
 
     // Animator のSpeed値などを作りたい場合に参照できます。
@@ -210,6 +214,12 @@ public class EnemyChaser2D : MonoBehaviour
     private Rigidbody2D enemyRigidbody;
     private Collider2D enemyCollider;
     private CharacterHealth ownHealth;
+    private CharacterWander2D wanderAI;
+    private CharacterAIInvestigation2D investigationAI;
+    private CharacterAIFearFlee2D fearAI;
+    private CharacterAIRangedTactics2D rangedTactics;
+    private CharacterAIPersonality2D personalityAI;
+    private CarryableObject2D carryable;
 
     private bool hasDetectedPlayer;
     private float nextAttackTime;
@@ -240,6 +250,12 @@ public class EnemyChaser2D : MonoBehaviour
         enemyRigidbody = GetComponent<Rigidbody2D>();
         enemyCollider = GetComponent<Collider2D>();
         ownHealth = GetComponent<CharacterHealth>();
+        wanderAI = GetComponent<CharacterWander2D>();
+        investigationAI = GetComponent<CharacterAIInvestigation2D>();
+        fearAI = GetComponent<CharacterAIFearFlee2D>();
+        rangedTactics = GetComponent<CharacterAIRangedTactics2D>();
+        personalityAI = GetComponent<CharacterAIPersonality2D>();
+        carryable = GetComponent<CarryableObject2D>();
 
         if (spriteRenderer == null)
         {
@@ -253,9 +269,20 @@ public class EnemyChaser2D : MonoBehaviour
     {
         FindPlayer();
 
+        // 運搬・エレベーター予約中はAIもRigidbodyも絶対に操作しない。
+        if (carryable != null && carryable.IsReserved)
+        {
+            desiredHorizontalSpeed = 0f;
+            if (wanderAI != null && wanderAI.isActiveAndEnabled)
+                wanderAI.GetDesiredSpeed(); // Carried状態へ更新
+            return;
+        }
+
         if (IsDead())
         {
             desiredHorizontalSpeed = 0f;
+            if (wanderAI != null && wanderAI.isActiveAndEnabled)
+                wanderAI.GetDesiredSpeed(); // Dead状態へ更新
             return;
         }
 
@@ -267,11 +294,35 @@ public class EnemyChaser2D : MonoBehaviour
             return;
         }
 
+        // STEP3: HP低下時や救出NPCの恐怖反応は戦闘／音調査より優先。
+        // Rigidbody2DはこれまでどおりChaserのみが動かす。
+        if (fearAI != null && fearAI.isActiveAndEnabled &&
+            fearAI.TryGetDesiredSpeed(out float fleeSpeed))
+        {
+            if (wanderAI != null && wanderAI.isActiveAndEnabled)
+                wanderAI.SetCombatActive(true);
+            float fleeDirection = Mathf.Sign(fleeSpeed);
+            if (Mathf.Abs(fleeSpeed) > .01f &&
+                ((avoidDeepCliffs && IsDeepCliffAhead(fleeDirection, out _)) ||
+                 IsWallAhead(fleeDirection)))
+            {
+                desiredHorizontalSpeed = 0f;
+                fearAI.NotifyMovementBlocked();
+            }
+            else
+            {
+                desiredHorizontalSpeed = fleeSpeed;
+                if (Mathf.Abs(fleeSpeed) > .01f) UpdateSpriteDirection(fleeDirection);
+            }
+            return;
+        }
+
         if (!HasValidPlayer())
         {
             hasDetectedPlayer = false;
             desiredHorizontalSpeed = 0f;
             ClearPathBlock();
+            UpdateAmbientMovement();
             return;
         }
 
@@ -290,7 +341,7 @@ public class EnemyChaser2D : MonoBehaviour
                 distanceToPlayer))
         {
             hasDetectedPlayer = false;
-            desiredHorizontalSpeed = 0f;
+            UpdateAmbientMovement();
             return;
         }
 
@@ -308,9 +359,12 @@ public class EnemyChaser2D : MonoBehaviour
 
         if (!hasDetectedPlayer)
         {
-            desiredHorizontalSpeed = 0f;
+            UpdateAmbientMovement();
             return;
         }
+
+        if (wanderAI != null && wanderAI.isActiveAndEnabled)
+            wanderAI.SetCombatActive(true);
 
         float absoluteHorizontalDifference =
             Mathf.Abs(horizontalDifference);
@@ -339,10 +393,22 @@ public class EnemyChaser2D : MonoBehaviour
 
         float direction;
         bool movingTowardPlayer;
+        float movementMultiplier = 1f;
 
         if (combatMovementStyle == EnemyCombatMovementStyle.KeepDistance)
         {
-            if (distanceToPlayer < keepDistanceMinimum)
+            if (rangedTactics != null && rangedTactics.isActiveAndEnabled &&
+                rangedTactics.TryGetMovement(distanceToPlayer, horizontalDifference,
+                    out direction, out movingTowardPlayer, out movementMultiplier))
+            {
+                if (Mathf.Abs(direction) <= .01f)
+                {
+                    desiredHorizontalSpeed = 0f;
+                    UpdateSpriteDirection(Mathf.Sign(horizontalDifference));
+                    return;
+                }
+            }
+            else if (distanceToPlayer < keepDistanceMinimum)
             {
                 // 近すぎるので後退。
                 direction = -Mathf.Sign(horizontalDifference);
@@ -396,12 +462,70 @@ public class EnemyChaser2D : MonoBehaviour
             return;
         }
 
-        desiredHorizontalSpeed = direction * moveSpeed;
+        desiredHorizontalSpeed = direction * moveSpeed * movementMultiplier *
+            (personalityAI != null ? personalityAI.CombatMoveMultiplier : 1f);
+        // 遠距離型は後退中も敵対対象を向く（射撃方向と見た目の乖離を防ぐ）。
+        UpdateSpriteDirection(combatMovementStyle == EnemyCombatMovementStyle.KeepDistance
+            ? Mathf.Sign(horizontalDifference) : direction);
+    }
+
+    private void UpdateAmbientMovement()
+    {
+        // STEP2の調査行動も既存Chaserが横移動を一元制御する。
+        // 調査が終了したらSTEP1の通常徘徊・帰還へ引き継ぐ。
+        if (wanderAI != null && wanderAI.isActiveAndEnabled)
+            wanderAI.SetCombatActive(false);
+        if (investigationAI == null)
+            investigationAI = GetComponent<CharacterAIInvestigation2D>();
+        if (investigationAI != null && investigationAI.isActiveAndEnabled &&
+            investigationAI.TryGetDesiredSpeed(out float investigationSpeed))
+        {
+            float investigationDirection = Mathf.Sign(investigationSpeed);
+            if (Mathf.Abs(investigationSpeed) <= 0.01f)
+            {
+                desiredHorizontalSpeed = 0f;
+                return;
+            }
+            if ((avoidDeepCliffs && IsDeepCliffAhead(investigationDirection, out _)) ||
+                IsWallAhead(investigationDirection))
+            {
+                desiredHorizontalSpeed = 0f;
+                investigationAI.NotifyMovementBlocked();
+                return;
+            }
+            desiredHorizontalSpeed = investigationSpeed;
+            UpdateSpriteDirection(investigationDirection);
+            return;
+        }
+
+        if (wanderAI == null || !wanderAI.isActiveAndEnabled)
+        {
+            desiredHorizontalSpeed = 0f;
+            return;
+        }
+        float speed = wanderAI.GetDesiredSpeed();
+        if (Mathf.Abs(speed) < 0.01f)
+        {
+            desiredHorizontalSpeed = 0f;
+            return;
+        }
+
+        float direction = Mathf.Sign(speed);
+        if ((avoidDeepCliffs && IsDeepCliffAhead(direction, out _)) ||
+            IsWallAhead(direction))
+        {
+            desiredHorizontalSpeed = 0f;
+            wanderAI.NotifyMovementBlocked(direction);
+            return;
+        }
+
+        desiredHorizontalSpeed = speed;
         UpdateSpriteDirection(direction);
     }
 
     private void FixedUpdate()
     {
+        if (carryable != null && carryable.IsReserved) return;
         if (enemyRigidbody == null || IsDead())
         {
             return;
@@ -500,8 +624,8 @@ public class EnemyChaser2D : MonoBehaviour
     private bool ShouldJump(bool grounded)
     {
         if (!enableJump ||
+            (fearAI != null && fearAI.IsReacting) ||
             enemyCollider == null ||
-            playerTransform == null ||
             isRecoveringFromWallHit ||
             Mathf.Abs(desiredHorizontalSpeed) < 0.01f ||
             Time.time < nextJumpTime ||
@@ -521,6 +645,7 @@ public class EnemyChaser2D : MonoBehaviour
 
         bool hasWallAhead = IsWallAhead(direction);
         bool playerIsAbove = jumpWhenPlayerIsAbove &&
+            hasDetectedPlayer && playerTransform != null &&
             playerTransform.position.y >
             enemyCollider.bounds.max.y + playerAboveJumpThreshold;
 
@@ -605,7 +730,7 @@ public class EnemyChaser2D : MonoBehaviour
             enemyRigidbody.linearVelocity = velocity;
         }
 
-        if (giveUpAfterFailedJumps &&
+        if (hasDetectedPlayer && giveUpAfterFailedJumps &&
             maxFailedJumpAttemptsBeforeGivingUp > 0 &&
             failedJumpAttempts >=
             maxFailedJumpAttemptsBeforeGivingUp)
@@ -890,7 +1015,8 @@ public class EnemyChaser2D : MonoBehaviour
         else
             playerHealth.TakeDamage(attackDamage);
         // FACTION_STEP3_DAMAGE_END
-        nextAttackTime = Time.time + attackInterval;
+        nextAttackTime = Time.time + attackInterval *
+            (personalityAI != null ? personalityAI.AttackIntervalMultiplier : 1f);
 
         // ダメージが無敵で無効化された場合も、敵が攻撃動作をした事実は残します。
         // これにより、攻撃アニメーションとAttack Intervalが一致します。

@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,7 +23,9 @@ public sealed partial class CharacterStudioWindow2D
 
     private void CreateNewNpcDraftContents()
     {
-        int npcLayer = LayerMask.NameToLayer("NPC");
+        // 既存プロジェクトで使われているRescueNPCを優先する。
+        int npcLayer = LayerMask.NameToLayer("RescueNPC");
+        if (npcLayer < 0) npcLayer = LayerMask.NameToLayer("NPC");
         if (npcLayer >= 0) draft.layer = npcLayer;
         Rigidbody2D body = draft.AddComponent<Rigidbody2D>();
         body.bodyType = RigidbodyType2D.Dynamic;

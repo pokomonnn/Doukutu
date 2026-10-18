@@ -69,10 +69,12 @@ public class EnemyRangedAttack2D : MonoBehaviour
     public bool CanCurrentlyAttack => CanAttackNow(false);
 
     private float nextAttackTime;
+    private CharacterAIPersonality2D personalityAI;
 
     private void Awake()
     {
         FindReferences();
+        personalityAI = GetComponent<CharacterAIPersonality2D>();
     }
 
     private void OnEnable()
@@ -197,7 +199,8 @@ public class EnemyRangedAttack2D : MonoBehaviour
                     );
                 }
 
-                nextAttackTime = Time.time + attackInterval;
+                nextAttackTime = Time.time + attackInterval *
+                    (personalityAI != null ? personalityAI.AttackIntervalMultiplier : 1f);
                 return;
             }
         }
@@ -232,6 +235,27 @@ public class EnemyRangedAttack2D : MonoBehaviour
             spawnPosition,
             Quaternion.Euler(0f, 0f, angle)
         );
+
+        // 発射者を弾に通知。自分への命中・物理接触・同派閥への誤射を防ぐ。
+        // Rigidbody2Dに初速を与えるより前に設定し、発射直後の自傷を防止。
+        DamageDealer[] projectileDamageDealers =
+            projectile.GetComponentsInChildren<DamageDealer>(true);
+        foreach (DamageDealer dealer in projectileDamageDealers)
+        {
+            if (dealer != null)
+            {
+                dealer.ConfigureShooter(transform);
+            }
+        }
+
+        if (projectileDamageDealers.Length == 0 && showAttackLogs)
+        {
+            Debug.LogWarning(
+                $"[EnemyRangedAttack2D] {projectile.name}: DamageDealerが見つかりません。" +
+                " 弾Prefabの親または子に追加してください。",
+                this
+            );
+        }
 
         Rigidbody2D rb = projectile.GetComponent<Rigidbody2D>();
 
@@ -281,7 +305,8 @@ public class EnemyRangedAttack2D : MonoBehaviour
 
         Destroy(projectile, projectileLifeTime);
 
-        nextAttackTime = Time.time + attackInterval;
+        nextAttackTime = Time.time + attackInterval *
+                    (personalityAI != null ? personalityAI.AttackIntervalMultiplier : 1f);
         RangedAttackPerformed?.Invoke();
 
         if (showAttackLogs)
