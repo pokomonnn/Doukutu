@@ -170,6 +170,10 @@ GameObject:
   - component: {fileID: 7090586116530058713}
   - component: {fileID: 332876672723277557}
   - component: {fileID: 2524655012213960734}
+  - component: {fileID: 8853898568369235560}
+  - component: {fileID: 8773450937289083325}
+  - component: {fileID: 3754261929750142531}
+  - component: {fileID: 3295276506376848152}
   m_Layer: 11
   m_Name: "\u76D7\u8CCA_\u52C7\u6562"
   m_TagString: Untagged
@@ -676,6 +680,124 @@ MonoBehaviour:
   moraleScanInterval: 0.6
   drawMoraleRange: 0
   logMoraleChanges: 0
+--- !u!114 &8853898568369235560
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3148623400523761093}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8128de001e18e04f9872ec9a555cadf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueActor2D
+  dialogue: {fileID: 11400000, guid: 1ad2b3c996d117e46871a7c8ee90b2da, type: 2}
+  useEKeyInteraction: 1
+  interactionDistance: 2.5
+  playerTransform: {fileID: 0}
+  preventWhenDead: 1
+  preventWhenCarried: 1
+  preventWhenHostileToPlayer: 1
+  onDialogueEvent:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &8773450937289083325
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3148623400523761093}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c813cdc89f9a084ebf0ae7faacb3ee7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueBattleBarks2D
+  barkData: {fileID: 11400000, guid: 91c623ba49bcd1f41b9dda38c0363989, type: 2}
+  dialogueActor: {fileID: 0}
+  globalCooldown: 1.5
+  sameTriggerCooldown: 6
+  displaySeconds: 2.4
+  lowHealthThreshold: 0.3
+  muteWhileNormalDialogue: 1
+  muteWhileCarried: 1
+  replacePreviousBubble: 1
+  enableTypewriter: 1
+  secondsPerCharacter: 0.045
+  minimumFullyVisibleSeconds: 0.7
+  japaneseFont: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
+  worldOffset: {x: 0, y: 2, z: 0}
+  widthInWorldUnits: 3.5
+  sortingOrder: 120
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  backgroundColor: {r: 0.08, g: 0.1, b: 0.14, a: 0.9}
+  debugLogs: 0
+--- !u!114 &3754261929750142531
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3148623400523761093}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c683bd8b06f69f42b7cfe1213444a47, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueAmbientTalk2D
+  talkData: {fileID: 11400000, guid: 8f14ea982538b184895f8e398c2ac547, type: 2}
+  additionalDialogue600TalkData: {fileID: 11400000, guid: a86b1dc59608ccc4e8ec215c81b704e2, type: 2}
+  dialogueActor: {fileID: 0}
+  allowDifferentNonHostileFactions: 1
+  talkRadius: 2.8
+  maxHeightDifference: 1.7
+  startProbability: 0.42
+  scanInterval: 3.5
+  minimumRestSeconds: 15
+  maximumRestSeconds: 28
+  maxPartnerDrift: 3.7
+  limitImportedTalkToPlayerHearingRange: 1
+  importedTalkHearingRadius: 12
+  enableTypewriter: 1
+  secondsPerCharacter: 0.045
+  minimumFullyVisibleSeconds: 0.7
+  japaneseFont: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
+  worldOffset: {x: 0, y: 2, z: 0}
+  widthInWorldUnits: 3.5
+  sortingOrder: 120
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  backgroundColor: {r: 0.08, g: 0.1, b: 0.14, a: 0.9}
+  debugLogs: 0
+--- !u!114 &3295276506376848152
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3148623400523761093}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 830c486f8eb2fc74e9d3c0fd3149617f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Dialogue600SoloSpeaker2D
+  regularLibrary: {fileID: 11400000, guid: bd50f90202b40394d8aef1bb0341a278, type: 2}
+  hostileLibrary: {fileID: 11400000, guid: db46fe3a41059a144ac930a4575779b8, type: 2}
+  enableHostileSoliloquies: 1
+  hearingRadius: 11
+  firstTalkDelayMin: 12
+  firstTalkDelayMax: 24
+  cooldownMin: 90
+  cooldownMax: 180
+  chancePerAttempt: 0.8
+  japaneseFont: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
+  worldOffset: {x: 0, y: 2, z: 0}
+  bubbleWidth: 3.5
+  secondsPerCharacter: 0.045
+  minimumFullyVisibleSeconds: 0.85
+  sortingOrder: 119
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  backgroundColor: {r: 0.08, g: 0.1, b: 0.14, a: 0.9}
+  debugLogs: 0
 --- !u!1 &4965880056282265016
 GameObject:
   m_ObjectHideFlags: 0

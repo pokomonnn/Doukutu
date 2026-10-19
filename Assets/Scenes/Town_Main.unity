@@ -1207,6 +1207,7 @@ MonoBehaviour:
   acceptedSpecificItems: []
   rejectedSpecificItems: []
   rejectedItemMessageFormat: "{0}\u3067\u306F\u300C{1}\u300D\u3092\u8CB7\u3044\u53D6\u308A\u307E\u305B\u3093\u3002"
+  dungeonTradeProfile: {fileID: 0}
 --- !u!114 &61251527
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19711,6 +19712,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1077807561}
+  - {fileID: 1452342253}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -29468,7 +29470,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1745980947}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.99997944
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -31342,6 +31344,108 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1446269048}
   m_CullTransparentMesh: 1
+--- !u!1001 &1452342252
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 872343142}
+    m_Modifications:
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8567034840661397268, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+      propertyPath: m_Name
+      value: SharedTownTradeUI
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+--- !u!224 &1452342253 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 3706800538778253297, guid: 0f542d3ad56d52e498dc1197c8b67d5c, type: 3}
+  m_PrefabInstance: {fileID: 1452342252}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1455219368
 GameObject:
   m_ObjectHideFlags: 0
@@ -34269,7 +34373,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1593693214}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.9999618
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -37097,7 +37201,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.0004249412}
+  m_AnchoredPosition: {x: 0, y: 0.00023773409}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &1790660294
@@ -38644,6 +38748,7 @@ MonoBehaviour:
   acceptedSpecificItems: []
   rejectedSpecificItems: []
   rejectedItemMessageFormat: "{0}\u3067\u306F\u300C{1}\u300D\u3092\u8CB7\u3044\u53D6\u308A\u307E\u305B\u3093\u3002"
+  dungeonTradeProfile: {fileID: 0}
 --- !u!114 &1904281101
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -42259,7 +42364,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.0008198946}
+  m_AnchoredPosition: {x: 0, y: 0.00014852175}
   m_SizeDelta: {x: 0, y: 554.2}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &2093821864

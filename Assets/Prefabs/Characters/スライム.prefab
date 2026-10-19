@@ -54,6 +54,7 @@ GameObject:
   - component: {fileID: 4194626770294601243}
   - component: {fileID: 170650249388480660}
   - component: {fileID: 7459287781341964151}
+  - component: {fileID: 3422996939710339389}
   m_Layer: 11
   m_Name: "\u30B9\u30E9\u30A4\u30E0"
   m_TagString: Untagged
@@ -493,6 +494,34 @@ MonoBehaviour:
   retaliationDuration: 9
   printTargetChanges: 1
   drawRangeGizmo: 1
+--- !u!114 &3422996939710339389
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1606759663257450600}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c813cdc89f9a084ebf0ae7faacb3ee7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueBattleBarks2D
+  barkData: {fileID: 11400000, guid: 91c623ba49bcd1f41b9dda38c0363989, type: 2}
+  dialogueActor: {fileID: 0}
+  globalCooldown: 1.5
+  sameTriggerCooldown: 6
+  displaySeconds: 2.4
+  lowHealthThreshold: 0.3
+  muteWhileNormalDialogue: 1
+  muteWhileCarried: 1
+  replacePreviousBubble: 1
+  japaneseFont: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
+  worldOffset: {x: 0, y: 2, z: 0}
+  widthInWorldUnits: 3.5
+  sortingOrder: 120
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  backgroundColor: {r: 0.08, g: 0.1, b: 0.14, a: 0.9}
+  debugLogs: 0
 --- !u!1 &2905622570337413983
 GameObject:
   m_ObjectHideFlags: 0

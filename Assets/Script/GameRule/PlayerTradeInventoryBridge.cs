@@ -9,13 +9,12 @@ using UnityEngine;
 /// 洞窟の実プレイヤーには、このPlayerTradeInventoryBridgeを直接追加してください。
 /// </summary>
 [DisallowMultipleComponent]
-[RequireComponent(typeof(InventoryController))]
-[RequireComponent(typeof(EquipmentController))]
-[RequireComponent(typeof(PlayerInventorySessionBridge))]
 public class PlayerTradeInventoryBridge : MonoBehaviour
 {
     [Header("共通プレイヤー参照")]
     [SerializeField] private InventoryController inventoryController;
+    [Tooltip("STEP4 v1.3.5：InventoryControllerが別Objectにある場合、普段のTabインベントリ用GridUIを指定できます。")]
+    [SerializeField] private InventoryGridUI usualPlayerInventoryGridUI;
     [SerializeField] private EquipmentController equipmentController;
     [SerializeField] private PlayerInventorySessionBridge sessionBridge;
 
@@ -43,20 +42,22 @@ public class PlayerTradeInventoryBridge : MonoBehaviour
     /// </summary>
     public void RefreshReferences()
     {
-        if (inventoryController == null)
-        {
-            inventoryController = GetComponent<InventoryController>();
-        }
-
-        if (equipmentController == null)
-        {
-            equipmentController = GetComponent<EquipmentController>();
-        }
-
         if (sessionBridge == null)
-        {
             sessionBridge = GetComponent<PlayerInventorySessionBridge>();
-        }
+
+        // 同じObjectへのInventoryControllerの追加は必須にしません。
+        if (usualPlayerInventoryGridUI != null &&
+            usualPlayerInventoryGridUI.Controller != null)
+            inventoryController = usualPlayerInventoryGridUI.Controller;
+        else if (inventoryController == null && sessionBridge != null)
+            inventoryController = sessionBridge.InventoryController;
+        else if (inventoryController == null)
+            inventoryController = GetComponent<InventoryController>();
+
+        if (equipmentController == null && sessionBridge != null)
+            equipmentController = sessionBridge.EquipmentController;
+        if (equipmentController == null)
+            equipmentController = GetComponent<EquipmentController>();
     }
 
     /// <summary>

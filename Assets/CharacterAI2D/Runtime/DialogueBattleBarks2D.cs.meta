@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 5c813cdc89f9a084ebf0ae7faacb3ee7
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - barkData: {instanceID: 0}
+  - dialogueActor: {instanceID: 0}
+  - japaneseFont: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

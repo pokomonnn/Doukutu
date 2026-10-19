@@ -1,0 +1,116 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a2ebcb871cb9ea4481f749c592f26d1, type: 3}
+  m_Name: SOLO_NEW_SKEL_MERCHANT
+  m_EditorClassIdentifier: Assembly-CSharp::Dialogue600SoloLibrary2D
+  displayName: "\u30B9\u30B1\u30EB\u30C8\u30F3\u5546\u4EBA\u306E\u72EC\u308A\u8A00\uFF08\u65B0\u898F\u30FB600\u4EF6\u3068\u306F\u5225\uFF09"
+  entries:
+  - sourceDialogueId: NEW_SKEL_MERCHANT_SOLO_001
+    title: "\u30B9\u30B1\u30EB\u30C8\u30F3\u5546\u4EBA\u306E\u72EC\u308A\u8A00 1"
+    requiredStage: 0
+    text: "\u2026\u2026\u8AB0\u306E\u540D\u3092\u547C\u3093\u3067\u3044\u305F\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SKEL_MERCHANT_SOLO_002
+    title: "\u30B9\u30B1\u30EB\u30C8\u30F3\u5546\u4EBA\u306E\u72EC\u308A\u8A00 2"
+    requiredStage: 0
+    text: "\u9AA8\u306E\u8ECB\u307F\u304C\u3001\u6B4C\u306B\u805E\u3053\u3048\u308B\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SKEL_MERCHANT_SOLO_003
+    title: "\u30B9\u30B1\u30EB\u30C8\u30F3\u5546\u4EBA\u306E\u72EC\u308A\u8A00 3"
+    requiredStage: 0
+    text: "\u3053\u3053\u3067\u4F55\u3092\u5B88\u3063\u3066\u3044\u305F\u306E\u3060\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SKEL_MERCHANT_SOLO_004
+    title: "\u30B9\u30B1\u30EB\u30C8\u30F3\u5546\u4EBA\u306E\u72EC\u308A\u8A00 4"
+    requiredStage: 0
+    text: "\u3053\u306E\u5263\u3060\u3051\u306F\u624B\u653E\u305B\u306C\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SKEL_MERCHANT_SOLO_005
+    title: "\u30B9\u30B1\u30EB\u30C8\u30F3\u5546\u4EBA\u306E\u72EC\u308A\u8A00 5"
+    requiredStage: 0
+    text: "\u8AB0\u304B\u306E\u7948\u308A\u304C\u58C1\u306B\u6B8B\u3063\u3066\u3044\u308B\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SKEL_MERCHANT_SOLO_006
+    title: "\u30B9\u30B1\u30EB\u30C8\u30F3\u5546\u4EBA\u306E\u72EC\u308A\u8A00 6"
+    requiredStage: 0
+    text: "\u606F\u304C\u306A\u3044\u306E\u306B\u3001\u305F\u3081\u606F\u304C\u51FA\u308B\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SKEL_MERCHANT_SOLO_007
+    title: "\u30B9\u30B1\u30EB\u30C8\u30F3\u5546\u4EBA\u306E\u72EC\u308A\u8A00 7"
+    requiredStage: 0
+    text: "\u3053\u306E\u5ECA\u4E0B\u3092\u4F55\u5EA6\u5DE1\u3063\u305F\uFF1F"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SKEL_MERCHANT_SOLO_008
+    title: "\u30B9\u30B1\u30EB\u30C8\u30F3\u5546\u4EBA\u306E\u72EC\u308A\u8A00 8"
+    requiredStage: 0
+    text: "\u93A7\u306E\u4E2D\u3092\u98A8\u304C\u629C\u3051\u308B\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SKEL_MERCHANT_SOLO_009
+    title: "\u30B9\u30B1\u30EB\u30C8\u30F3\u5546\u4EBA\u306E\u72EC\u308A\u8A00 9"
+    requiredStage: 0
+    text: "\u5E30\u308B\u5834\u6240\u306A\u3069\u3001\u3082\u3046\u306A\u3044\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SKEL_MERCHANT_SOLO_010
+    title: "\u30B9\u30B1\u30EB\u30C8\u30F3\u5546\u4EBA\u306E\u72EC\u308A\u8A00 10"
+    requiredStage: 0
+    text: "\u307E\u305F\u9418\u304C\u9CF4\u3063\u305F\u2026\u2026\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1

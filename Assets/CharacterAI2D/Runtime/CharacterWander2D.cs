@@ -63,6 +63,7 @@ public sealed class CharacterWander2D : MonoBehaviour
     private CharacterAIInvestigation2D investigationAI;
     private CharacterAIFearFlee2D fearAI;
     private CharacterAIPersonality2D personalityAI;
+    private DialogueAmbientTalk2D ambientTalk;
 
     private Vector2 home;
     private bool homeCaptured;
@@ -125,6 +126,7 @@ public sealed class CharacterWander2D : MonoBehaviour
         if (investigationAI == null) investigationAI = GetComponent<CharacterAIInvestigation2D>();
         if (fearAI == null) fearAI = GetComponent<CharacterAIFearFlee2D>();
         if (personalityAI == null) personalityAI = GetComponent<CharacterAIPersonality2D>();
+        if (ambientTalk == null) ambientTalk = GetComponent<DialogueAmbientTalk2D>();
         if (spriteRenderer == null) spriteRenderer = GetComponentInChildren<SpriteRenderer>(true);
         if (groundLayers.value == 0)
         {
@@ -172,6 +174,12 @@ public sealed class CharacterWander2D : MonoBehaviour
         CacheReferences();
         CaptureHomeIfNeeded();
         if (IsUnavailable()) return 0f;
+        // STEP5: 立ち話中は通常の徘徊移動のみ停止（戦闘はChaser側が優先）
+        if (ambientTalk != null && ambientTalk.IsTalking)
+        {
+            lastRequestedSpeed = 0f;
+            return 0f;
+        }
         if (combatActive)
         {
             lastRequestedSpeed = 0f;
@@ -357,6 +365,11 @@ public sealed class CharacterWander2D : MonoBehaviour
     {
         // EnemyChaser2Dがアクティブな場合は、移動と戦闘判断を任せる。
         if (chaser != null && chaser.isActiveAndEnabled) return;
+        if (ambientTalk != null && ambientTalk.IsTalking)
+        {
+            lastRequestedSpeed = 0f;
+            return;
+        }
         // STEP3: 逃走・うずくまる恐怖反応はGuard戦闘／音調査／徘徊より優先。
         // 運搬中のRigidbody2D操作は禁止したままにする。
         if (fearAI != null && fearAI.isActiveAndEnabled &&

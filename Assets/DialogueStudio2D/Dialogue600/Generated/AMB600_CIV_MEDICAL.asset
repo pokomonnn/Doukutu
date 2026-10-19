@@ -1,0 +1,306 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 004c82aad18bc534fb95f47d90f128a5, type: 3}
+  m_Name: AMB600_CIV_MEDICAL
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueAmbientTalkData2D
+  displayName: "600\u4F1A\u8A71\u96C6\u30FB\u639B\u3051\u5408\u3044 CIV_MEDICAL"
+  exchanges:
+  - sourceDialogueId: AMB_CIV_021
+    requiredStage: 0
+    requiredInitiatorFactionId: 
+    requiredPartnerFactionId: 
+    sourceSituation: "\u533B\u8005\u3068\u52A9\u624B\u30FB\u624B\u5F53\u3066"
+    sourcePrerequisites: "\u6551\u51FA\u524D\u306E\u5B89\u5168\u306A\u5F85\u6A5F\u5834\u6240\u3001\u81E8\u6642\u91CE\u55B6\u5730\u3001\u307E\u305F\u306F\u8B77\u885B\u4E2D\u306E\u4F11\u6B62\u5730\u70B9\u3067\u4F7F\u7528\u3002\u4F1A\u8A71\u76F8\u624B\u304C\u305D\u306E\u5834\u306B2\u4EBA\u3044\u308B\u3053\u3068\u3002"
+    sourcePersonalityHint: "\u6A19\u6E96\uFF0F\u4EF2\u9593\u601D\u3044\uFF0F\u81C6\u75C5\uFF08\u5FC5\u9808\u30D5\u30A3\u30EB\u30BF\u3067\u306F\u306A\u3044\uFF09"
+    sourcePlaybackHint: "\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u8074\u53D6\u7BC4\u56F2\u5185\uFF0F\u975E\u6226\u95D8\uFF0F\u53CC\u65B9\u751F\u5B58\uFF0F\u4ED6\u306E\u4F1A\u8A71\u3068\u6392\u4ED6\u3002\u5171\u901A\u30AF\u30FC\u30EB\u30C0\u30A6\u30F3120\u301C240\u79D2\uFF08\u63D0\u6848\u5024\uFF09\u3002"
+    title: "AMB_CIV_021\u3000\u6E05\u6F54\u306A\u6C34"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u6C34\u3092\u5C11\u3057\u6CB8\u304B\u3057\u3066\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u307E\u3060\u706B\u304C\u5F31\u3044\u3067\u3059\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u6025\u304C\u306A\u304F\u3066\u3044\u3044\u3001\u78BA\u5B9F\u306B\u306A\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: AMB_CIV_022
+    requiredStage: 0
+    requiredInitiatorFactionId: 
+    requiredPartnerFactionId: 
+    sourceSituation: "\u533B\u8005\u3068\u52A9\u624B\u30FB\u624B\u5F53\u3066"
+    sourcePrerequisites: "\u6551\u51FA\u524D\u306E\u5B89\u5168\u306A\u5F85\u6A5F\u5834\u6240\u3001\u81E8\u6642\u91CE\u55B6\u5730\u3001\u307E\u305F\u306F\u8B77\u885B\u4E2D\u306E\u4F11\u6B62\u5730\u70B9\u3067\u4F7F\u7528\u3002\u4F1A\u8A71\u76F8\u624B\u304C\u305D\u306E\u5834\u306B2\u4EBA\u3044\u308B\u3053\u3068\u3002"
+    sourcePersonalityHint: "\u6A19\u6E96\uFF0F\u4EF2\u9593\u601D\u3044\uFF0F\u81C6\u75C5\uFF08\u5FC5\u9808\u30D5\u30A3\u30EB\u30BF\u3067\u306F\u306A\u3044\uFF09"
+    sourcePlaybackHint: "\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u8074\u53D6\u7BC4\u56F2\u5185\uFF0F\u975E\u6226\u95D8\uFF0F\u53CC\u65B9\u751F\u5B58\uFF0F\u4ED6\u306E\u4F1A\u8A71\u3068\u6392\u4ED6\u3002\u5171\u901A\u30AF\u30FC\u30EB\u30C0\u30A6\u30F3120\u301C240\u79D2\uFF08\u63D0\u6848\u5024\uFF09\u3002"
+    title: "AMB_CIV_022\u3000\u5E03\u306E\u6D88\u6BD2"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u3053\u306E\u5E03\u3001\u4F7F\u3048\u307E\u3059\u304B\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u4E00\u5EA6\u6D17\u3063\u3066\u304B\u3089\u3060\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u5206\u304B\u308A\u307E\u3057\u305F\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: AMB_CIV_023
+    requiredStage: 0
+    requiredInitiatorFactionId: 
+    requiredPartnerFactionId: 
+    sourceSituation: "\u533B\u8005\u3068\u52A9\u624B\u30FB\u624B\u5F53\u3066"
+    sourcePrerequisites: "\u6551\u51FA\u524D\u306E\u5B89\u5168\u306A\u5F85\u6A5F\u5834\u6240\u3001\u81E8\u6642\u91CE\u55B6\u5730\u3001\u307E\u305F\u306F\u8B77\u885B\u4E2D\u306E\u4F11\u6B62\u5730\u70B9\u3067\u4F7F\u7528\u3002\u4F1A\u8A71\u76F8\u624B\u304C\u305D\u306E\u5834\u306B2\u4EBA\u3044\u308B\u3053\u3068\u3002"
+    sourcePersonalityHint: "\u6A19\u6E96\uFF0F\u4EF2\u9593\u601D\u3044\uFF0F\u81C6\u75C5\uFF08\u5FC5\u9808\u30D5\u30A3\u30EB\u30BF\u3067\u306F\u306A\u3044\uFF09"
+    sourcePlaybackHint: "\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u8074\u53D6\u7BC4\u56F2\u5185\uFF0F\u975E\u6226\u95D8\uFF0F\u53CC\u65B9\u751F\u5B58\uFF0F\u4ED6\u306E\u4F1A\u8A71\u3068\u6392\u4ED6\u3002\u5171\u901A\u30AF\u30FC\u30EB\u30C0\u30A6\u30F3120\u301C240\u79D2\uFF08\u63D0\u6848\u5024\uFF09\u3002"
+    title: "AMB_CIV_023\u3000\u4F11\u3080\u9806\u756A"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u5148\u751F\u3082\u4F11\u3093\u3067\u304F\u3060\u3055\u3044\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u6B21\u306E\u898B\u5F35\u308A\u304C\u6765\u305F\u3089\u306A\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u305D\u308C\u3001\u3055\u3063\u304D\u3082\u805E\u304D\u307E\u3057\u305F\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: AMB_CIV_024
+    requiredStage: 0
+    requiredInitiatorFactionId: 
+    requiredPartnerFactionId: 
+    sourceSituation: "\u533B\u8005\u3068\u52A9\u624B\u30FB\u624B\u5F53\u3066"
+    sourcePrerequisites: "\u6551\u51FA\u524D\u306E\u5B89\u5168\u306A\u5F85\u6A5F\u5834\u6240\u3001\u81E8\u6642\u91CE\u55B6\u5730\u3001\u307E\u305F\u306F\u8B77\u885B\u4E2D\u306E\u4F11\u6B62\u5730\u70B9\u3067\u4F7F\u7528\u3002\u4F1A\u8A71\u76F8\u624B\u304C\u305D\u306E\u5834\u306B2\u4EBA\u3044\u308B\u3053\u3068\u3002"
+    sourcePersonalityHint: "\u6A19\u6E96\uFF0F\u4EF2\u9593\u601D\u3044\uFF0F\u81C6\u75C5\uFF08\u5FC5\u9808\u30D5\u30A3\u30EB\u30BF\u3067\u306F\u306A\u3044\uFF09"
+    sourcePlaybackHint: "\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u8074\u53D6\u7BC4\u56F2\u5185\uFF0F\u975E\u6226\u95D8\uFF0F\u53CC\u65B9\u751F\u5B58\uFF0F\u4ED6\u306E\u4F1A\u8A71\u3068\u6392\u4ED6\u3002\u5171\u901A\u30AF\u30FC\u30EB\u30C0\u30A6\u30F3120\u301C240\u79D2\uFF08\u63D0\u6848\u5024\uFF09\u3002"
+    title: "AMB_CIV_024\u3000\u8A3A\u5BDF\u306E\u706F\u308A"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u3082\u3046\u5C11\u3057\u706F\u308A\u3092\u5BC4\u305B\u3066\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u3053\u308C\u304F\u3089\u3044\u3067\u3059\u304B\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u3088\u3057\u3001\u50B7\u304C\u898B\u3048\u308B\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: AMB_CIV_025
+    requiredStage: 0
+    requiredInitiatorFactionId: 
+    requiredPartnerFactionId: 
+    sourceSituation: "\u533B\u8005\u3068\u52A9\u624B\u30FB\u624B\u5F53\u3066"
+    sourcePrerequisites: "\u6551\u51FA\u524D\u306E\u5B89\u5168\u306A\u5F85\u6A5F\u5834\u6240\u3001\u81E8\u6642\u91CE\u55B6\u5730\u3001\u307E\u305F\u306F\u8B77\u885B\u4E2D\u306E\u4F11\u6B62\u5730\u70B9\u3067\u4F7F\u7528\u3002\u4F1A\u8A71\u76F8\u624B\u304C\u305D\u306E\u5834\u306B2\u4EBA\u3044\u308B\u3053\u3068\u3002"
+    sourcePersonalityHint: "\u6A19\u6E96\uFF0F\u4EF2\u9593\u601D\u3044\uFF0F\u81C6\u75C5\uFF08\u5FC5\u9808\u30D5\u30A3\u30EB\u30BF\u3067\u306F\u306A\u3044\uFF09"
+    sourcePlaybackHint: "\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u8074\u53D6\u7BC4\u56F2\u5185\uFF0F\u975E\u6226\u95D8\uFF0F\u53CC\u65B9\u751F\u5B58\uFF0F\u4ED6\u306E\u4F1A\u8A71\u3068\u6392\u4ED6\u3002\u5171\u901A\u30AF\u30FC\u30EB\u30C0\u30A6\u30F3120\u301C240\u79D2\uFF08\u63D0\u6848\u5024\uFF09\u3002"
+    title: "AMB_CIV_025\u3000\u85AC\u8349\u306E\u6B8B\u308A"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u85AC\u8349\u306F\u3042\u3068\u4E00\u675F\u3067\u3059\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u6025\u3050\u60A3\u8005\u306B\u4F7F\u304A\u3046\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u8A18\u9332\u3057\u3066\u304A\u304D\u307E\u3059\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: AMB_CIV_026
+    requiredStage: 0
+    requiredInitiatorFactionId: 
+    requiredPartnerFactionId: 
+    sourceSituation: "\u533B\u8005\u3068\u52A9\u624B\u30FB\u624B\u5F53\u3066"
+    sourcePrerequisites: "\u6551\u51FA\u524D\u306E\u5B89\u5168\u306A\u5F85\u6A5F\u5834\u6240\u3001\u81E8\u6642\u91CE\u55B6\u5730\u3001\u307E\u305F\u306F\u8B77\u885B\u4E2D\u306E\u4F11\u6B62\u5730\u70B9\u3067\u4F7F\u7528\u3002\u4F1A\u8A71\u76F8\u624B\u304C\u305D\u306E\u5834\u306B2\u4EBA\u3044\u308B\u3053\u3068\u3002"
+    sourcePersonalityHint: "\u6A19\u6E96\uFF0F\u4EF2\u9593\u601D\u3044\uFF0F\u81C6\u75C5\uFF08\u5FC5\u9808\u30D5\u30A3\u30EB\u30BF\u3067\u306F\u306A\u3044\uFF09"
+    sourcePlaybackHint: "\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u8074\u53D6\u7BC4\u56F2\u5185\uFF0F\u975E\u6226\u95D8\uFF0F\u53CC\u65B9\u751F\u5B58\uFF0F\u4ED6\u306E\u4F1A\u8A71\u3068\u6392\u4ED6\u3002\u5171\u901A\u30AF\u30FC\u30EB\u30C0\u30A6\u30F3120\u301C240\u79D2\uFF08\u63D0\u6848\u5024\uFF09\u3002"
+    title: "AMB_CIV_026\u3000\u6C34\u5206\u306E\u78BA\u8A8D"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u3042\u306E\u4EBA\u3001\u6C34\u306F\u98F2\u3081\u3066\u3044\u307E\u3059\u304B\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u5C11\u3057\u305A\u3064\u306A\u3089\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u305D\u308C\u3067\u3044\u3044\u3001\u7D9A\u3051\u3066\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: AMB_CIV_027
+    requiredStage: 0
+    requiredInitiatorFactionId: 
+    requiredPartnerFactionId: 
+    sourceSituation: "\u533B\u8005\u3068\u52A9\u624B\u30FB\u624B\u5F53\u3066"
+    sourcePrerequisites: "\u6551\u51FA\u524D\u306E\u5B89\u5168\u306A\u5F85\u6A5F\u5834\u6240\u3001\u81E8\u6642\u91CE\u55B6\u5730\u3001\u307E\u305F\u306F\u8B77\u885B\u4E2D\u306E\u4F11\u6B62\u5730\u70B9\u3067\u4F7F\u7528\u3002\u4F1A\u8A71\u76F8\u624B\u304C\u305D\u306E\u5834\u306B2\u4EBA\u3044\u308B\u3053\u3068\u3002"
+    sourcePersonalityHint: "\u6A19\u6E96\uFF0F\u4EF2\u9593\u601D\u3044\uFF0F\u81C6\u75C5\uFF08\u5FC5\u9808\u30D5\u30A3\u30EB\u30BF\u3067\u306F\u306A\u3044\uFF09"
+    sourcePlaybackHint: "\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u8074\u53D6\u7BC4\u56F2\u5185\uFF0F\u975E\u6226\u95D8\uFF0F\u53CC\u65B9\u751F\u5B58\uFF0F\u4ED6\u306E\u4F1A\u8A71\u3068\u6392\u4ED6\u3002\u5171\u901A\u30AF\u30FC\u30EB\u30C0\u30A6\u30F3120\u301C240\u79D2\uFF08\u63D0\u6848\u5024\uFF09\u3002"
+    title: "AMB_CIV_027\u3000\u66FF\u3048\u306E\u5305\u5E2F"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u5305\u5E2F\u3092\u77ED\u304F\u5207\u308A\u3059\u304E\u307E\u3057\u305F\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u6368\u3066\u305A\u306B\u53D6\u3063\u3068\u3051\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u4F55\u306B\u4F7F\u3046\u3093\u3067\u3059\u304B\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: AMB_CIV_028
+    requiredStage: 0
+    requiredInitiatorFactionId: 
+    requiredPartnerFactionId: 
+    sourceSituation: "\u533B\u8005\u3068\u52A9\u624B\u30FB\u624B\u5F53\u3066"
+    sourcePrerequisites: "\u6551\u51FA\u524D\u306E\u5B89\u5168\u306A\u5F85\u6A5F\u5834\u6240\u3001\u81E8\u6642\u91CE\u55B6\u5730\u3001\u307E\u305F\u306F\u8B77\u885B\u4E2D\u306E\u4F11\u6B62\u5730\u70B9\u3067\u4F7F\u7528\u3002\u4F1A\u8A71\u76F8\u624B\u304C\u305D\u306E\u5834\u306B2\u4EBA\u3044\u308B\u3053\u3068\u3002"
+    sourcePersonalityHint: "\u6A19\u6E96\uFF0F\u4EF2\u9593\u601D\u3044\uFF0F\u81C6\u75C5\uFF08\u5FC5\u9808\u30D5\u30A3\u30EB\u30BF\u3067\u306F\u306A\u3044\uFF09"
+    sourcePlaybackHint: "\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u8074\u53D6\u7BC4\u56F2\u5185\uFF0F\u975E\u6226\u95D8\uFF0F\u53CC\u65B9\u751F\u5B58\uFF0F\u4ED6\u306E\u4F1A\u8A71\u3068\u6392\u4ED6\u3002\u5171\u901A\u30AF\u30FC\u30EB\u30C0\u30A6\u30F3120\u301C240\u79D2\uFF08\u63D0\u6848\u5024\uFF09\u3002"
+    title: "AMB_CIV_028\u3000\u71B1\u306E\u5909\u5316"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u71B1\u304C\u5C11\u3057\u4E0B\u304C\u308A\u307E\u3057\u305F\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u5B89\u5FC3\u3059\u308B\u306E\u306F\u65E9\u3044\u304C\u3001\u3044\u3044\u5146\u3057\u3060\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u306F\u3044\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: AMB_CIV_029
+    requiredStage: 0
+    requiredInitiatorFactionId: 
+    requiredPartnerFactionId: 
+    sourceSituation: "\u533B\u8005\u3068\u52A9\u624B\u30FB\u624B\u5F53\u3066"
+    sourcePrerequisites: "\u6551\u51FA\u524D\u306E\u5B89\u5168\u306A\u5F85\u6A5F\u5834\u6240\u3001\u81E8\u6642\u91CE\u55B6\u5730\u3001\u307E\u305F\u306F\u8B77\u885B\u4E2D\u306E\u4F11\u6B62\u5730\u70B9\u3067\u4F7F\u7528\u3002\u4F1A\u8A71\u76F8\u624B\u304C\u305D\u306E\u5834\u306B2\u4EBA\u3044\u308B\u3053\u3068\u3002"
+    sourcePersonalityHint: "\u6A19\u6E96\uFF0F\u4EF2\u9593\u601D\u3044\uFF0F\u81C6\u75C5\uFF08\u5FC5\u9808\u30D5\u30A3\u30EB\u30BF\u3067\u306F\u306A\u3044\uFF09"
+    sourcePlaybackHint: "\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u8074\u53D6\u7BC4\u56F2\u5185\uFF0F\u975E\u6226\u95D8\uFF0F\u53CC\u65B9\u751F\u5B58\uFF0F\u4ED6\u306E\u4F1A\u8A71\u3068\u6392\u4ED6\u3002\u5171\u901A\u30AF\u30FC\u30EB\u30C0\u30A6\u30F3120\u301C240\u79D2\uFF08\u63D0\u6848\u5024\uFF09\u3002"
+    title: "AMB_CIV_029\u3000\u76EE\u3092\u899A\u307E\u3059\u307E\u3067"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u307E\u3060\u8D77\u304D\u307E\u305B\u3093\u306D\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u547C\u5438\u306F\u843D\u3061\u7740\u3044\u3066\u308B\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u305D\u3070\u306B\u3044\u307E\u3059\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: AMB_CIV_030
+    requiredStage: 0
+    requiredInitiatorFactionId: 
+    requiredPartnerFactionId: 
+    sourceSituation: "\u533B\u8005\u3068\u52A9\u624B\u30FB\u624B\u5F53\u3066"
+    sourcePrerequisites: "\u6551\u51FA\u524D\u306E\u5B89\u5168\u306A\u5F85\u6A5F\u5834\u6240\u3001\u81E8\u6642\u91CE\u55B6\u5730\u3001\u307E\u305F\u306F\u8B77\u885B\u4E2D\u306E\u4F11\u6B62\u5730\u70B9\u3067\u4F7F\u7528\u3002\u4F1A\u8A71\u76F8\u624B\u304C\u305D\u306E\u5834\u306B2\u4EBA\u3044\u308B\u3053\u3068\u3002"
+    sourcePersonalityHint: "\u6A19\u6E96\uFF0F\u4EF2\u9593\u601D\u3044\uFF0F\u81C6\u75C5\uFF08\u5FC5\u9808\u30D5\u30A3\u30EB\u30BF\u3067\u306F\u306A\u3044\uFF09"
+    sourcePlaybackHint: "\u30D7\u30EC\u30A4\u30E4\u30FC\u306E\u8074\u53D6\u7BC4\u56F2\u5185\uFF0F\u975E\u6226\u95D8\uFF0F\u53CC\u65B9\u751F\u5B58\uFF0F\u4ED6\u306E\u4F1A\u8A71\u3068\u6392\u4ED6\u3002\u5171\u901A\u30AF\u30FC\u30EB\u30C0\u30A6\u30F3120\u301C240\u79D2\uFF08\u63D0\u6848\u5024\uFF09\u3002"
+    title: "AMB_CIV_030\u3000\u5730\u4E0A\u306E\u8A3A\u7642\u6240"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u623B\u3063\u305F\u3089\u6700\u521D\u306B\u4F55\u3092\u3057\u307E\u3059\uFF1F"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u85AC\u68DA\u3092\u6E80\u305F\u3059\u3002"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u60A3\u8005\u3088\u308A\u5148\u3067\u3059\u304B\uFF1F"
+      displaySeconds: 2.4
+      pauseAfterSeconds: 0.35

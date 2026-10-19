@@ -35,6 +35,15 @@ public sealed class TownUnifiedTradeScreen2D : MonoBehaviour
 
     public bool IsOpen => isOpen;
 
+    /// <summary>洞窟用Prefabで呼ぶ。町の画面には影響しない。</summary>
+    public void BindDungeonPlayer(InventoryController inventory, PlayerTradeInventoryBridge bridge,
+        GameSessionManager session, EquipmentController equipment = null)
+    {
+        playerTradeInventory = bridge;
+        pawnShopController = null; // 町の質屋の閉じる判定は洞窟では使わない
+        if (tradeController != null) tradeController.BindDungeonPlayer(inventory, bridge, session, equipment);
+    }
+
     private void Awake()
     {
         if (windowRect != null) originalScale = windowRect.localScale;

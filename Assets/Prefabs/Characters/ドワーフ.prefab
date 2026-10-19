@@ -139,6 +139,11 @@ GameObject:
   - component: {fileID: 7775196102900000240}
   - component: {fileID: 6583845886693845767}
   - component: {fileID: 8746000767295557961}
+  - component: {fileID: 511087309453520533}
+  - component: {fileID: 3195183979393157919}
+  - component: {fileID: 2514138117899177849}
+  - component: {fileID: 2954167425510822944}
+  - component: {fileID: 6887291914238708381}
   m_Layer: 16
   m_Name: "\u30C9\u30EF\u30FC\u30D5"
   m_TagString: Untagged
@@ -526,7 +531,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4616794928283158267}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cd91a2548950a8c4c9570fbb31199cb9, type: 3}
   m_Name: 
@@ -638,6 +643,152 @@ MonoBehaviour:
   coweringBoolName: IsCowering
   debugLogs: 0
   showGizmo: 1
+--- !u!114 &511087309453520533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4616794928283158267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5c813cdc89f9a084ebf0ae7faacb3ee7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueBattleBarks2D
+  barkData: {fileID: 11400000, guid: 91c623ba49bcd1f41b9dda38c0363989, type: 2}
+  dialogueActor: {fileID: 0}
+  globalCooldown: 1.5
+  sameTriggerCooldown: 6
+  displaySeconds: 2.4
+  lowHealthThreshold: 0.3
+  muteWhileNormalDialogue: 1
+  muteWhileCarried: 1
+  replacePreviousBubble: 1
+  enableTypewriter: 1
+  secondsPerCharacter: 0.045
+  minimumFullyVisibleSeconds: 0.7
+  japaneseFont: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
+  worldOffset: {x: 0, y: 2, z: 0}
+  widthInWorldUnits: 3.5
+  sortingOrder: 120
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  backgroundColor: {r: 0.08, g: 0.1, b: 0.14, a: 0.9}
+  debugLogs: 0
+--- !u!114 &3195183979393157919
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4616794928283158267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8128de001e18e04f9872ec9a555cadf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueActor2D
+  dialogue: {fileID: 11400000, guid: 6a018a0cf4b301940a8373a68a3f69e6, type: 2}
+  useEKeyInteraction: 1
+  interactionDistance: 2.5
+  playerTransform: {fileID: 0}
+  preventWhenDead: 1
+  preventWhenCarried: 1
+  preventWhenHostileToPlayer: 1
+  onDialogueEvent:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &2514138117899177849
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4616794928283158267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f572023aef5d04a41be1f6f463b44f89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonNpcShop2D
+  tradeProfile: {fileID: 11400000, guid: 91d3673e56ab96149875b9f1f8c53c53, type: 2}
+  playerInventory: {fileID: 0}
+  usualPlayerInventoryGridUI: {fileID: 0}
+  playerPositionOverride: {fileID: 0}
+  playerEquipmentOverride: {fileID: 0}
+  interactionRadius: 2.5
+  interactionKey: 101
+  closeKey: 27
+  optionalGuiSkin: {fileID: 0}
+  showDebugLogs: 0
+  useInventoryGridTradeUI: 1
+  japaneseTradeFont: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
+  useSharedTownTradeUI: 1
+  sharedTownTradeScreen: {fileID: 0}
+  sharedMerchantStock: {fileID: 0}
+  sharedPlayerBridge: {fileID: 0}
+--- !u!114 &2954167425510822944
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4616794928283158267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c683bd8b06f69f42b7cfe1213444a47, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueAmbientTalk2D
+  talkData: {fileID: 0}
+  additionalDialogue600TalkData: {fileID: 11400000, guid: 6e46635402093f54095357fafdb5fbb1, type: 2}
+  dialogueActor: {fileID: 0}
+  allowDifferentNonHostileFactions: 1
+  talkRadius: 2.8
+  maxHeightDifference: 1.7
+  startProbability: 0.42
+  scanInterval: 3.5
+  minimumRestSeconds: 120
+  maximumRestSeconds: 240
+  maxPartnerDrift: 3.7
+  limitImportedTalkToPlayerHearingRange: 1
+  importedTalkHearingRadius: 12
+  enableTypewriter: 1
+  secondsPerCharacter: 0.045
+  minimumFullyVisibleSeconds: 0.7
+  japaneseFont: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
+  worldOffset: {x: 0, y: 2, z: 0}
+  widthInWorldUnits: 3.5
+  sortingOrder: 120
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  backgroundColor: {r: 0.08, g: 0.1, b: 0.14, a: 0.9}
+  debugLogs: 0
+--- !u!114 &6887291914238708381
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4616794928283158267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 830c486f8eb2fc74e9d3c0fd3149617f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Dialogue600SoloSpeaker2D
+  regularLibrary: {fileID: 11400000, guid: 271fff50707389049b6f5c3f9beb267f, type: 2}
+  hostileLibrary: {fileID: 0}
+  enableHostileSoliloquies: 1
+  hearingRadius: 11
+  firstTalkDelayMin: 12
+  firstTalkDelayMax: 24
+  cooldownMin: 90
+  cooldownMax: 180
+  chancePerAttempt: 0.8
+  japaneseFont: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
+  worldOffset: {x: 0, y: 2, z: 0}
+  bubbleWidth: 3.5
+  secondsPerCharacter: 0.045
+  minimumFullyVisibleSeconds: 0.85
+  sortingOrder: 119
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  backgroundColor: {r: 0.08, g: 0.1, b: 0.14, a: 0.9}
+  debugLogs: 0
 --- !u!1 &6017319517165086994
 GameObject:
   m_ObjectHideFlags: 0

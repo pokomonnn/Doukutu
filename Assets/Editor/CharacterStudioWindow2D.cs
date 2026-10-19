@@ -235,6 +235,7 @@ public sealed partial class CharacterStudioWindow2D : EditorWindow
             DrawSection(Section.Identity, "洞窟NPC・基本情報", DrawCharacterIdentity);
             DrawSection(Section.Rescue, "救出・運搬・症状・支援", DrawCharacterRescue);
             DrawSection(Section.Trade, "購入・売却・物々交換", DrawCharacterTrade);
+            DrawCharacterDialogueSettings();
             DrawSection(Section.Faction, "派閥・友好度連携・戦闘", DrawCharacterFaction);
             DrawSection(Section.Advanced, "全コンポーネントをInspector形式で表示", DrawAdvanced);
             GUILayout.Space(15);

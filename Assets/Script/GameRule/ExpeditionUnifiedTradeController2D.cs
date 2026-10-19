@@ -62,6 +62,24 @@ public class ExpeditionUnifiedTradeController2D : MonoBehaviour
     private float nextVisualRefresh;
     private float nextValidation;
 
+    private bool isDungeonTrade;
+    private EquipmentController dungeonEquipment;
+
+    // 洞窟NPCで画面を開く前に、シーン固有の参照を安全に差し替える。
+    // 町の通常ルートでは呼ばないので従来の動作を変更しない。
+    public void BindDungeonPlayer(InventoryController inventory, PlayerTradeInventoryBridge bridge,
+        GameSessionManager session, EquipmentController equipment = null)
+    {
+        isDungeonTrade = true;
+        // 洞窟ではNPCが解決した「実際のTabインベントリ」を唯一の正しい参照とする。
+        // 町Prefabに残った古いPlayerGridUI.Controllerで上書きしない。
+        playerInventory = inventory;
+        townInventoryBridge = bridge != null && bridge.InventoryController == inventory ? bridge : null;
+        dungeonEquipment = equipment;
+        sessionManager = session;
+        sellRules = null; // 町の商店専用ルールではなくNPCの買取条件を使う。
+    }
+
     public bool IsOpen => isOpen;
     public bool HasPendingSelections => buying.Count > 0 || selling.Count > 0;
 
@@ -89,10 +107,11 @@ public class ExpeditionUnifiedTradeController2D : MonoBehaviour
     {
         if (stock != null) merchantStock = stock;
         if (sessionManager == null) sessionManager = GameSessionManager.Instance;
-        if (playerInventory == null && playerGridUI != null) playerInventory = playerGridUI.Controller;
-        if (playerInventory == null && townInventoryBridge != null)
+        if (!isDungeonTrade && playerInventory == null && playerGridUI != null)
+            playerInventory = playerGridUI.Controller;
+        if (!isDungeonTrade && playerInventory == null && townInventoryBridge != null)
             playerInventory = townInventoryBridge.InventoryController;
-        if (playerInventory == null)
+        if (!isDungeonTrade && playerInventory == null)
             playerInventory = FindAnyObjectByType<InventoryController>(FindObjectsInactive.Include);
         if (merchantStock == null || merchantGridUI == null || playerGridUI == null ||
             playerInventory == null || sessionManager == null)
@@ -100,9 +119,9 @@ public class ExpeditionUnifiedTradeController2D : MonoBehaviour
             SetStatus("売買に必要な参照が不足しています（店舗・2つのGrid・Inventory・GameSessionManager）。", true);
             return false;
         }
-        if (merchantStock.ShopData == null)
+        if (!merchantStock.IsReady)
         {
-            SetStatus("MerchantStockInventoryのShopDataを設定してください。", true);
+            SetStatus("MerchantStockInventoryにShopDataまたは洞窟NPCのTrade Profileを設定してください。", true);
             return false;
         }
         merchantStock.PrepareForOpen();
@@ -120,6 +139,16 @@ public class ExpeditionUnifiedTradeController2D : MonoBehaviour
         if (sellRules != null) sellRules.SetMerchantStock(merchantStock);
         merchantGridUI.BindItemBoxInventory(stockInventory);
         playerGridUI.BindPlayerInventory(playerInventory);
+        if (isDungeonTrade)
+        {
+            string detail = "[共通売買UI] PlayerInventory=" + playerInventory.name +
+                " / マス=" + playerInventory.Grid.Width + "x" + playerInventory.Grid.Height +
+                " / 所持アイテム数=" + playerInventory.Grid.Items.Count;
+            if (playerInventory.Grid.Items.Count == 0)
+                Debug.LogWarning(detail + "。普段のTabインベントリに品物がある場合、" +
+                    "NPCの『通常インベントリのGrid UI』へ正しいInventoryGridUIを指定してください。", this);
+            else Debug.Log(detail, this);
+        }
         buying.Clear();
         selling.Clear();
         editingItem = null;
@@ -274,6 +303,7 @@ public class ExpeditionUnifiedTradeController2D : MonoBehaviour
     {
         if (item == null || item.ItemData == null) return 0;
         return sellRules != null ? sellRules.GetUnitSellPrice(item)
+            : merchantStock != null ? merchantStock.GetUnitSellPrice(item.ItemData)
             : Mathf.Max(0, item.ItemData.SellPrice);
     }
 
@@ -449,6 +479,52 @@ public class ExpeditionUnifiedTradeController2D : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// 洞窟NPCが「売られた品を商品棚に追加」する場合の容量を事前試算。
+    /// 町の店舗はここを通さないため従来の売買を変えない。
+    /// </summary>
+    private bool FitsShopAfterTransaction()
+    {
+        if (merchantStock == null || !merchantStock.IsDungeonMerchant ||
+            merchantStock.DungeonTradeProfile == null ||
+            !merchantStock.DungeonTradeProfile.addSoldItemsToStock) return true;
+        InventoryGrid grid = merchantStock.StockInventory != null ? merchantStock.StockInventory.Grid : null;
+        if (grid == null) return false;
+        bool[,] occupied = new bool[grid.Width, grid.Height];
+        Dictionary<ItemData, long> stackSpace = new Dictionary<ItemData, long>();
+        foreach (InventoryItem item in grid.Items)
+        {
+            if (item == null || item.ItemData == null) continue;
+            int bought = buying.TryGetValue(item, out int amount) ? amount : 0;
+            int remaining = Mathf.Max(0, item.Amount - bought);
+            if (remaining == 0) continue;
+            Vector2Int sz = item.ItemData.GetSize(item.IsRotated);
+            for (int y = item.GridY; y < item.GridY + sz.y; y++)
+                for (int x = item.GridX; x < item.GridX + sz.x; x++)
+                    if (x >= 0 && y >= 0 && x < grid.Width && y < grid.Height) occupied[x, y] = true;
+            if (!item.ItemData.CanStack) continue;
+            stackSpace.TryGetValue(item.ItemData, out long current);
+            stackSpace[item.ItemData] = current + Mathf.Max(0, item.ItemData.MaxStack - remaining);
+        }
+        foreach (KeyValuePair<InventoryItem, int> entry in selling)
+        {
+            ItemData data = entry.Key.ItemData;
+            int remaining = entry.Value;
+            if (data.CanStack && stackSpace.TryGetValue(data, out long capacity))
+            {
+                int add = (int)Math.Min((long)remaining, capacity);
+                remaining -= add;
+                stackSpace[data] = capacity - add;
+            }
+            while (remaining > 0)
+            {
+                if (!ReserveSpace(occupied, grid.Width, grid.Height, data)) return false;
+                remaining -= Mathf.Min(remaining, Mathf.Max(1, data.MaxStack));
+            }
+        }
+        return true;
+    }
+
     private struct RemovedEntry
     {
         public ItemData Data;
@@ -470,6 +546,8 @@ public class ExpeditionUnifiedTradeController2D : MonoBehaviour
             playerInventory == null || sessionManager == null) return Fail("売買システムへの参照が不足しています。");
         if (!CalculateTotals(out long buy, out long sell)) return Fail("金額上限を超えました。");
         long net = buy - sell;
+        if (!merchantStock.CanPayNpcBalance(buy, sell))
+            return Fail("NPCの買取資金が不足しています。購入との差額を確認してください。");
         if (net > sessionManager.CurrentMoney) return Fail("所持金が足りません。差額を確認してください。");
         if (net < 0 && -net > int.MaxValue - (long)sessionManager.CurrentMoney)
             return Fail("所持金上限を超えるため精算できません。");
@@ -487,10 +565,16 @@ public class ExpeditionUnifiedTradeController2D : MonoBehaviour
                 return Fail("売却品を確認できません。選択し直してください。");
         }
         if (!FitsAfterSales()) return Fail("購入後のプレイヤーInventoryに空きがありません。");
+        if (!FitsShopAfterTransaction()) return Fail("商人の商品棚に買取品を置く空きがありません。");
 
         // 本決済。最終金額を固定し、変化イベントで選択が変更されないよう同期処理する。
         EquipmentController backupEquipment = townInventoryBridge != null
             ? townInventoryBridge.EquipmentController : null;
+        if (backupEquipment == null && isDungeonTrade) backupEquipment = dungeonEquipment;
+        if (isDungeonTrade && backupEquipment == null)
+            return Fail("PlayerのEquipmentControllerを特定できません。" +
+                "装備データの消失を防ぐため決済を中止しました。" +
+                "PlayerInventorySessionBridgeのEquipment参照を確認してください。");
         // 完全なInventorySnapshotを先に保存。武器の耐久や残弾も保持して失敗時に復元できる。
         if (!sessionManager.CapturePlayerInventory(playerInventory, backupEquipment))
             return Fail("安全なInventoryバックアップを作れないため決済を中止しました。");
@@ -500,6 +584,13 @@ public class ExpeditionUnifiedTradeController2D : MonoBehaviour
         List<RemovedEntry> removedStock = new List<RemovedEntry>();
         Dictionary<ItemData, int> purchasedBefore = new Dictionary<ItemData, int>();
         Dictionary<ItemData, int> purchasedAmount = new Dictionary<ItemData, int>();
+        Dictionary<ItemData, int> purchasedSales = new Dictionary<ItemData, int>();
+        foreach (KeyValuePair<InventoryItem, int> entry in selling)
+        {
+            ItemData data = entry.Key.ItemData;
+            purchasedSales.TryGetValue(data, out int current);
+            purchasedSales[data] = current + entry.Value;
+        }
         foreach (KeyValuePair<InventoryItem, int> entry in buying)
         {
             ItemData data = entry.Key.ItemData;
@@ -569,6 +660,8 @@ public class ExpeditionUnifiedTradeController2D : MonoBehaviour
             RefreshGridAndTotals();
             return Fail(failure + "。Inventory復元ログも確認してください。");
         }
+        // 決済が完全に成功したあとだけ洞窟NPCの在庫と所持金を更新。
+        merchantStock.CommitDungeonTrade(buy, sell, purchasedSales);
         isCheckingOut = false;
         buying.Clear();
         selling.Clear();
@@ -591,7 +684,7 @@ public class ExpeditionUnifiedTradeController2D : MonoBehaviour
         }
         if (sessionManager != null && playerInventory != null)
             sessionManager.CapturePlayerInventory(playerInventory,
-                townInventoryBridge != null ? townInventoryBridge.EquipmentController : null);
+                townInventoryBridge != null ? townInventoryBridge.EquipmentController : dungeonEquipment);
     }
 
     private void RefreshGridAndTotals()

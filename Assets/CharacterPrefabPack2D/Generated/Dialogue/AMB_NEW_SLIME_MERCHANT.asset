@@ -1,0 +1,306 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 004c82aad18bc534fb95f47d90f128a5, type: 3}
+  m_Name: AMB_NEW_SLIME_MERCHANT
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueAmbientTalkData2D
+  displayName: "\u30B9\u30E9\u30A4\u30E0\u5546\u4EBA\u5C02\u7528\u306E\u639B\u3051\u5408\u3044\uFF08\u65B0\u898F\u30FB600\u4EF6\u3068\u306F\u5225\uFF09"
+  exchanges:
+  - sourceDialogueId: NEW_SLIME_MERCHANT_AMB_001
+    requiredStage: 0
+    requiredInitiatorFactionId: monster_traders
+    requiredPartnerFactionId: monster_traders
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    title: "\u30B9\u30E9\u30A4\u30E0\u5546\u4EBA\u306E\u53CD\u97FF 1"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u3077\u308B\u2026\u2026\u3077\u308B\u308B\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u307D\u3088\uFF1F"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u3077\u308B\u3093\uFF01"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: NEW_SLIME_MERCHANT_AMB_002
+    requiredStage: 0
+    requiredInitiatorFactionId: monster_traders
+    requiredPartnerFactionId: monster_traders
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    title: "\u30B9\u30E9\u30A4\u30E0\u5546\u4EBA\u306E\u53CD\u97FF 2"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u307D\u3053\u3001\u307D\u3053\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u3077\u308B\u308B\u308B\u2026\u2026\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u307D\u3053\u3093\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: NEW_SLIME_MERCHANT_AMB_003
+    requiredStage: 0
+    requiredInitiatorFactionId: monster_traders
+    requiredPartnerFactionId: monster_traders
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    title: "\u30B9\u30E9\u30A4\u30E0\u5546\u4EBA\u306E\u53CD\u97FF 3"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u2026\u2026\u3077\u3061\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u307D\u3088\u3088\uFF1F"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u3077\u308B\u308B\u3063\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: NEW_SLIME_MERCHANT_AMB_004
+    requiredStage: 0
+    requiredInitiatorFactionId: monster_traders
+    requiredPartnerFactionId: monster_traders
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    title: "\u30B9\u30E9\u30A4\u30E0\u5546\u4EBA\u306E\u53CD\u97FF 4"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u307D\u3088\u3093\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u307D\u3088\u3093\uFF01"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u3077\u308B\u3063\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: NEW_SLIME_MERCHANT_AMB_005
+    requiredStage: 0
+    requiredInitiatorFactionId: monster_traders
+    requiredPartnerFactionId: monster_traders
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    title: "\u30B9\u30E9\u30A4\u30E0\u5546\u4EBA\u306E\u53CD\u97FF 5"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u3077\u304F\u3001\u3077\u304F\u2026\u2026\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u3077\u308B\u2026\u2026\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u307D\u3093\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: NEW_SLIME_MERCHANT_AMB_006
+    requiredStage: 0
+    requiredInitiatorFactionId: monster_traders
+    requiredPartnerFactionId: monster_traders
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    title: "\u30B9\u30E9\u30A4\u30E0\u5546\u4EBA\u306E\u53CD\u97FF 6"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u307D\u3088\u2026\u2026\uFF1F"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u3077\u308B\u3077\u308B\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u307D\u3088\u3063\uFF01"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: NEW_SLIME_MERCHANT_AMB_007
+    requiredStage: 0
+    requiredInitiatorFactionId: monster_traders
+    requiredPartnerFactionId: monster_traders
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    title: "\u30B9\u30E9\u30A4\u30E0\u5546\u4EBA\u306E\u53CD\u97FF 7"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u3077\u308B\u2026\u2026\u307D\u3053\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u307D\u3053\u307D\u3053\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u3077\u308B\u308B\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: NEW_SLIME_MERCHANT_AMB_008
+    requiredStage: 0
+    requiredInitiatorFactionId: monster_traders
+    requiredPartnerFactionId: monster_traders
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    title: "\u30B9\u30E9\u30A4\u30E0\u5546\u4EBA\u306E\u53CD\u97FF 8"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u3077\u3061\u3063\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u2026\u2026\u3077\u308B\uFF1F"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u3077\u3061\u3077\u3061\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: NEW_SLIME_MERCHANT_AMB_009
+    requiredStage: 0
+    requiredInitiatorFactionId: monster_traders
+    requiredPartnerFactionId: monster_traders
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    title: "\u30B9\u30E9\u30A4\u30E0\u5546\u4EBA\u306E\u53CD\u97FF 9"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u307D\u3088\u3093\u3001\u307D\u3088\u3093\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u3077\u308B\u308B\u308B\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u307D\u3088\uFF01"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+  - sourceDialogueId: NEW_SLIME_MERCHANT_AMB_010
+    requiredStage: 0
+    requiredInitiatorFactionId: monster_traders
+    requiredPartnerFactionId: monster_traders
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    title: "\u30B9\u30E9\u30A4\u30E0\u5546\u4EBA\u306E\u53CD\u97FF 10"
+    weight: 1
+    probability: 1
+    conditions: []
+    requireInitiatorPersonality: 0
+    initiatorPersonality: 0
+    requirePartnerPersonality: 0
+    partnerPersonality: 0
+    lines:
+    - speaker: 0
+      text: "\u3077\u304F\u2026\u2026\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 1
+      text: "\u307D\u3053\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35
+    - speaker: 0
+      text: "\u3077\u308B\u3093\u2026\u2026\u3002"
+      displaySeconds: 2.5
+      pauseAfterSeconds: 0.35

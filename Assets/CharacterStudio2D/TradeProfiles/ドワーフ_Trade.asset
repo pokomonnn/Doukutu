@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e24899f0b0e65714592fe59ebca479d5, type: 3}
+  m_Name: "\u30C9\u30EF\u30FC\u30D5_Trade"
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonNpcTradeProfile2D
+  products:
+  - item: {fileID: 11400000, guid: a3b808ca916280a46816c5033eac419a, type: 2}
+    priceOverride: 0
+    stock: 90
+  - item: {fileID: 11400000, guid: c375d2bc72fdf754a9bb76c08017179c, type: 2}
+    priceOverride: 0
+    stock: 1
+  - item: {fileID: 11400000, guid: 4e7046421b99b8d47bd6599f6af96914, type: 2}
+    priceOverride: 0
+    stock: 6
+  - item: {fileID: 11400000, guid: ea7581793bcc8bb46b4e27ace4109183, type: 2}
+    priceOverride: 0
+    stock: 20
+  - item: {fileID: 11400000, guid: 2a46d0e95fe6b714bb4a0aa5501c2f04, type: 2}
+    priceOverride: 0
+    stock: 1
+  purchasePriceMultiplier: 1
+  addSoldItemsToStock: 1
+  buyAnyItem: 1
+  acceptedOnly:
+  - {fileID: 11400000, guid: ea7581793bcc8bb46b4e27ace4109183, type: 2}
+  - {fileID: 11400000, guid: fb52aa05e33bca54e9a1f901280855d0, type: 2}
+  - {fileID: 11400000, guid: c375d2bc72fdf754a9bb76c08017179c, type: 2}
+  - {fileID: 11400000, guid: a3b808ca916280a46816c5033eac419a, type: 2}
+  - {fileID: 11400000, guid: 4e7046421b99b8d47bd6599f6af96914, type: 2}
+  rejected: []
+  sellPriceMultiplier: 1
+  startingNpcMoney: -1
+  exchanges: []

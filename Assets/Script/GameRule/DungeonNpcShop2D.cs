@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 /// <summary>
 /// ダンジョンNPC専用の購入・売却窓。Eで開く。
@@ -12,11 +13,33 @@ public sealed class DungeonNpcShop2D : MonoBehaviour
     [Header("商人")]
     [SerializeField] private DungeonNpcTradeProfile2D tradeProfile;
     [SerializeField] private InventoryController playerInventory;
+    [Header("STEP4 v1.3.5：Player所持品の自動参照")]
+    [Tooltip("任意。普段Tabで開くインベントリ画面のInventoryGridUIを指定。Player本体にInventoryControllerは不要です。")]
+    [SerializeField] private InventoryGridUI usualPlayerInventoryGridUI;
+    [Tooltip("任意。Playerの位置。未指定ならPlayerタグから取得します。InventoryControllerの位置で距離判定しません。")]
+    [SerializeField] private Transform playerPositionOverride;
+    [Tooltip("任意。装備ControllerもPlayerと別Objectにある場合に割り当てます。未指定ならPlayer/SessionBridgeから探索します。")]
+    [SerializeField] private EquipmentController playerEquipmentOverride;
     [SerializeField, Min(0.5f)] private float interactionRadius = 2.5f;
     [SerializeField] private KeyCode interactionKey = KeyCode.E;
     [SerializeField] private KeyCode closeKey = KeyCode.Escape;
     [SerializeField] private GUISkin optionalGuiSkin;
     [SerializeField] private bool showDebugLogs;
+    [Header("町と同じインベントリ形式の売買UI")]
+    [Tooltip("ONで左右グリッドの売買UIを表示。OFFなら従来の簡易IMGUI画面")]
+    [SerializeField] private bool useInventoryGridTradeUI = true;
+    [Tooltip("日本語表示が四角になる場合に日本語TMP FontAssetを設定")]
+    [SerializeField] private TMP_FontAsset japaneseTradeFont;
+
+    [Header("町と共通の売買Prefab（STEP4 v1.3.4）")]
+    [Tooltip("ONなら町と同じPrefab/一括会計を使用。既存の簡易UIは使いません。")]
+    [SerializeField] private bool useSharedTownTradeUI;
+    [Tooltip("町UIから生成したPrefabのTownUnifiedTradeScreen2D。洞窟Canvas内に配置します。")]
+    [SerializeField] private TownUnifiedTradeScreen2D sharedTownTradeScreen;
+    [Tooltip("NPCの子に設けたMerchantStockInventory。DungeonNpcTradeProfileを自動読み込みします。")]
+    [SerializeField] private MerchantStockInventory sharedMerchantStock;
+    [Tooltip("任意。未指定ならPlayerのInventoryから検索します。")]
+    [SerializeField] private PlayerTradeInventoryBridge sharedPlayerBridge;
 
     private readonly Dictionary<ItemData, int> stock = new Dictionary<ItemData, int>();
     private bool isOpen;
@@ -36,6 +59,13 @@ public sealed class DungeonNpcShop2D : MonoBehaviour
     private GUISkin cachedStyleSkin;
 
     public bool IsOpen => isOpen;
+    public InventoryController TradePlayerInventory { get { FindPlayer(); return playerInventory; } }
+    public string TradeDisplayName => identity != null ? identity.DisplayName : name;
+    public List<ItemData> TradeAllProducts() => new List<ItemData>(stock.Keys);
+    public int TradeGetStock(ItemData item) => GetStock(item);
+    public int TradeGetBuyPrice(ItemData item) => GetPrice(item);
+    public int TradeGetSellPrice(ItemData item) => tradeProfile != null && item != null ? tradeProfile.GetSellPrice(item) : 0;
+    public bool TradeCanSell(ItemData item) => tradeProfile != null && tradeProfile.WillBuy(item) && item != null && item.CanSellToShop;
 
     private void Awake()
     {
@@ -64,6 +94,13 @@ public sealed class DungeonNpcShop2D : MonoBehaviour
     {
         if (isOpen)
         {
+            if (useSharedTownTradeUI && sharedTownTradeScreen != null &&
+                !sharedTownTradeScreen.IsOpen)
+            {
+                // UIの閉じるボタンで閉じた場合もNPCの状態を同期。
+                CloseShop();
+                return;
+            }
             if (!IsNpcAvailable() || Input.GetKeyDown(closeKey)) CloseShop();
             return;
         }
@@ -74,42 +111,173 @@ public sealed class DungeonNpcShop2D : MonoBehaviour
     private bool IsNpcAvailable() => tradeProfile != null && (health == null || !health.IsDead) &&
         (carryable == null || (!carryable.IsCarried && !carryable.IsExternallyReserved));
 
+    /// <summary>
+    /// Player本体にInventoryControllerを増設しないこと。
+    /// 普段のTabインベントリUIが使っているControllerを優先して取得する。
+    /// </summary>
     private bool FindPlayer()
     {
-        if (playerInventory != null && playerInventory.gameObject.activeInHierarchy) return true;
-        var all = FindObjectsByType<InventoryController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-        foreach (var inv in all)
+        if (SharedTradePlayerInventoryResolver2D.TryResolve(
+                this, usualPlayerInventoryGridUI, playerInventory,
+                out InventoryController resolved, out string reason))
         {
-            if (inv == null) continue;
-            Transform current = inv.transform;
-            while (current != null)
-            {
-                if (current.CompareTag("Player")) { playerInventory = inv; return true; }
-                current = current.parent;
-            }
+            if (playerInventory != resolved && showDebugLogs)
+                Debug.Log("[DungeonNpcShop2D] Player所持品の参照を接続: " + reason, this);
+            playerInventory = resolved;
+            return true;
         }
+        if (showDebugLogs) Debug.LogWarning("[DungeonNpcShop2D] " + reason, this);
         return false;
+    }
+
+    /// <summary>InventoryのあるObjectではなく、Playerキャラクターの位置で距離判定。</summary>
+    private Transform GetPlayerPositionTransform()
+    {
+        if (playerPositionOverride != null) return playerPositionOverride;
+        Transform taggedPlayer = SharedTradePlayerInventoryResolver2D.FindPlayerTransform();
+        if (taggedPlayer != null) return taggedPlayer;
+        if (playerInventory == null) return null;
+        for (Transform t = playerInventory.transform; t != null; t = t.parent)
+            if (t.CompareTag("Player")) return t;
+        // Playerタグが未設定なら位置を推測せず、取引距離エラーを明示する。
+        return null;
     }
 
     private bool IsPlayerNearby()
     {
-        if (!FindPlayer()) return false;
-        return ((Vector2)(playerInventory.transform.position - transform.position)).sqrMagnitude <=
+        Transform playerTransform = GetPlayerPositionTransform();
+        if (playerTransform == null) return false;
+        return ((Vector2)(playerTransform.position - transform.position)).sqrMagnitude <=
             interactionRadius * interactionRadius;
     }
 
+    // 既存のUnityEventなどが使うvoid版はそのまま残します。
     public void OpenShop()
     {
-        if (!IsNpcAvailable() || !IsPlayerNearby()) return;
+        TryOpenShop(out _);
+    }
+
+    /// <summary>
+    /// Dialogue Studio STEP4から呼ぶ詳細エラー付き版。
+    /// 一般的なEキー操作でも、従来の条件を維持します。
+    /// </summary>
+    public bool TryOpenShop(out string resultMessage)
+    {
+        resultMessage = "";
+        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
+        {
+            resultMessage = "ショップ用コンポーネントまたはNPCが無効になっています";
+            return false;
+        }
+        if (tradeProfile == null)
+        {
+            resultMessage = "商人のTrade Profileが未設定です（DungeonNpcShop2D）";
+            return false;
+        }
+        if (health != null && health.IsDead)
+        {
+            resultMessage = "NPCが死亡しているため取引できません";
+            return false;
+        }
+        if (carryable != null && (carryable.IsCarried || carryable.IsExternallyReserved))
+        {
+            resultMessage = "NPCが運搬中または予約中のため取引できません";
+            return false;
+        }
+        if (!FindPlayer())
+        {
+            SharedTradePlayerInventoryResolver2D.TryResolve(this, usualPlayerInventoryGridUI,
+                playerInventory, out _, out string inventoryError);
+            resultMessage = inventoryError;
+            return false;
+        }
+        if (GetPlayerPositionTransform() == null)
+        {
+            resultMessage = "Playerの位置を取得できません。PlayerタグまたはPlayer Position Overrideを設定してください。";
+            return false;
+        }
+        if (!IsPlayerNearby())
+        {
+            Transform playerPosition = GetPlayerPositionTransform();
+            float distance = playerPosition != null
+                ? Vector2.Distance(playerPosition.position, transform.position)
+                : float.PositiveInfinity;
+            resultMessage = $"ショップの取引距離外です（現在{distance:0.00} / 許可{interactionRadius:0.00}）。Interaction Radiusを確認";
+            return false;
+        }
         var session = GameSessionManager.Instance;
-        if (session == null) { statusMessage = "GameSessionManager が見つかりません"; return; }
+        if (session == null)
+        {
+            resultMessage = "GameSessionManager.Instanceが見つかりません（シーンのSession初期化を確認）";
+            return false;
+        }
         session.EnsureMoneyInitialized();
+        // 町型のPrefabを使う場合は、旧ショップUIや旧在庫を開かない。
+        if (useSharedTownTradeUI)
+        {
+            if (sharedTownTradeScreen == null || sharedMerchantStock == null)
+            {
+                resultMessage = "共通売買UIの参照が未設定です（Trade Screen / Merchant Stock）";
+                return false;
+            }
+            sharedMerchantStock.ConfigureDungeonProfile(tradeProfile);
+            // Bridgeは任意。追加するとInventoryControllerが自動生成される旧設定を避ける。
+            // 今ゲーム内で使っているTabインベントリのControllerを必ず渡す。
+            if (sharedPlayerBridge == null)
+                sharedPlayerBridge = playerInventory.GetComponent<PlayerTradeInventoryBridge>() ??
+                    playerInventory.GetComponentInParent<PlayerTradeInventoryBridge>();
+            if (sharedPlayerBridge != null &&
+                sharedPlayerBridge.InventoryController != playerInventory)
+            {
+                // 別の空Inventoryを持つBridgeは絶対に採用しない。
+                sharedPlayerBridge = null;
+            }
+            EquipmentController playerEquipment = playerEquipmentOverride != null
+                ? playerEquipmentOverride
+                : SharedTradePlayerInventoryResolver2D.FindEquipment(playerInventory, sharedPlayerBridge);
+            sharedTownTradeScreen.BindDungeonPlayer(playerInventory, sharedPlayerBridge, session,
+                playerEquipment);
+            if (!sharedTownTradeScreen.Open(sharedMerchantStock))
+            {
+                resultMessage = "町の共通売買UIを開けません。GameSession・Grid・Shop在庫を確認してください。";
+                return false;
+            }
+            isOpen = true;
+            if (showDebugLogs)
+                Debug.Log("[DungeonNpcShop2D] 売買UIが参照するPlayer所持品: " +
+                    playerInventory.name + " / スタック=" + playerInventory.Grid.Items.Count, this);
+            resultMessage = "共通の売買画面を開きました";
+            return true;
+        }
         isOpen = true;
         viewingBuy = true;
         statusMessage = "";
+        resultMessage = "ショップを開きました";
+        if (useInventoryGridTradeUI)
+        {
+            if (!DungeonNpcInventoryTradeUI2D.OpenFor(this, japaneseTradeFont, out resultMessage))
+            {
+                isOpen = false;
+                return false;
+            }
+        }
+        return true;
     }
 
-    public void CloseShop() { isOpen = false; statusMessage = ""; }
+    public void CloseShop()
+    {
+        isOpen = false;
+        statusMessage = "";
+        if (useSharedTownTradeUI)
+        {
+            if (sharedTownTradeScreen != null && sharedTownTradeScreen.IsOpen)
+                sharedTownTradeScreen.Close();
+        }
+        else
+        {
+            DungeonNpcInventoryTradeUI2D.CloseFor(this);
+        }
+    }
     private void OnDisable() => CloseShop();
 
     private int GetStock(ItemData item) => item != null && stock.TryGetValue(item, out int n) ? n : 0;
@@ -194,7 +362,7 @@ public sealed class DungeonNpcShop2D : MonoBehaviour
 
     private void OnGUI()
     {
-        if (!Application.isPlaying || !isActiveAndEnabled || !IsNpcAvailable()) return;
+        if (!Application.isPlaying || !isActiveAndEnabled || !IsNpcAvailable() || useInventoryGridTradeUI || useSharedTownTradeUI) return;
         if (!isOpen)
         {
             if (IsPlayerNearby())

@@ -55,7 +55,57 @@ public class MerchantStockInventory : MonoBehaviour
     private string rejectedItemMessageFormat =
         "{0}では「{1}」を買い取りません。";
 
+    [Header("洞窟NPC用（町では未設定のまま）")]
+    [Tooltip("DungeonNpcShop2DのTrade Profileを使用する場合に設定。町の商店には影響しません。")]
+    [SerializeField] private DungeonNpcTradeProfile2D dungeonTradeProfile;
+
+    private int dungeonRemainingMoney = -1;
+
+    public bool IsDungeonMerchant => dungeonTradeProfile != null;
     public MerchantShopData ShopData => shopData;
+    public DungeonNpcTradeProfile2D DungeonTradeProfile => dungeonTradeProfile;
+
+    public void ConfigureDungeonProfile(DungeonNpcTradeProfile2D profile)
+    {
+        if (dungeonTradeProfile == profile) return;
+        dungeonTradeProfile = profile;
+        hasPreparedStock = false;
+        dungeonRemainingMoney = profile != null ? profile.startingNpcMoney : -1;
+    }
+
+    public int GetUnitSellPrice(ItemData itemData)
+    {
+        return dungeonTradeProfile != null
+            ? dungeonTradeProfile.GetSellPrice(itemData)
+            : itemData != null ? Mathf.Max(0, itemData.SellPrice) : 0;
+    }
+
+    public bool CanPayNpcBalance(long totalBuying, long totalSelling)
+    {
+        // 差額精算により商人が支払う金額だけをチェック。
+        long needed = totalSelling - totalBuying;
+        return dungeonTradeProfile == null || dungeonRemainingMoney < 0 || needed <= dungeonRemainingMoney;
+    }
+
+    public void CommitDungeonTrade(long totalBuying, long totalSelling,
+        IReadOnlyDictionary<ItemData, int> soldItems)
+    {
+        if (dungeonTradeProfile == null) return;
+        if (dungeonRemainingMoney >= 0)
+        {
+            long next = (long)dungeonRemainingMoney + totalBuying - totalSelling;
+            dungeonRemainingMoney = (int)System.Math.Max(0L, System.Math.Min(next, (long)int.MaxValue));
+        }
+        if (!dungeonTradeProfile.addSoldItemsToStock || soldItems == null || stockInventory == null) return;
+        foreach (KeyValuePair<ItemData, int> entry in soldItems)
+        {
+            if (entry.Key == null || entry.Value <= 0) continue;
+            stockInventory.TryAddItem(entry.Key, entry.Value, out int missing);
+            if (missing > 0)
+                LogWarning("買取品を商品棚へ追加できませんでした: " + entry.Key.DisplayName + " x" + missing);
+        }
+    }
+
     public ItemBoxInventory StockInventory => stockInventory;
 
     // 既存コード互換。統合後はShopData自身がTownFacilityUpgradeDataです。
@@ -89,6 +139,7 @@ public class MerchantStockInventory : MonoBehaviour
     {
         get
         {
+            if (dungeonTradeProfile != null) return transform.parent != null ? transform.parent.name : name;
             if (shopData != null)
             {
                 return shopData.ShopName;
@@ -101,7 +152,7 @@ public class MerchantStockInventory : MonoBehaviour
     }
 
     public bool IsReady =>
-        shopData != null &&
+        (shopData != null || dungeonTradeProfile != null) &&
         stockInventory != null &&
         stockInventory.Grid != null;
 
@@ -125,6 +176,16 @@ public class MerchantStockInventory : MonoBehaviour
         if (stockInventory == null)
         {
             LogWarning("ItemBoxInventoryが見つかりません。");
+            return;
+        }
+
+        if (dungeonTradeProfile != null)
+        {
+            if (!hasPreparedStock)
+            {
+                RebuildStockFromDungeonProfile();
+                hasPreparedStock = true;
+            }
             return;
         }
 
@@ -196,6 +257,19 @@ public class MerchantStockInventory : MonoBehaviour
 
         hasPreparedStock = true;
         lastAppliedFacilityLevel = currentLevel;
+    }
+
+    private void RebuildStockFromDungeonProfile()
+    {
+        if (stockInventory == null || dungeonTradeProfile == null) return;
+        stockInventory.ResetInventoryEmpty();
+        foreach (DungeonNpcTradeProfile2D.Product product in dungeonTradeProfile.products)
+        {
+            if (product == null || product.item == null || product.stock <= 0) continue;
+            stockInventory.TryAddItem(product.item, product.stock, out int missing);
+            if (missing > 0) LogWarning("NPCの商品棚に入りきりません: " + product.item.DisplayName + " x" + missing);
+        }
+        Log("洞窟NPCのTrade Profileから商品在庫を読み込みました");
     }
 
     private void RebuildStockFromShopData(int currentLevel)
@@ -347,6 +421,15 @@ public class MerchantStockInventory : MonoBehaviour
     {
         FindReferences();
 
+        if (dungeonTradeProfile != null)
+        {
+            foreach (DungeonNpcTradeProfile2D.Product product in dungeonTradeProfile.products)
+            {
+                if (product != null && product.item == itemData)
+                    return dungeonTradeProfile.GetBuyPrice(itemData, product.priceOverride);
+            }
+            return dungeonTradeProfile.GetBuyPrice(itemData);
+        }
         return stockInventory != null
             ? stockInventory.GetBuyPrice(itemData)
             : 0;
@@ -360,6 +443,12 @@ public class MerchantStockInventory : MonoBehaviour
         ItemData itemData,
         out string rejectionReason)
     {
+        if (dungeonTradeProfile != null)
+        {
+            bool accepted = itemData != null && itemData.CanSellToShop && dungeonTradeProfile.WillBuy(itemData);
+            rejectionReason = accepted ? string.Empty : "このNPCはそのアイテムを買い取りません。";
+            return accepted;
+        }
         if (shopData != null)
         {
             return shopData.CanBuyFromPlayer(

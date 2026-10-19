@@ -1,0 +1,116 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a2ebcb871cb9ea4481f749c592f26d1, type: 3}
+  m_Name: SOLO_NEW_SLIME
+  m_EditorClassIdentifier: Assembly-CSharp::Dialogue600SoloLibrary2D
+  displayName: "\u30B9\u30E9\u30A4\u30E0\u306E\u72EC\u308A\u8A00\uFF08\u65B0\u898F\u30FB600\u4EF6\u3068\u306F\u5225\uFF09"
+  entries:
+  - sourceDialogueId: NEW_SLIME_SOLO_001
+    title: "\u30B9\u30E9\u30A4\u30E0\u306E\u72EC\u308A\u8A00 1"
+    requiredStage: 0
+    text: "\u3077\u308B\u308B\u2026\u2026\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SLIME_SOLO_002
+    title: "\u30B9\u30E9\u30A4\u30E0\u306E\u72EC\u308A\u8A00 2"
+    requiredStage: 0
+    text: "\u307D\u3088\u3093\uFF01"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SLIME_SOLO_003
+    title: "\u30B9\u30E9\u30A4\u30E0\u306E\u72EC\u308A\u8A00 3"
+    requiredStage: 0
+    text: "\u3077\u3061\u2026\u2026\u307D\u3053\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SLIME_SOLO_004
+    title: "\u30B9\u30E9\u30A4\u30E0\u306E\u72EC\u308A\u8A00 4"
+    requiredStage: 0
+    text: "\u307D\u3088\u2026\u2026\uFF1F"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SLIME_SOLO_005
+    title: "\u30B9\u30E9\u30A4\u30E0\u306E\u72EC\u308A\u8A00 5"
+    requiredStage: 0
+    text: "\u3077\u308B\u3077\u308B\uFF01"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SLIME_SOLO_006
+    title: "\u30B9\u30E9\u30A4\u30E0\u306E\u72EC\u308A\u8A00 6"
+    requiredStage: 0
+    text: "\u2026\u2026\u307D\u3053\u3093\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SLIME_SOLO_007
+    title: "\u30B9\u30E9\u30A4\u30E0\u306E\u72EC\u308A\u8A00 7"
+    requiredStage: 0
+    text: "\u3077\u304F\u3001\u3077\u304F\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SLIME_SOLO_008
+    title: "\u30B9\u30E9\u30A4\u30E0\u306E\u72EC\u308A\u8A00 8"
+    requiredStage: 0
+    text: "\u307D\u3088\u3088\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SLIME_SOLO_009
+    title: "\u30B9\u30E9\u30A4\u30E0\u306E\u72EC\u308A\u8A00 9"
+    requiredStage: 0
+    text: "\u3077\u308B\u3093\u3063\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1
+  - sourceDialogueId: NEW_SLIME_SOLO_010
+    title: "\u30B9\u30E9\u30A4\u30E0\u306E\u72EC\u308A\u8A00 10"
+    requiredStage: 0
+    text: "\u3077\u3061\u3077\u3061\u2026\u2026\u3002"
+    speakerInfo: 
+    sourceSituation: 
+    sourcePrerequisites: 
+    sourcePersonalityHint: 
+    sourcePlaybackHint: 
+    weight: 1

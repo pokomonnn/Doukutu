@@ -175,6 +175,8 @@ GameObject:
   - component: {fileID: 3441709077903546557}
   - component: {fileID: 2488363617827489976}
   - component: {fileID: 8947425062903850232}
+  - component: {fileID: 1221772834500206113}
+  - component: {fileID: 314322467844501690}
   m_Layer: 16
   m_Name: "\u753A\u4EBA"
   m_TagString: Untagged
@@ -833,6 +835,71 @@ MonoBehaviour:
   retaliationDuration: 9
   printTargetChanges: 0
   drawRangeGizmo: 1
+--- !u!114 &1221772834500206113
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6621694433674733991}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c683bd8b06f69f42b7cfe1213444a47, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueAmbientTalk2D
+  talkData: {fileID: 0}
+  additionalDialogue600TalkData: {fileID: 11400000, guid: a86b1dc59608ccc4e8ec215c81b704e2, type: 2}
+  dialogueActor: {fileID: 0}
+  allowDifferentNonHostileFactions: 1
+  talkRadius: 2.8
+  maxHeightDifference: 1.7
+  startProbability: 0.42
+  scanInterval: 3.5
+  minimumRestSeconds: 120
+  maximumRestSeconds: 240
+  maxPartnerDrift: 3.7
+  limitImportedTalkToPlayerHearingRange: 1
+  importedTalkHearingRadius: 12
+  enableTypewriter: 1
+  secondsPerCharacter: 0.045
+  minimumFullyVisibleSeconds: 0.7
+  japaneseFont: {fileID: 0}
+  worldOffset: {x: 0, y: 2, z: 0}
+  widthInWorldUnits: 3.5
+  sortingOrder: 120
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  backgroundColor: {r: 0.08, g: 0.1, b: 0.14, a: 0.9}
+  debugLogs: 0
+--- !u!114 &314322467844501690
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6621694433674733991}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 830c486f8eb2fc74e9d3c0fd3149617f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Dialogue600SoloSpeaker2D
+  regularLibrary: {fileID: 11400000, guid: bd50f90202b40394d8aef1bb0341a278, type: 2}
+  hostileLibrary: {fileID: 11400000, guid: db46fe3a41059a144ac930a4575779b8, type: 2}
+  enableHostileSoliloquies: 1
+  hearingRadius: 11
+  firstTalkDelayMin: 12
+  firstTalkDelayMax: 24
+  cooldownMin: 90
+  cooldownMax: 180
+  chancePerAttempt: 0.8
+  japaneseFont: {fileID: 0}
+  worldOffset: {x: 0, y: 2, z: 0}
+  bubbleWidth: 3.5
+  secondsPerCharacter: 0.045
+  minimumFullyVisibleSeconds: 0.85
+  sortingOrder: 119
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+  backgroundColor: {r: 0.08, g: 0.1, b: 0.14, a: 0.9}
+  debugLogs: 0
 --- !u!1 &7833750208031561064
 GameObject:
   m_ObjectHideFlags: 0

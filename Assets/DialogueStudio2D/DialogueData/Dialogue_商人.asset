@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33ea86acbcf5364d97ad2501b8af980, type: 3}
+  m_Name: "Dialogue_\u5546\u4EBA"
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueData2D
+  dialogueId: dialogue_f18683e307
+  displayName: "Dialogue_\u5546\u4EBA"
+  startNodeId: start
+  nodes:
+  - id: start
+    speakerName: NPC
+    body: "\u3044\u3089\u3063\u3057\u3083\u3044\u3001\u3044\u3044\u3082\u306E\u304C\u5165\u8377\u3057\u305F\u3088\u3002"
+    onEnterEventId: action_13c12f
+    nextNodeId: 
+    choices:
+    - label: "\u8CB7\u3046"
+      nextNodeId: 
+      eventId: action_13c12f
+      conditions: []
+    - label: "\u8CB7\u308F\u306A\u3044"
+      nextNodeId: 
+      eventId: 
+      conditions: []
+    nextRoutes: []
+  - id: node_3d2495
+    speakerName: NPC
+    body: "\u3044\u3089\u3063\u3057\u3083\u3044\u3001\u3044\u3044\u3082\u306E\u304C\u5165\u8377\u3057\u305F\u3088\u3002\u305F\u3076\u3093"
+    onEnterEventId: action_13c12f
+    nextNodeId: node_bb6d49
+    choices:
+    - label: "\u58F2\u8CB7\u3059\u308B"
+      nextNodeId: 
+      eventId: action_13c12f
+      conditions: []
+    - label: "\u623B\u308B"
+      nextNodeId: 
+      eventId: 
+      conditions: []
+    nextRoutes:
+    - label: "\u58F2\u8CB7"
+      targetNodeId: 
+      conditions:
+      - kind: 1
+        threshold: 0
+        factionId: bandits
+        personality: 0
+    - label: "\u65B0\u3057\u3044\u6761\u4EF6\u5206\u5C90"
+      targetNodeId: 
+      conditions: []
+  - id: node_bb6d49
+    speakerName: NPC
+    body: "\u65B0\u3057\u3044\u30BB\u30EA\u30D5"
+    onEnterEventId: 
+    nextNodeId: 
+    choices: []
+    nextRoutes: []
+  startRoutes:
+  - label: "\u3044\u3089\u3063\u3057\u3083\u3044"
+    targetNodeId: start
+    conditions: []
+  actions:
+  - eventId: action_13c12f
+    kind: 0
+    missionIndex: 0
+    item: {fileID: 0}
+    amount: 1
+    oncePerRuntime: 1
