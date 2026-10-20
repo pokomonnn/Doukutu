@@ -28,7 +28,8 @@ public sealed class DialogueBattleBarkBubble2D : MonoBehaviour
         Vector3 worldOffset, float seconds, int order, float widthUnits,
         Color textColor, Color backgroundColor,
         float characterInterval = 0.045f,
-        float minimumFullyVisibleSeconds = 0.7f)
+        float minimumFullyVisibleSeconds = 0.7f,
+        int speechPriority = 50)
     {
         if (speaker == null || string.IsNullOrWhiteSpace(message)) return null;
         GameObject root = new GameObject("BattleBark_" + speaker.name,
@@ -73,6 +74,8 @@ public sealed class DialogueBattleBarkBubble2D : MonoBehaviour
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.enableWordWrapping = true;
         tmp.raycastTarget = false;
+        NpcSpeechUnifiedBubbleVisual2D.Apply(canvas, rootRect, bg, tmp, font);
+        rootRect.localScale = Vector3.one * NpcSpeechUnifiedBubbleVisual2D.WorldScale;
 
         DialogueBattleBarkBubble2D bubble = root.GetComponent<DialogueBattleBarkBubble2D>();
         bubble.target = speaker;
@@ -91,9 +94,23 @@ public sealed class DialogueBattleBarkBubble2D : MonoBehaviour
             : Mathf.Max(.1f, seconds);
         if (bubble.secondsPerCharacter <= 0f || bubble.totalCharacters == 0)
             tmp.maxVisibleCharacters = int.MaxValue;
+        if (!NpcSpeechCoordinator2D.TryShow(bubble, speechPriority, bubble.duration, bubble.Interrupt))
+        {
+            bubble.Interrupt();
+            return null;
+        }
         bubble.Follow();
         return bubble;
     }
+
+    private void Interrupt()
+    {
+        if (group != null) group.alpha = 0;
+        enabled = false;
+        Destroy(gameObject);
+    }
+
+    private void OnDisable() { NpcSpeechCoordinator2D.Release(this); }
 
     private void LateUpdate()
     {

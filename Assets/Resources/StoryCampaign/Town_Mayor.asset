@@ -1,0 +1,645 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd60bfc4d6663934e94846057f06cc5f, type: 3}
+  m_Name: Town_Mayor
+  m_EditorClassIdentifier: Assembly-CSharp::TownConversationData
+  conversationType: 0
+  residentId: story_Mayor
+  residentName: "\u753A\u9577"
+  defaultPortrait: {fileID: 0}
+  firstConversationBlockId: menu
+  repeatConversationBlockId: menu
+  mission: {fileID: 0}
+  trackMissionAfterAccept: 1
+  missionNotAcceptedBlockId: mission_offer
+  missionAcceptedJustNowBlockId: mission_accepted
+  missionInProgressBlockId: mission_progress
+  missionReadyToReportBlockId: mission_report
+  missionRewardClaimedBlockId: mission_finished
+  requireObjectiveCompleted: 1
+  moneyReward: 0
+  itemRewards: []
+  merchantStartBlockId: merchant
+  merchantShopData: {fileID: 0}
+  nextButtonText: "\u6B21\u3078"
+  closeButtonText: "\u9589\u3058\u308B"
+  blocks:
+  - blockId: menu
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u4F55\u306B\u3064\u3044\u3066\u8A71\u3057\u307E\u3059\u304B\uFF1F"
+    choices:
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u6D88\u3048\u305F\u9060\u5F81\u968A\u306E\u8DB3\u8DE1"
+      action: 0
+      nextBlockId: S1M01
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u5C01\u9396\u3055\u308C\u305F\u6607\u964D\u8DEF"
+      action: 0
+      nextBlockId: S2M01
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u5931\u308F\u308C\u305F\u5DE1\u793C\u8DEF"
+      action: 0
+      nextBlockId: S3M01
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u642C\u5165\u8A31\u53EF\u306E\u76F8\u8AC7"
+      action: 0
+      nextBlockId: permit
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u8A71\u3092\u7D42\u3048\u308B"
+      action: 0
+      nextBlockId: 
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    nextBlockId: 
+  - blockId: done_report1
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u9060\u5F81\u968A\u306E\u65E5\u8A8C\u3060\u3068\uFF1F
+        \u306A\u308B\u307B\u3069\u3001\u9023\u4E2D\u306F\u78BA\u304B\u306B\u65E7\u5C45\u4F4F\u533A\u3092\u901A\u3063\u3066\u3044\u305F\u3093\u3060\u306A\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u5D29\u843D\u3067\u6563\u308A\u6563\u308A\u306B\u2026\u2026\u3061\u3063\u3002\u3060\u304B\u3089\u8AB0\u3082\u5E30\u3063\u3066\u3053\u306A\u3044\u306E\u304B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3067\u3001\u8CB4\u65CF\u306F\u3055\u3089\u306B\u5965\u3078\u5411\u304B\u3063\u305F\u3001\u3068\u3002\u3044\u3063\u305F\u3044\u4F55\u304C\u305D\u3053\u307E\u3067\u5927\u4E8B\u3060\u3063\u305F\u3093\u3060\u304B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u307E\u3060\u751F\u304D\u3066\u308B\u5974\u304C\u3044\u308B\u304B\u3082\u3057\u308C\u3093\u3002\u753A\u3067\u5F85\u3063\u3066\u308B\u5BB6\u65CF\u3082\u3044\u308B\u3093\u3060\u3002\u898B\u3064\u3051\u305F\u3089\u653E\u3063\u3066\u304A\u304F\u306A\u3088\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u307B\u3089\u3001\u5831\u916C\u3060\u3002\u5C11\u306A\u3044\u3068\u601D\u3046\u306A\u3088\u3002\u4ECA\u306E\u753A\u306B\u306F\u3053\u308C\u304C\u7CBE\u3044\u3063\u3071\u3044\u306A\u3093\u3060\u304B\u3089\u306A\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u307B\u304B\u306E\u533A\u753B\u3082\u8ABF\u3079\u3066\u304F\u308C\u3002\u2026\u2026\u305D\u308C\u3068\u3001\u5FC5\u305A\u623B\u3063\u3066\u3053\u3044\u3002\u307E\u3060\u983C\u307F\u305F\u3044\u3053\u3068\u304C\u5C71\u307B\u3069\u3042\u308B\u3002"
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u3010\u30E1\u30A4\u30F3\u30DF\u30C3\u30B7\u30E7\u30F3\uFF1A\u6D88\u3048\u305F\u9060\u5F81\u968A\u306E\u8DB3\u8DE1\u3011\u3092\u9054\u6210\u3057\u305F\u3002"
+    choices:
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u623B\u308B"
+      action: 0
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    nextBlockId: 
+  - blockId: S1M01
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u6D88\u3048\u305F\u9060\u5F81\u968A\u306E\u8DB3\u8DE1"
+    choices:
+    - storyEventId: step/report1
+      storyConditions:
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S1M01_ClueFound
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S1M01_Completed
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/step_report1
+      choiceText: "\u753A\u9577\u306B\u65E5\u8A8C\u3092\u5831\u544A"
+      action: 7
+      nextBlockId: done_report1
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u4F9D\u983C\u3092\u805E\u304F"
+      action: 0
+      nextBlockId: S1M01offer
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u623B\u308B"
+      action: 0
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    nextBlockId: 
+  - blockId: S1M01offer
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3093\uFF1F \u898B\u306A\u3044\u9854\u3060\u306A\u3002\u65C5\u306E\u5192\u967A\u8005\u304B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u308F\u3057\u306F\u3053\u306E\u753A\u306E\u753A\u9577\u3060\u3002\u3061\u3087\u3046\u3069\u3044\u3044\u3001\u5C11\u3057\u8A71\u3092\u805E\u3044\u3066\u3044\u3051\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u6614\u306F\u306A\u3001\u3053\u306E\u753A\u306B\u3082\u5192\u967A\u8005\u304C\u5927\u52E2\u6765\u305F\u3082\u3093\u3060\u3002\u3042\u306E\u53E4\u57CE\u306E\u30C0\u30F3\u30B8\u30E7\u30F3\u3092\u76EE\u5F53\u3066\u306B\u306A\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u5BBF\u3082\u98DF\u5802\u3082\u6B66\u5668\u5C4B\u3082\u3001\u5192\u967A\u8005\u304C\u843D\u3068\u3057\u3066\u3044\u304F\u91D1\u3067\u98DF\u3063\u3066\u3044\u305F\u3002\u5206\u304B\u308B\u304B\uFF1F
+        \u3042\u3093\u305F\u3089\u304C\u6765\u306A\u304D\u3083\u3001\u3053\u3053\u306F\u6210\u308A\u7ACB\u305F\u3093\u753A\u306A\u3093\u3060\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3068\u3053\u308D\u304C\u3060\u3002\u3069\u3053\u305E\u306E\u8CB4\u65CF\u304C\u3001\u8155\u306E\u7ACB\u3064\u5192\u967A\u8005\u306B\u8077\u4EBA\u3001\u533B\u8005\u307E\u3067\u3001\u307E\u3068\u3081\u3066\u96C7\u3063\u3066\u9023\u308C\u3066\u3044\u304D\u304A\u3063\u305F\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u6570\u5341\u4EBA\u306E\u5927\u6240\u5E2F\u3060\u305E\uFF1F \u305D\u308C\u304C\u4E00\u4EBA\u3082\u623B\u3063\u3066\u3053\u306A\u3044\u3002\u307E\u3063\u305F\u304F\u3001\u4F55\u3092\u3084\u3063\u3066\u308B\u3093\u3060\u304B\u2026\u2026\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u304A\u304B\u3052\u3067\u300E\u3042\u306E\u30C0\u30F3\u30B8\u30E7\u30F3\u306F\u5165\u3063\u305F\u3089\u6700\u5F8C\u300F\u306A\u3093\u3066\u5642\u304C\u7ACB\u3063\u305F\u3002\u5916\u304B\u3089\u6765\u308B\u5192\u967A\u8005\u307E\u3067\u3071\u3063\u305F\u308A\u3060\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u5BA2\u306F\u3044\u306A\u3044\u3001\u50CD\u304D\u624B\u3082\u3044\u306A\u3044\u3001\u5E97\u306F\u9589\u307E\u308B\u3002\u898B\u308A\u3083\u5206\u304B\u308B\u3060\u308D\u3001\u3053\u306E\u6709\u69D8\u3060\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u305D\u3053\u3067\u3060\u3002\u3042\u3093\u305F\u3001\u30C0\u30F3\u30B8\u30E7\u30F3\u306B\u5165\u3063\u3066\u884C\u65B9\u4E0D\u660E\u306E\u9023\u4E2D\u3092\u63A2\u3057\u3066\u3053\u3044\u3002\u3042\u306E\u8CB4\u65CF\u306E\u8DB3\u53D6\u308A\u3082\u5206\u304B\u308C\u3070\u4E0A\u51FA\u6765\u3060\u3002"
+    choices:
+    - storyEventId: accept/S1M01
+      storyConditions:
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S1M01_Completed
+      choiceText: "\u5F15\u304D\u53D7\u3051\u308B"
+      action: 7
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u4ECA\u306F\u3084\u3081\u308B"
+      action: 0
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    nextBlockId: 
+  - blockId: done_report2
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3075\u3080\u3002\u3053\u3044\u3064\u304C\u6DF1\u5C64\u6607\u964D\u8DEF\u306E\u8D77\u52D5\u624B\u9806\u304B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3084\u3063\u3071\u308A\u3001\u5965\u3078\u9032\u3080\u306B\u306F\u3042\u3061\u3053\u3061\u306E\u8CC7\u6599\u304C\u5FC5\u8981\u3089\u3057\u3044\u306A\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u8CB4\u65CF\u306E\u9060\u5F81\u968A\u304C\u3053\u3093\u306A\u8A2D\u5099\u3092\u8ABF\u3079\u3066\u3044\u305F\u306A\u3089\u3001\u6700\u4E0B\u5C64\u306B\u3082\u8DB3\u3092\u904B\u3093\u3060\u304B\u3082\u3057\u308C\u3093\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u4F55\u306E\u305F\u3081\u304B\u306F\u77E5\u3089\u3093\u304C\u2026\u2026\u3042\u308C\u3060\u3051\u306E\u4EBA\u6570\u3092\u9023\u308C\u3066\u884C\u3063\u305F\u3093\u3060\u3002\u4F55\u304B\u8003\u3048\u304C\u3042\u3063\u305F\u3093\u3060\u308D\u3046\u3088\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u307B\u3089\u3001\u7D04\u675F\u306E\u5831\u916C\u3060\u3002\u4ECA\u56DE\u306F\u5F79\u306B\u7ACB\u3064\u7269\u3092\u62FE\u3063\u3066\u304D\u305F\u3058\u3083\u306A\u3044\u304B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3060\u304C\u6E80\u8DB3\u3059\u308B\u306A\u3088\u3002\u753A\u306E\u4EBA\u624B\u306F\u307E\u3060\u8DB3\u308A\u3093\u3002\u623B\u308C\u305D\u3046\u306A\u5974\u306F\u5FC5\u305A\u9023\u308C\u5E30\u308C\u3002"
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u3010\u30E1\u30A4\u30F3\u30DF\u30C3\u30B7\u30E7\u30F3\uFF1A\u5C01\u9396\u3055\u308C\u305F\u6607\u964D\u8DEF\u3011\u3092\u9054\u6210\u3057\u305F\u3002"
+    choices:
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u623B\u308B"
+      action: 0
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    nextBlockId: 
+  - blockId: S2M01
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u5C01\u9396\u3055\u308C\u305F\u6607\u964D\u8DEF"
+    choices:
+    - storyEventId: step/report2
+      storyConditions:
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S2M01_ClueFound
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S2M01_Completed
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/step_report2
+      choiceText: "\u753A\u9577\u306B\u8D77\u52D5\u624B\u9806\u3092\u5831\u544A"
+      action: 7
+      nextBlockId: done_report2
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u4F9D\u983C\u3092\u805E\u304F"
+      action: 0
+      nextBlockId: S2M01offer
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u623B\u308B"
+      action: 0
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    nextBlockId: 
+  - blockId: S2M01offer
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u304A\u3046\u3001\u3042\u3093\u305F\u3002\u6687\u306A\u3089\u3061\u3087\u3063\u3068\u805E\u3051\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u53E4\u57CE\u306E\u5DE5\u623F\u533A\u3092\u77E5\u3063\u3066\u308B\u304B\uFF1F
+        \u6614\u306F\u3067\u304B\u3044\u6C34\u8ECA\u3084\u935B\u51B6\u5834\u304C\u3042\u3063\u305F\u305D\u3046\u3060\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u30C0\u30F3\u30B8\u30E7\u30F3\u306E\u5965\u3078\u5411\u304B\u3046\u6607\u964D\u8DEF\u3082\u3001\u305D\u3053\u306E\u6A5F\u68B0\u3067\u52D5\u304B\u3057\u3066\u3044\u305F\u3089\u3057\u3044\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3082\u3063\u3068\u3082\u3001\u4ECA\u306F\u58CA\u308C\u3066\u52D5\u304B\u3093\u3063\u3066\u8A71\u3060\u304C\u306A\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u8CB4\u65CF\u306E\u4E00\u884C\u304C\u5965\u3078\u9032\u3093\u3060\u306A\u3089\u3001\u3042\u305D\u3053\u306B\u4F55\u304B\u6B8B\u3057\u3066\u308B\u304B\u3082\u3057\u308C\u3093\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u5DE5\u623F\u533A\u306E\u6A5F\u68B0\u5BA4\u3092\u8ABF\u3079\u3066\u3053\u3044\u3002\u4F7F\u3048\u308B\u8A18\u9332\u304C\u4E00\u679A\u3067\u3082\u898B\u3064\u304B\u308A\u3083\u5FA1\u306E\u5B57\u3060\u3002"
+    choices:
+    - storyEventId: accept/S2M01
+      storyConditions:
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S2M01_Completed
+      choiceText: "\u5F15\u304D\u53D7\u3051\u308B"
+      action: 7
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u4ECA\u306F\u3084\u3081\u308B"
+      action: 0
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    nextBlockId: 
+  - blockId: done_report3
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3075\u3080\u3002\u8056\u5802\u306E\u5965\u304B\u3089\u3001\u3055\u3089\u306B\u4E0B\u3078\u7D9A\u3044\u3066\u308B\u308F\u3051\u304B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u305D\u306E\u5370\u3001\u9060\u5F81\u968A\u304C\u4ED8\u3051\u305F\u3082\u306E\u304B\u3082\u3057\u308C\u3093\u306A\u3002\u5C11\u306A\u304F\u3068\u3082\u8AB0\u304B\u304C\u9053\u3092\u8ABF\u3079\u3066\u3044\u305F\u306E\u306F\u78BA\u304B\u3060\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u307E\u3063\u305F\u304F\u3001\u3042\u306E\u8CB4\u65CF\u306F\u3069\u3053\u307E\u3067\u6F5C\u308B\u3064\u3082\u308A\u3060\u3063\u305F\u3093\u3060\u304B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3060\u304C\u3001\u9053\u304C\u5206\u304B\u3063\u305F\u306A\u3089\u7121\u99C4\u3058\u3083\u306A\u3044\u3002\u751F\u304D\u6B8B\u308A\u3092\u9023\u308C\u623B\u3059\u624B\u639B\u304B\u308A\u306B\u3082\u306A\u308B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u307B\u3089\u3001\u5831\u916C\u3092\u53D7\u3051\u53D6\u308C\u3002\u2026\u2026\u308F\u3057\u306B\u304A\u793C\u3092\u8A00\u308F\u305B\u308B\u306A\u3088\u3001\u7167\u308C\u304F\u3055\u3044\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u305D\u308C\u3068\u3001\u4ED6\u306E\u533A\u753B\u306E\u8A18\u9332\u3082\u5FD8\u308C\u308B\u306A\u3002\u9053\u3060\u3051\u5206\u304B\u3063\u3066\u3082\u3001\u52D5\u304B\u3059\u4ED5\u7D44\u307F\u304C\u306A\u304D\u3083\u59CB\u307E\u3089\u3093\u3002"
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u3010\u30E1\u30A4\u30F3\u30DF\u30C3\u30B7\u30E7\u30F3\uFF1A\u5931\u308F\u308C\u305F\u5DE1\u793C\u8DEF\u3011\u3092\u9054\u6210\u3057\u305F\u3002"
+    choices:
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u623B\u308B"
+      action: 0
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    nextBlockId: 
+  - blockId: S3M01
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u5931\u308F\u308C\u305F\u5DE1\u793C\u8DEF"
+    choices:
+    - storyEventId: step/report3
+      storyConditions:
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S3M01_ClueFound
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S3M01_Completed
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/step_report3
+      choiceText: "\u753A\u9577\u306B\u7D4C\u8DEF\u56F3\u3092\u5831\u544A"
+      action: 7
+      nextBlockId: done_report3
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u4F9D\u983C\u3092\u805E\u304F"
+      action: 0
+      nextBlockId: S3M01offer
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u623B\u308B"
+      action: 0
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    nextBlockId: 
+  - blockId: S3M01offer
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u304A\u3046\u3001\u3042\u3093\u305F\u3002\u3061\u3087\u3044\u3068\u3053\u3063\u3061\u3078\u6765\u3044\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u53E4\u57CE\u306E\u8056\u5802\u533A\u306F\u307E\u3060\u8ABF\u3079\u3066\u306A\u3044\u306E\u304B\uFF1F
+        \u3042\u305D\u3053\u306B\u3083\u3001\u6614\u306E\u9053\u6848\u5185\u304C\u6B8B\u3063\u3066\u308B\u3063\u3066\u8A71\u3060\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u5999\u306A\u8A71\u3060\u308D\u3002\u793C\u62DD\u3059\u308B\u3060\u3051\u306E\u5834\u6240\u306B\u3001\u5730\u4E0B\u3078\u4E0B\u308A\u308B\u9053\u304C\u3042\u308B\u3089\u3057\u3044\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u8CB4\u65CF\u306E\u9023\u4E2D\u304C\u3069\u3053\u3078\u6D88\u3048\u305F\u304B\u77E5\u3089\u3093\u304C\u3001\u57CE\u306E\u5965\u3078\u884C\u3063\u305F\u306A\u3089\u624B\u639B\u304B\u308A\u306B\u306A\u308B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u8056\u5802\u306E\u8A18\u9332\u5EAB\u3060\u304B\u8CC7\u6599\u5BA4\u3060\u304B\u3001\u305D\u3053\u3092\u8ABF\u3079\u3066\u3053\u3044\u3002\u3042\u3093\u305F\u306E\u8DB3\u3067\u306A\u3002"
+    choices:
+    - storyEventId: accept/S3M01
+      storyConditions:
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S3M01_Completed
+      choiceText: "\u5F15\u304D\u53D7\u3051\u308B"
+      action: 7
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u4ECA\u306F\u3084\u3081\u308B"
+      action: 0
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    nextBlockId: 
+  - blockId: permit
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u5009\u5EAB\u306E\u76EE\u9332\u3068\u3001\u76D7\u8CCA\u305F\u3061\u3068\u306E\u505C\u6226\u304C\u5FC5\u8981\u3067\u3059\u3002"
+    choices:
+    - storyEventId: step/permit
+      storyConditions:
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S2S02_LedgerFound
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/PlayerBanditTruce
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S2S02_Completed
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/step_permit
+      choiceText: "\u76EE\u9332\u3092\u793A\u3057\u3066\u4EA4\u6E09\u3059\u308B"
+      action: 7
+      nextBlockId: permitDone
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u623B\u308B"
+      action: 0
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    nextBlockId: 
+  - blockId: permitDone
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u4F55\u3060\u3001\u305D\u306E\u53E4\u3044\u5E33\u9762\u306F\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u5171\u540C\u5009\u5EAB\uFF1F \u307B\u3046\u3001\u57CE\u306B\u307E\u3060\u305D\u3093\u306A\u8CC7\u6750\u304C\u6B8B\u3063\u3066\u3044\u305F\u306E\u304B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u305D\u308C\u3067\u3001\u4F55\u3060\u3002\u904B\u3073\u51FA\u3059\u4EBA\u624B\u304C\u6B32\u3057\u3044\u3063\u3066\uFF1F"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u91D1\u5177\u3082\u5DE5\u5177\u3082\u4E0D\u8DB3\u3057\u3066\u3044\u308B\u3002\u4F7F\u3048\u308B\u306A\u3089\u3042\u308A\u304C\u305F\u3044\u306B\u6C7A\u307E\u3063\u3068\u308B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3060\u304C\u3001\u6301\u3061\u4E3B\u3084\u7531\u6765\u3082\u78BA\u304B\u3081\u305A\u306B\u753A\u3078\u5165\u308C\u308B\u308F\u3051\u306B\u306F\u3044\u304B\u3093\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u76EE\u9332\u3092\u9810\u304B\u3063\u3066\u691C\u54C1\u3067\u304D\u308A\u3083\u3001\u904B\u3073\u8CC3\u3092\u51FA\u3059\u3053\u3068\u306F\u3067\u304D\u308B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u8AB0\u304C\u904B\u3076\u3063\u3066\uFF1F"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u306F\u3042\uFF01\uFF1F \u3042\u306E\u76D7\u8CCA\u3069\u3082\u3060\u3068\uFF01\uFF1F"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3075\u3056\u3051\u308B\u306A\u3002\u9023\u4E2D\u304C\u5192\u967A\u8005\u306E\u8377\u3092\u596A\u3063\u305F\u3053\u3068\u3092\u5FD8\u308C\u305F\u308F\u3051\u3058\u3083\u3042\u308B\u307E\u3044\u306A\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3061\u3063\u3002\u4ED5\u4E8B\u304C\u306A\u304F\u306A\u3063\u305F\u306E\u3082\u3001\u308F\u3057\u306F\u77E5\u3063\u3068\u308B\u3055\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3060\u304C\u3001\u305D\u308C\u3068\u76D7\u307F\u304C\u8A31\u3055\u308C\u308B\u304B\u306F\u5225\u306E\u8A71\u3060\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u307E\u3042\u3044\u3044\u3002\u753A\u3060\u3063\u3066\u904A\u3070\u305B\u3066\u304A\u304F\u624B\u306F\u306A\u3044\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u54C1\u7269\u306F\u5168\u90E8\u691C\u54C1\u3059\u308B\u3002\u52DD\u624B\u306A\u6301\u3061\u51FA\u3057\u306F\u8A8D\u3081\u3093\u3002\u904B\u3073\u8CC3\u306F\u4ED5\u4E8B\u304C\u7D42\u308F\u3063\u3066\u304B\u3089\u3060\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u6761\u4EF6\u3092\u5B88\u308C\u308B\u306A\u3089\u3001\u4E00\u5EA6\u3060\u3051\u8A66\u3057\u3066\u3084\u308B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u307B\u3089\u3001\u3053\u306E\u8A31\u53EF\u8A3C\u3092\u6E21\u3057\u3068\u3051\u3002\u2026\u2026\u76D7\u8CCA\u3069\u3082\u304C\u307E\u305F\u3084\u3089\u304B\u3057\u305F\u3089\u3001\u308F\u3057\u306F\u5BB9\u8D66\u305B\u3093\u305E\u3002"
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u3010\u753A\u306E\u642C\u5165\u8A31\u53EF\u8A3C\u3011\u3092\u53D7\u3051\u53D6\u3063\u305F\u3002"
+    choices:
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u623B\u308B"
+      action: 0
+      nextBlockId: menu
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    nextBlockId: 

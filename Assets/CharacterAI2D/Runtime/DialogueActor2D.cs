@@ -32,10 +32,21 @@ public sealed class DialogueActor2D : MonoBehaviour
 
     public DialogueData2D Dialogue => dialogue;
     public bool UseEKeyInteraction => useEKeyInteraction;
+    public void SetDialogue(DialogueData2D data) => dialogue = data;
+    private InteractableOutline2D dialogueOutline;
+    private void Start()
+    {
+        if (useEKeyInteraction && GetComponentInChildren<SpriteRenderer>() != null)
+            dialogueOutline = InteractableOutline2D.CreateForDialogue(transform);
+    }
+    private void OnDisable() { if (dialogueOutline != null) dialogueOutline.SetDialogueHighlight(false); }
 
     private void Update()
     {
         if (!useEKeyInteraction) return;
+        if (dialogueOutline != null)
+            dialogueOutline.SetDialogueHighlight(CanStartDialogue() &&
+                (DialoguePresenter2D.Active == null || !DialoguePresenter2D.Active.IsPlaying));
 #if ENABLE_INPUT_SYSTEM
         if (Keyboard.current == null || !Keyboard.current.eKey.wasPressedThisFrame) return;
 #else
@@ -46,6 +57,19 @@ public sealed class DialogueActor2D : MonoBehaviour
     }
 
     public bool TryStartDialogue()
+    {
+        if (!CanStartDialogue()) return false;
+        DialoguePresenter2D presenter = DialoguePresenter2D.Active;
+        if (presenter == null) presenter = FindFirstObjectByType<DialoguePresenter2D>();
+        if (presenter == null)
+        {
+            Debug.LogWarning("[Dialogue Studio] DialoguePresenter2Dがシーンにありません。", this);
+            return false;
+        }
+        return presenter.Play(dialogue, this);
+    }
+
+    public bool CanStartDialogue()
     {
         if (dialogue == null || !isActiveAndEnabled) return false;
         CharacterHealth hp = GetComponent<CharacterHealth>();
@@ -76,15 +100,7 @@ public sealed class DialogueActor2D : MonoBehaviour
                 return false;
         }
 
-        DialoguePresenter2D presenter = DialoguePresenter2D.Active;
-        if (presenter == null)
-            presenter = FindFirstObjectByType<DialoguePresenter2D>();
-        if (presenter == null)
-        {
-            Debug.LogWarning("[Dialogue Studio] DialoguePresenter2Dがシーンにありません。Tools > 2D Shooter > Dialogue Studio > テスト用会話UIをシーンに作成 を実行してください。", this);
-            return false;
-        }
-        return presenter.Play(dialogue, this);
+        return true;
     }
 
     internal void RaiseDialogueEvent(string eventId)

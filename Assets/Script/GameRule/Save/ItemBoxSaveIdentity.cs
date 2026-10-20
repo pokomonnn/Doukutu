@@ -11,12 +11,15 @@ using UnityEngine;
 public class ItemBoxSaveIdentity : MonoBehaviour
 {
     [SerializeField] private string persistentId = string.Empty;
+    // 配置箱の旧IDを維持したまま、複製された配置を区別する固定キー。
+    [SerializeField, HideInInspector] private string placementSaveKey = string.Empty;
     [SerializeField] private ItemBoxInventory itemBoxInventory;
     [SerializeField] private bool wasOpened;
     [SerializeField] private GameObject closedVisual;
     [SerializeField] private GameObject openedVisual;
 
     public string PersistentId => persistentId?.Trim() ?? string.Empty;
+    public string SaveKey => string.IsNullOrEmpty(placementSaveKey) ? PersistentId : placementSaveKey;
     public bool WasOpened => wasOpened;
 
     private void Awake()
@@ -50,6 +53,7 @@ public class ItemBoxSaveIdentity : MonoBehaviour
             return;
         }
         persistentId = newPersistentId.Trim();
+        placementSaveKey = string.Empty; // SpawnPointが発行するIDはそれ自体で一意。
     }
 
     public SavedItemBoxData CreateSaveData()
@@ -59,7 +63,7 @@ public class ItemBoxSaveIdentity : MonoBehaviour
         SavedItemBoxData result = new SavedItemBoxData
         {
             SceneName = gameObject.scene.name,
-            PersistentId = PersistentId,
+            PersistentId = SaveKey,
             WasOpened = wasOpened,
             GridWidth = itemBoxInventory.Grid != null ? itemBoxInventory.Grid.Width : 1,
             GridHeight = itemBoxInventory.Grid != null ? itemBoxInventory.Grid.Height : 1
@@ -75,12 +79,15 @@ public class ItemBoxSaveIdentity : MonoBehaviour
                     GridX = item.GridX,
                     GridY = item.GridY,
                     IsRotated = item.IsRotated,
+                    HasFourWayRotation = true,
+                    RotationSteps = item.RotationSteps,
                     Amount = item.Amount,
                     HasStoredMagazineAmmo = item.HasStoredMagazineAmmo,
                     StoredMagazineAmmo = item.StoredMagazineAmmo,
                     StoredMagazineAmmoItemId = item.StoredMagazineAmmoType != null ? item.StoredMagazineAmmoType.ItemId : string.Empty,
                     HasStoredWeaponDurability = item.HasStoredWeaponDurability,
-                    StoredWeaponDurability = item.StoredWeaponDurability
+                    StoredWeaponDurability = item.StoredWeaponDurability,
+                    StoredWeaponJammed = item.StoredWeaponJammed
                 });
             }
         }
@@ -100,7 +107,7 @@ public class ItemBoxSaveIdentity : MonoBehaviour
                 if (itemData == null || !database.TryGetItemData(itemData.ItemId, out ItemData definition)) continue;
                 InventoryItem item = new InventoryItem(definition,itemData.GridX,itemData.GridY,
                     Mathf.Clamp(itemData.Amount,1,definition.MaxStack));
-                if (itemData.IsRotated && item.CanRotate) item.TryRotate();
+                item.SetRotationSteps(itemData.ResolvedRotationSteps);
                 if (itemData.HasStoredMagazineAmmo)
                 {
                     AmmoItemData ammoType = null;
@@ -113,6 +120,7 @@ public class ItemBoxSaveIdentity : MonoBehaviour
                     item.SetStoredWeaponDurability(itemData.StoredWeaponDurability);
                 else
                     item.EnsureWeaponDurabilityInitialized();
+                item.SetStoredWeaponJammed(itemData.StoredWeaponJammed);
                 restored.Add(item);
             }
         }

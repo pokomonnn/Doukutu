@@ -145,6 +145,7 @@ public class MissionMenuUI : MonoBehaviour
     private bool isOpen;
     private bool isSubscribed;
     private bool refreshRequested;
+    private GameSessionManager objectiveSession;
     private int selectedMissionIndex = -1;
 
     private bool hasDisabledPlayerMove;
@@ -203,6 +204,12 @@ public class MissionMenuUI : MonoBehaviour
 
     private void Update()
     {
+        if(objectiveSession!=GameSessionManager.Instance) {
+            if(objectiveSession!=null)objectiveSession.StorySessionChanged-=HandleMissionStateChanged;
+            objectiveSession=GameSessionManager.Instance;
+            if(objectiveSession!=null)objectiveSession.StorySessionChanged+=HandleMissionStateChanged;
+            RequestRefresh();
+        }
         if (Input.GetKeyDown(toggleKey))
         {
             ToggleMenu();
@@ -222,6 +229,8 @@ public class MissionMenuUI : MonoBehaviour
 
     private void OnDisable()
     {
+        if(objectiveSession!=null)objectiveSession.StorySessionChanged-=HandleMissionStateChanged;
+        objectiveSession=null;
         UnsubscribeEvents();
         StopOpenAnimationAndRestoreScale();
         RestorePlayerControls();
@@ -362,7 +371,7 @@ public class MissionMenuUI : MonoBehaviour
             missionManager.SetTrackedMission(selectedMissionIndex);
             Log($"ミッションを受注しました：{mission.DisplayName}");
         }
-        else if (state == MissionProgressState2D.InProgress)
+        else if (missionManager.CanTrackMission(selectedMissionIndex))
         {
             if (missionManager.IsTrackedMission(selectedMissionIndex))
             {
@@ -630,9 +639,10 @@ public class MissionMenuUI : MonoBehaviour
 
         RefreshMissionImage(mission);
         SetText(missionTitleText, mission.DisplayName);
-        SetText(missionDescriptionText, mission.Description);
+        SetText(missionDescriptionText, MissionObjectiveDisplayState.History(mission));
         SetText(missionProgressText, BuildProgressText(mission, progress, required));
-        SetText(missionStatusText, BuildStatusText(state));
+        SetText(missionStatusText, mission.HasDisplayObjectives && state!=MissionProgressState2D.Inactive
+            ? (MissionObjectiveDisplayState.HasPending(mission)?"受注中":"完了済み") : BuildStatusText(state));
 
         if (lastDetailMissionIndex != selectedMissionIndex)
         {
@@ -667,6 +677,9 @@ public class MissionMenuUI : MonoBehaviour
 
         if (trackButton != null)
         {
+            if(state==MissionProgressState2D.Completed && missionManager.CanTrackMission(selectedMissionIndex)) {
+                canUseActionButton=!isTracked;actionLabel=isTracked?trackingLabel:trackLabel;
+            }
             trackButton.interactable = canUseActionButton;
         }
 
@@ -773,6 +786,10 @@ public class MissionMenuUI : MonoBehaviour
         {
             return string.Empty;
         }
+
+        if(mission.HasDisplayObjectives)return "現在の目標："+MissionObjectiveDisplayState.Current(mission);
+        if(mission.ObjectiveType==MissionObjectiveType2D.StoryFlag)return "進捗 "+progress+" / "+required;
+        if(mission.ObjectiveType==MissionObjectiveType2D.RescueTargetNpc)return "救出 "+progress+" / "+required;
 
         if (mission.ObjectiveType == MissionObjectiveType2D.CollectItem)
         {

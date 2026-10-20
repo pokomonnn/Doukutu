@@ -4,6 +4,7 @@ Shader "Custom/InteractableWhiteSilhouette2D"
     {
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color ("Alpha Multiplier", Color) = (1, 1, 1, 1)
+        _AlphaThreshold ("Outline Alpha Threshold", Range(0, 1)) = 0
     }
     SubShader
     {
@@ -49,6 +50,7 @@ Shader "Custom/InteractableWhiteSilhouette2D"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
+                half _AlphaThreshold;
             CBUFFER_END
 
             Varyings Vert(Attributes input)
@@ -66,6 +68,7 @@ Shader "Custom/InteractableWhiteSilhouette2D"
                     _MainTex, sampler_MainTex, input.uv).a;
 
                 half alpha = sampledAlpha * input.color.a * _Color.a;
+                clip(sampledAlpha - _AlphaThreshold);
                 // テクスチャが何色でも、輪郭用の複製は白いシルエット。
                 return half4(1.0h, 1.0h, 1.0h, alpha);
             }

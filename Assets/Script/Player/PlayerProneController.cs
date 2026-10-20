@@ -26,9 +26,6 @@ public class PlayerProneController : MonoBehaviour
     [Tooltip("ほふく中は壁登りを開始できないようにします。未設定なら自動取得します")]
     [SerializeField] private WallClimbController wallClimbController;
 
-    [Tooltip("ほふく中はロープ登りを開始できないようにします。未設定なら自動取得します")]
-    [SerializeField] private RopeClimbController ropeClimbController;
-
     [Header("入力")]
     [Tooltip("ほふくの開始・解除に使うキーです")]
     [SerializeField] private KeyCode proneKey = KeyCode.LeftAlt;
@@ -464,13 +461,6 @@ public class PlayerProneController : MonoBehaviour
             return false;
         }
 
-        if (ropeClimbController != null &&
-            ropeClimbController.IsClimbing)
-        {
-            reason = "ロープ登り中です。";
-            return false;
-        }
-
         if (resizeColliderWhileProne)
         {
             if (bodyCollider == null)
@@ -863,12 +853,6 @@ public class PlayerProneController : MonoBehaviour
             wallClimbController.StopWallClimbNow();
         }
 
-        if (ropeClimbController != null &&
-            ropeClimbController.IsClimbing)
-        {
-            Log("ロープ登りを終了してほふく状態を維持します。");
-            ropeClimbController.StopClimbingNow();
-        }
     }
 
     private bool WasProneKeyPressed()
@@ -932,12 +916,6 @@ public class PlayerProneController : MonoBehaviour
         {
             wallClimbController =
                 GetComponent<WallClimbController>();
-        }
-
-        if (ropeClimbController == null)
-        {
-            ropeClimbController =
-                GetComponent<RopeClimbController>();
         }
 
         if (bodyCollider == null)
@@ -1036,8 +1014,7 @@ public class PlayerProneController : MonoBehaviour
             $"IsDead={(playerHealth != null ? playerHealth.IsDead.ToString() : "不明")}"
         );
         builder.AppendLine(
-            $"WallClimb={(wallClimbController != null ? wallClimbController.IsWallClimbing.ToString() : "未取得")} / " +
-            $"RopeClimb={(ropeClimbController != null ? ropeClimbController.IsClimbing.ToString() : "未取得")}"
+            $"WallClimb={(wallClimbController != null ? wallClimbController.IsWallClimbing.ToString() : "未取得")}"
         );
         builder.AppendLine(
             $"ResizeCollider={resizeColliderWhileProne} / " +

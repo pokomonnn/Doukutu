@@ -150,6 +150,8 @@ public static class FactionHostility2D
     {
         if (attacker == null)
             return new FactionDecision2D(false, false, "攻撃側のFactionMember2Dが見つかりません。");
+        if (FactionId2D.Same(attacker.FactionId, FactionId2D.Bandits) && StoryCampaignRuntime.Has("PlayerBanditTruce"))
+            return new FactionDecision2D(false, true, StoryCampaignRuntime.Has("PlayerBanditFriendly") ? "運送契約による友好" : "薬の納品による停戦");
         PlayerKarmaReputation2D state = GameSessionManager.Instance != null
             ? PlayerKarmaReputation2D.GetCurrent() : null;
         int karma = state != null ? state.Karma : 0;
@@ -163,6 +165,7 @@ public static class FactionHostility2D
             return new FactionDecision2D(false, false, "FactionMember2Dが足りません。");
         if (attacker == target)
             return new FactionDecision2D(false, false, "自分自身は攻撃しません。");
+        if (StoryNegotiationZone.Protects(attacker, target)) return new FactionDecision2D(false, true, "交渉・停戦区域");
         if (target.IsPlayer) return EvaluateToPlayer(attacker);
         return EvaluateNpcToNpc(attacker.FactionId, target.FactionId, target.MonsterType);
     }

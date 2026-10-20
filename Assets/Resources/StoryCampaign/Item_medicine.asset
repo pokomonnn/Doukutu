@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c4185669380a342a6d946ef845ec2b, type: 3}
+  m_Name: Item_medicine
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: story_medicine
+  displayName: "\u65E7\u8A3A\u7642\u6240\u306E\u85AC"
+  description: 
+  icon: {fileID: 1923090828, guid: daa359c07b4be2f47b477ca2857b031a, type: 3}
+  localizedDisplayName:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  localizedDescription:
+    m_TableReference:
+      m_TableCollectionName: 
+    m_TableEntryReference:
+      m_KeyId: 0
+      m_Key: 
+    m_FallbackState: 0
+    m_WaitForCompletion: 0
+    m_LocalVariables: []
+  width: 1
+  height: 1
+  canRotate: 1
+  useCustomShape: 0
+  customShapeCells: []
+  maxStack: 1
+  purchasePrice: 0
+  sellPrice: 0
+  canSellToShop: 0
+  weight: 0.2
+  canDiscard: 1
+  references:
+    version: 2
+    RefIds: []

@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33ea86acbcf5364d97ad2501b8af980, type: 3}
+  m_Name: Dialogue_structure
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueData2D
+  dialogueId: story_structure
+  displayName: "\u56DE\u5ECA\u306E\u69CB\u9020\u8ABF\u67FB"
+  startNodeId: start
+  nodes:
+  - id: start
+    speakerName: 
+    body: "\u56DE\u5ECA\u306E\u69CB\u9020\u8ABF\u67FB"
+    onEnterEventId: 
+    nextNodeId: 
+    choices:
+    - label: "\u8ABF\u3079\u308B\u30FB\u8A71\u3059"
+      nextNodeId: line0
+      eventId: step/structure
+      conditions:
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S3S03_Completed
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/step_structure
+    - label: "\u4ECA\u306F\u3084\u3081\u3066\u304A\u304F"
+      nextNodeId: 
+      eventId: 
+      conditions: []
+    nextRoutes: []
+  - id: line0
+    speakerName: 
+    body: "\u63A5\u5408\u90E8\u306E\u50B7\u3084\u3001\u5D29\u308C\u305F\u77F3\u6750\u306E\u4F4D\u7F6E\u3092\u8A18\u9332\u3057\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: line1
+    choices: []
+    nextRoutes: []
+  - id: line1
+    speakerName: 
+    body: "\u4FEE\u7E55\u304C\u5FC5\u8981\u306A\u90E8\u5206\u306F\u3042\u308B\u304C\u3001\u3059\u3079\u3066\u5EFA\u3066\u76F4\u3055\u306A\u3051\u308C\u3070\u4F7F\u3048\u306A\u3044\u308F\u3051\u3067\u306F\u306A\u3044\u3002"
+    onEnterEventId: 
+    nextNodeId: line2
+    choices: []
+    nextRoutes: []
+  - id: line2
+    speakerName: 
+    body: "\u3010\u56DE\u5ECA\u306E\u69CB\u9020\u8ABF\u67FB\u3011\u3092\u5B8C\u4E86\u3057\u305F\u3002\u30B0\u30EC\u30F3\u3078\u5831\u544A\u3057\u3088\u3046\u3002"
+    onEnterEventId: 
+    nextNodeId: 
+    choices: []
+    nextRoutes: []
+  startRoutes: []
+  actions:
+  - eventId: step/structure
+    kind: 5
+    missionIndex: 0
+    item: {fileID: 0}
+    amount: 1
+    oncePerRuntime: 0

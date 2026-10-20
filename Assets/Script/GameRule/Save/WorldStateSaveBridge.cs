@@ -60,9 +60,9 @@ public class WorldStateSaveBridge : MonoBehaviour
                 Debug.LogWarning($"[WorldStateSaveBridge] ItemBox『{box.name}』のPersistent Idが空です。", box);
                 continue;
             }
-            if (!ids.Add(box.PersistentId))
+            if (!ids.Add(box.SaveKey))
             {
-                Debug.LogWarning($"[WorldStateSaveBridge] ItemBox Persistent Idが重複しています：{box.PersistentId}", box);
+                Debug.LogWarning($"[WorldStateSaveBridge] ItemBox Save Keyが重複しています：{box.SaveKey}", box);
                 continue;
             }
             SavedItemBoxData data = box.CreateSaveData();
@@ -94,14 +94,24 @@ public class WorldStateSaveBridge : MonoBehaviour
         {
             ItemBoxSaveIdentity[] boxes = FindObjectsByType<ItemBoxSaveIdentity>(FindObjectsInactive.Include);
             Dictionary<string, ItemBoxSaveIdentity> lookup = new Dictionary<string, ItemBoxSaveIdentity>(StringComparer.OrdinalIgnoreCase);
+            var legacyLookup = new Dictionary<string, ItemBoxSaveIdentity>(StringComparer.OrdinalIgnoreCase);
             foreach (ItemBoxSaveIdentity box in boxes)
             {
-                if (box != null && box.gameObject.scene == scene && !string.IsNullOrWhiteSpace(box.PersistentId)) lookup[box.PersistentId] = box;
+                if (box == null || box.gameObject.scene != scene || string.IsNullOrWhiteSpace(box.PersistentId)) continue;
+                lookup[box.SaveKey] = box;
+                // 旧版と同じ列挙順・last-winsで復元。旧IDは削除せず、旧セーブの読み取りに使用する。
+                legacyLookup[box.PersistentId] = box;
             }
 
             foreach (SavedItemBoxData saved in snapshot.ItemBoxes)
             {
-                if (saved != null && lookup.TryGetValue(saved.PersistentId, out ItemBoxSaveIdentity box) && box.RestoreFromSaveData(saved, itemDataDatabase)) restoredBoxes++;
+                if (saved == null) continue;
+                if (!lookup.TryGetValue(saved.PersistentId, out ItemBoxSaveIdentity box) &&
+                    !legacyLookup.TryGetValue(saved.PersistentId, out box)) continue;
+                // 専用保管箱はGameSessionManagerの保存内容が正本。旧ワールド欄は専用データが無い時だけ使う。
+                if (box.GetComponent<TownPlayerItemBoxSessionBridge>() != null &&
+                    GameSessionManager.Instance != null && GameSessionManager.Instance.HasPlayerItemBoxSessionData) continue;
+                if (box.RestoreFromSaveData(saved, itemDataDatabase)) restoredBoxes++;
             }
         }
 

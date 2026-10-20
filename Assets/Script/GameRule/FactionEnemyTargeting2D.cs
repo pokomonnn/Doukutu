@@ -147,6 +147,7 @@ public sealed class FactionEnemyTargeting2D : MonoBehaviour
         if (targetFaction == null || targetFaction == self ||
             (targetFaction.transform.position - transform.position).sqrMagnitude > maxDistance * maxDistance) return false;
 
+        if (StoryNegotiationZone.Protects(self, targetFaction)) return false;
         bool provoked = targetFaction.transform == provoker && Time.time < provokerExpiresAt &&
             self.RetaliateWhenAttacked && !FactionId2D.Same(self.FactionId, targetFaction.FactionId);
         if (!provoked && !FactionHostility2D.IsHostile(self, targetFaction)) return false;

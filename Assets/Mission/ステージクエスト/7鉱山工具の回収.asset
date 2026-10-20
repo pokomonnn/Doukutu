@@ -12,6 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e40ccca5d0d395b44b7cd41360470e57, type: 3}
   m_Name: "7\u9271\u5C71\u5DE5\u5177\u306E\u56DE\u53CE"
   m_EditorClassIdentifier: Assembly-CSharp::MissionDefinition2D
+  displayObjectives: []
+  objectiveFinishFlag: 
+  completionStoryFlag: 
+  activationStoryFlag: 
+  storyMoneyReward: 0
   missionId: mission_007
   displayName: "\u5DE5\u5177\u7BB1\u7D0D\u54C1"
   description: "\u5DE5\u5177\u7BB1\u3092\u7D0D\u54C1\u305B\u3088"
@@ -25,6 +30,5 @@ MonoBehaviour:
   targetRescueNpcId: 
   expeditionMoneyReward: 400
   expeditionItemRewards: []
-  skillCardRewards:
-  - {fileID: 11400000, guid: 8dd0d604ca3515c49a7d7e78f360999c, type: 2}
+  skillCardRewards: []
   skillSlotUnlockAmount: 1

@@ -227,17 +227,6 @@ Animator:
   m_CorrespondingSourceObject: {fileID: 624081966487689268, guid: e4f9170dfca79a545b540dbb952f3975, type: 3}
   m_PrefabInstance: {fileID: 8519354185895446000}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &76742666 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2629674874419213332, guid: e4f9170dfca79a545b540dbb952f3975, type: 3}
-  m_PrefabInstance: {fileID: 8519354185895446000}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 14ebea6cbd0aa154e817092989052639, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerSanityController
 --- !u!114 &76742669 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 9140815255896050091, guid: e4f9170dfca79a545b540dbb952f3975, type: 3}
@@ -1337,6 +1326,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 100
+  preventDeath: 0
   invincibilityDuration: 0.5
   enableDamageDebugLog: 1
   includePlayerDamageInDebugLog: 0
@@ -20042,17 +20032,6 @@ Sprite:
   m_Bones: []
   m_ScriptableObjects: []
   m_SpriteID: 
---- !u!114 &1056105609 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1337943977864763591, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
-  m_PrefabInstance: {fileID: 7660361531672240132}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!114 &1059237479 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3530091592298960812, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
@@ -21238,7 +21217,6 @@ GameObject:
   - component: {fileID: 1693494737}
   - component: {fileID: 1693494741}
   - component: {fileID: 1693494740}
-  - component: {fileID: 1693494738}
   - component: {fileID: 1693494742}
   m_Layer: 13
   m_Name: TestBox
@@ -21263,27 +21241,6 @@ Transform:
   - {fileID: 1316799776}
   m_Father: {fileID: 951164214}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}
---- !u!114 &1693494738
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1693494736}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1146ee63c06a1a34a9438f7938219f2d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RopePullTarget
-  targetRigidbody: {fileID: 1693494740}
-  carryableObject: {fileID: 0}
-  ropeAttachmentPoint: {fileID: 1316799776}
-  interactionPoint: {fileID: 0}
-  interactionText: {fileID: 1056105609}
-  applyPromptLocalPosition: 1
-  promptLocalPosition: {x: 0, y: 1.1, z: 0}
-  forceDynamicBodyOnAwake: 1
-  showDebugLogs: 0
 --- !u!50 &1693494740
 Rigidbody2D:
   serializedVersion: 5
@@ -53593,7 +53550,7 @@ PrefabInstance:
     - target: {fileID: 3978038586737380079, guid: 5b29e2537612b58489e3dcefb0561ad8, type: 3}
       propertyPath: sanityController
       value: 
-      objectReference: {fileID: 76742666}
+      objectReference: {fileID: 0}
     - target: {fileID: 4073880852395238385, guid: 5b29e2537612b58489e3dcefb0561ad8, type: 3}
       propertyPath: missions.Array.size
       value: 5
@@ -53745,7 +53702,7 @@ PrefabInstance:
     - target: {fileID: 4319853063467800155, guid: 5b29e2537612b58489e3dcefb0561ad8, type: 3}
       propertyPath: sanityController
       value: 
-      objectReference: {fileID: 76742666}
+      objectReference: {fileID: 0}
     - target: {fileID: 4319853063467800155, guid: 5b29e2537612b58489e3dcefb0561ad8, type: 3}
       propertyPath: cinemachineCamera
       value: 
@@ -54640,7 +54597,7 @@ PrefabInstance:
     - target: {fileID: 6984882403432790565, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: sanityController
       value: 
-      objectReference: {fileID: 76742666}
+      objectReference: {fileID: 0}
     - target: {fileID: 7022526769890015035, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: torchController
       value: 
@@ -54648,7 +54605,7 @@ PrefabInstance:
     - target: {fileID: 7302296106026254384, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: sanityController
       value: 
-      objectReference: {fileID: 76742666}
+      objectReference: {fileID: 0}
     - target: {fileID: 7344336177054565645, guid: 6e5c9d02bfbd9f744a92376514583a14, type: 3}
       propertyPath: missionManager
       value: 

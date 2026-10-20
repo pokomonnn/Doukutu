@@ -5,7 +5,7 @@ using Unity.Cinemachine;
 
 /// <summary>
 /// キャンプへの入場・退出、暗転、プレイヤー移動、カメラズーム、
-/// 武器操作停止、睡眠によるSAN・食料・水分の変化をまとめて管理します。
+/// 武器操作停止、睡眠によるHP回復・食料消費をまとめて管理します。
 /// シーンに1つだけ置いて使います。
 /// </summary>
 [DisallowMultipleComponent]
@@ -20,10 +20,6 @@ public class CampModeController : MonoBehaviour
 
     [SerializeField] private PlayerDeathHandler playerDeathHandler;
     [SerializeField] private Animator playerAnimator;
-
-    [Header("SAN・サバイバル参照")]
-    [Tooltip("未設定ならPlayerから自動取得します")]
-    [SerializeField] private PlayerSanityController sanityController;
 
     [Tooltip("未設定ならPlayerから自動取得します")]
     [SerializeField] private PlayerSurvivalController survivalController;
@@ -88,15 +84,8 @@ public class CampModeController : MonoBehaviour
     [Tooltip("キャンプ中に睡眠時間の選択画面を開くキー")]
     [SerializeField] private KeyCode sleepKey = KeyCode.Q;
 
-    [Header("睡眠：ゲーム内時間ごとの効果")]
-    [Tooltip("ゲーム内で1時間眠るごとに回復するSAN値")]
-    [SerializeField, Min(0f)] private float sanityRestorePerGameHour = 10f;
-
     [Tooltip("ゲーム内で1時間眠るごとに減る食料値")]
     [SerializeField, Min(0f)] private float foodDecreasePerGameHour = 1f;
-
-    [Tooltip("ゲーム内で1時間眠るごとに減る水分値")]
-    [SerializeField, Min(0f)] private float waterDecreasePerGameHour = 2f;
 
     [Tooltip("ゲーム内1時間あたりの、実際の暗転待機時間（秒）。例：0.4なら8時間で3.2秒")]
     [SerializeField, Min(0f)] private float sleepSecondsPerGameHour = 0.4f;
@@ -485,19 +474,12 @@ public class CampModeController : MonoBehaviour
 
     private void ApplySleepEffects(float gameHours)
     {
-        float sanityRestoreAmount =
-            sanityRestorePerGameHour * gameHours;
 
         float foodDecreaseAmount =
             foodDecreasePerGameHour * gameHours;
 
-        float waterDecreaseAmount =
-            waterDecreasePerGameHour * gameHours;
-
         // 各Controller側で0〜最大値の範囲に自動調整されます。
-        sanityController?.RestoreSanity(sanityRestoreAmount);
         survivalController?.DrainFood(foodDecreaseAmount);
-        survivalController?.DrainWater(waterDecreaseAmount);
     }
 
     private IEnumerator ExitRoutine()
@@ -908,18 +890,6 @@ public class CampModeController : MonoBehaviour
                 playerMove.GetComponentInChildren<Animator>(true);
         }
 
-        if (sanityController == null && playerMove != null)
-        {
-            sanityController =
-                playerMove.GetComponent<PlayerSanityController>();
-        }
-
-        if (sanityController == null)
-        {
-            sanityController =
-                FindAnyObjectByType<PlayerSanityController>();
-        }
-
         if (survivalController == null && playerMove != null)
         {
             survivalController =
@@ -969,9 +939,7 @@ public class CampModeController : MonoBehaviour
             maximumSleepHours
         );
 
-        sanityRestorePerGameHour = Mathf.Max(0f, sanityRestorePerGameHour);
         foodDecreasePerGameHour = Mathf.Max(0f, foodDecreasePerGameHour);
-        waterDecreasePerGameHour = Mathf.Max(0f, waterDecreasePerGameHour);
         sleepSecondsPerGameHour = Mathf.Max(0f, sleepSecondsPerGameHour);
 
         campEnterSoundVolume = Mathf.Clamp01(campEnterSoundVolume);

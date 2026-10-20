@@ -72,7 +72,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1243012549293345524}
   - component: {fileID: 1419437241707185644}
-  - component: {fileID: 986734356018631363}
   m_Layer: 0
   m_Name: RopePlacement_Cliff01
   m_TagString: Untagged
@@ -147,45 +146,6 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1.4256701}
   m_EdgeRadius: 0
---- !u!114 &986734356018631363
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4834461168351345398}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3be79d9d1b4b8045b04cfeb6bcc6647, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RopePlacementZone
-  requiredRopeItem: {fileID: 11400000, guid: 13a90d28bfe6bcf43883722037f8db4f, type: 2}
-  consumeRopeOnPlacement: 1
-  ropeAnchorPoint: {fileID: 8384067139896383718}
-  ropeBottomPoint: {fileID: 753517974211848858}
-  minimumDropHeight: 0.03
-  ropeVisual: {fileID: 6880094307684165976}
-  ropeSpriteRenderer: {fileID: 8975974530845220580}
-  fitTiledSpriteToPoints: 1
-  ropeVisualWidth: 0.1
-  startPlaced: 0
-  placementKey: 116
-  playerTag: Player
-  playerInventoryController: {fileID: 0}
-  nearbyIcon: {fileID: 6917138304399687169}
-  iconWorldOffset: {x: 0, y: 1.35, z: 0}
-  animateIcon: 1
-  iconFloatHeight: 0.08
-  iconFloatSpeed: 2
-  interactionPromptText: {fileID: 0}
-  interactionPrompt: "T: \u30ED\u30FC\u30D7\u3092\u8A2D\u7F6E"
-  promptWorldOffset: {x: 0, y: 1.85, z: 0}
-  audioSource: {fileID: 0}
-  placeRopeSound: {fileID: 0}
-  placeRopeSoundVolume: 0.9
-  showDebugLogs: 0
-  logTriggerEvents: 0
-  logKeyPressOutsideTrigger: 0
 --- !u!1 &4867811602706886627
 GameObject:
   m_ObjectHideFlags: 0
@@ -228,14 +188,13 @@ GameObject:
   - component: {fileID: 3179613683423117032}
   - component: {fileID: 8975974530845220580}
   - component: {fileID: 4718537617219496591}
-  - component: {fileID: 8196701217288561718}
   m_Layer: 0
   m_Name: RopeVisual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &3179613683423117032
 Transform:
   m_ObjectHideFlags: 0
@@ -317,7 +276,7 @@ BoxCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6880094307684165976}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Density: 1
   m_Material: {fileID: 0}
@@ -356,29 +315,6 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.7, y: 6.6599994}
   m_EdgeRadius: 0
---- !u!114 &8196701217288561718
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6880094307684165976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bcab2e5fdba43094890c605cf52a938d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RopeClimbZone
-  ropePlacementZone: {fileID: 986734356018631363}
-  topExitPoint: {fileID: 2709775208339756892}
-  bottomExitPoint: {fileID: 6469728520504037661}
-  triggerWidth: 0.7
-  triggerEndPadding: 0.12
-  fallbackTopExitYOffset: 0.45
-  fallbackBottomExitYOffset: 0.45
-  fallbackTopExitHorizontalOffset: 0.55
-  fallbackBottomExitHorizontalOffset: 0.55
-  fallbackTopExitSide: 1
-  fallbackBottomExitSide: 0
 --- !u!1 &6917138304399687169
 GameObject:
   m_ObjectHideFlags: 0

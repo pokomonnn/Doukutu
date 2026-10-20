@@ -19,8 +19,6 @@ public class AlcoholItemData : ConsumableItemData
     [SerializeField, Range(1f, 4f)] private float foodDrainMultiplier = 1.25f;
 
     // v1.0で作ったSOとのデータ互換性用。新仕様では効果を発動しない。
-    [SerializeField, HideInInspector] private float sanityRecovery = 12f;
-    [SerializeField, HideInInspector] private float waterLoss = 6f;
     [SerializeField, HideInInspector] private float drunkDurationSeconds = 45f;
     [SerializeField, HideInInspector] private float drunkMoveSpeedMultiplier = 0.8f;
 

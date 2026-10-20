@@ -863,7 +863,7 @@ MonoBehaviour:
   enableTypewriter: 1
   secondsPerCharacter: 0.045
   minimumFullyVisibleSeconds: 0.7
-  japaneseFont: {fileID: 0}
+  japaneseFont: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
   worldOffset: {x: 0, y: 2, z: 0}
   widthInWorldUnits: 3.5
   sortingOrder: 120
@@ -891,7 +891,7 @@ MonoBehaviour:
   cooldownMin: 90
   cooldownMax: 180
   chancePerAttempt: 0.8
-  japaneseFont: {fileID: 0}
+  japaneseFont: {fileID: 11400000, guid: 33725e3a7c30d3d45a6afee0c0a70db8, type: 2}
   worldOffset: {x: 0, y: 2, z: 0}
   bubbleWidth: 3.5
   secondsPerCharacter: 0.045

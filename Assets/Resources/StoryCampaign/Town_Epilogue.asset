@@ -1,0 +1,357 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd60bfc4d6663934e94846057f06cc5f, type: 3}
+  m_Name: Town_Epilogue
+  m_EditorClassIdentifier: Assembly-CSharp::TownConversationData
+  conversationType: 0
+  residentId: story_Epilogue
+  residentName: "\u753A\u306E\u4EBA\u3005"
+  defaultPortrait: {fileID: 0}
+  firstConversationBlockId: menu
+  repeatConversationBlockId: menu
+  mission: {fileID: 0}
+  trackMissionAfterAccept: 1
+  missionNotAcceptedBlockId: mission_offer
+  missionAcceptedJustNowBlockId: mission_accepted
+  missionInProgressBlockId: mission_progress
+  missionReadyToReportBlockId: mission_report
+  missionRewardClaimedBlockId: mission_finished
+  requireObjectiveCompleted: 1
+  moneyReward: 0
+  itemRewards: []
+  merchantStartBlockId: merchant
+  merchantShopData: {fileID: 0}
+  nextButtonText: "\u6B21\u3078"
+  closeButtonText: "\u9589\u3058\u308B"
+  blocks:
+  - blockId: menu
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u635C\u7D22\u3092\u7D42\u3048\u305F\u753A\u306E\u4EBA\u3005\u3002"
+    choices:
+    - storyEventId: 
+      storyConditions:
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/EndingType_A
+      choiceText: "\u5E30\u9084\u5F8C\u306E\u4EBA\u3005\u306E\u8A71\u3092\u805E\u304F"
+      action: 0
+      nextBlockId: A
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions:
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/EndingType_B
+      choiceText: "\u5E30\u9084\u5F8C\u306E\u4EBA\u3005\u306E\u8A71\u3092\u805E\u304F"
+      action: 0
+      nextBlockId: B
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions:
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/EndingType_C
+      choiceText: "\u5E30\u9084\u5F8C\u306E\u4EBA\u3005\u306E\u8A71\u3092\u805E\u304F"
+      action: 0
+      nextBlockId: C
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    - storyEventId: 
+      storyConditions: []
+      choiceText: "\u9589\u3058\u308B"
+      action: 0
+      nextBlockId: 
+      facilityUpgradeData: {fileID: 0}
+      upgradeFailureBlockId: 
+      selectionSoundOverride: {fileID: 0}
+    nextBlockId: 
+  - blockId: A
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u4E3B\u4EBA\u516C\u306F\u753A\u3078\u5E30\u9084\u3057\u305F\u3002\u8CB4\u65CF\u306F\u7121\u4E8B\u3060\u3063\u305F\u304C\u3001\u5730\u4E0A\u3078\u306F\u623B\u3089\u306A\u304B\u3063\u305F\u3002"
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u8CB4\u65CF\u304B\u3089\u9810\u304B\u3063\u305F\u5C0F\u7BB1\u306B\u306F\u3001\u65C5\u306E\u305F\u3081\u306B\u84C4\u3048\u3089\u308C\u305F\u8CA1\u5B9D\u304C\u53CE\u3081\u3089\u308C\u3066\u3044\u308B\u3002"
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u753A\u306B\u306F\u307E\u3060\u4ED5\u4E8B\u304C\u8DB3\u308A\u306A\u3044\u3002\u3051\u308C\u3069\u3001\u6551\u51FA\u3055\u308C\u305F\u4EBA\u3005\u304C\u5C11\u3057\u305A\u3064\u5E97\u3084\u5DE5\u623F\u3092\u958B\u304D\u59CB\u3081\u3066\u3044\u308B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u306F\u3042\uFF01\uFF1F \u3042\u306E\u8CB4\u65CF\u3001\u898B\u3064\u304B\u3063\u305F\u306E\u306B\u5E30\u3063\u3066\u3053\u306A\u3044\u3060\u3068\uFF01\uFF1F"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u307E\u3063\u305F\u304F\u2026\u2026\u6700\u5F8C\u307E\u3067\u52DD\u624B\u306A\u5974\u3060\u306A\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3060\u304C\u3001\u3042\u3093\u305F\u304C\u5618\u3092\u3064\u304F\u3068\u3082\u601D\u3048\u3093\u3002\u4F55\u304B\u3001\u3088\u3063\u307D\u3069\u306E\u4E8B\u60C5\u304C\u3042\u3063\u305F\u3093\u3060\u308D\u3046\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u305D\u306E\u5C0F\u7BB1\u306F\u8B1D\u793C\u304B\u3002\u2026\u2026\u3075\u3093\u3001\u91D1\u3060\u3051\u3067\u3082\u5BC4\u8D8A\u3057\u305F\u306A\u3089\u307E\u3060\u307E\u3057\u3060\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u308F\u3057\u306F\u3042\u3044\u3064\u3092\u8A31\u3057\u305F\u308F\u3051\u3058\u3083\u306A\u3044\u305E\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3060\u304C\u3001\u5E30\u3063\u3066\u304D\u305F\u8077\u4EBA\u3082\u3044\u308B\u3002\u5E97\u3092\u958B\u3051\u308B\u5974\u3082\u5897\u3048\u3066\u304D\u305F\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3053\u3053\u304B\u3089\u5148\u306F\u3001\u6B8B\u3063\u305F\u308F\u3057\u3089\u3067\u3084\u308B\u3057\u304B\u3042\u308B\u307E\u3044\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3042\u3093\u305F\u3082\u3001\u307E\u3060\u624B\u304C\u7A7A\u3044\u3066\u308B\u306A\u3089\u4ED8\u304D\u5408\u3048\u3002\u3053\u3053\u307E\u3067\u3084\u3063\u305F\u3093\u3060\u308D\u3046\u304C\u3002"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3054\u4E3B\u4EBA\u69D8\u306F\u3001\u304A\u4F1A\u3044\u306B\u306A\u308C\u305F\u306E\u3067\u3059\u306D\u3002"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u5965\u69D8\u3068\u2026\u2026\u3002"
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u57F7\u4E8B\u306F\u3057\u3070\u3089\u304F\u4F55\u3082\u8A00\u308F\u305A\u3001\u3086\u3063\u304F\u308A\u3068\u3046\u306A\u305A\u3044\u305F\u3002"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u79C1\u306B\u306F\u3001\u304A\u4E8C\u4EBA\u306B\u3069\u306E\u3088\u3046\u306A\u6642\u9593\u304C\u6D41\u308C\u305F\u306E\u304B\u3001\u5206\u304B\u308A\u307E\u305B\u3093\u3002"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u305F\u3060\u3001\u3054\u7121\u4E8B\u3067\u3001\u5B89\u3089\u304B\u306B\u904E\u3054\u3057\u3066\u304A\u3089\u308C\u308B\u306E\u306A\u3089\u2026\u2026\u3002"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u753A\u306E\u305F\u3081\u306B\u5FC5\u8981\u306A\u3053\u3068\u306F\u3001\u3053\u3061\u3089\u3067\u7D9A\u3051\u3066\u307E\u3044\u308A\u307E\u3059\u3002"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u304A\u77E5\u3089\u305B\u304F\u3060\u3055\u308A\u3001\u3042\u308A\u304C\u3068\u3046\u3054\u3056\u3044\u307E\u3057\u305F\u3002"
+    choices: []
+    nextBlockId: 
+  - blockId: B
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u5E30\u9084\u306E\u77E5\u3089\u305B\u306B\u3001\u753A\u306E\u4EBA\u3005\u304C\u9A5A\u3044\u3066\u96C6\u307E\u3063\u3066\u304F\u308B\u3002"
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u884C\u65B9\u4E0D\u660E\u3060\u3063\u305F\u8CB4\u65CF\u304C\u3001\u4E3B\u4EBA\u516C\u3068\u3068\u3082\u306B\u623B\u3063\u3066\u304D\u305F\u306E\u3060\u3002"
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u5F7C\u306F\u3001\u96C6\u307E\u3063\u305F\u4EBA\u3005\u306E\u524D\u3067\u3086\u3063\u304F\u308A\u3068\u982D\u3092\u4E0B\u3052\u305F\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u304A\u3044\u304A\u3044\u3002\u307B\u3093\u3068\u306B\u5E30\u3063\u3066\u304D\u305F\u306E\u304B\u3001\u3042\u3093\u305F\u3002"
+    - speakerNameOverride: "\u8CB4\u65CF"
+      portraitOverride: {fileID: 0}
+      message: "\u753A\u9577\u3002\u2026\u2026\u3054\u7121\u6C99\u6C70\u3057\u3066\u3044\u307E\u3059\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3054\u7121\u6C99\u6C70\u3001\u3067\u6E08\u307E\u305B\u308B\u6C17\u304B\uFF1F
+        \u5E97\u304C\u4F55\u8ED2\u6F70\u308C\u305F\u3068\u601D\u3063\u3066\u308B\u3002"
+    - speakerNameOverride: "\u8CB4\u65CF"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u8A00\u3044\u8A33\u306F\u3067\u304D\u307E\u305B\u3093\u3002\u753A\u306B\u8D77\u304D\u3066\u3044\u305F\u3053\u3068\u3092\u3001\u79C1\u306F\u77E5\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u77E5\u3089\u306A\u304B\u3063\u305F\u3001\u304B\u3002\u2026\u2026\u3061\u3063\u3002\u77E5\u3089\u3093\u3067\u6E08\u3080\u8A71\u306A\u3089\u3001\u8AB0\u3082\u82E6\u52B4\u306F\u305B\u3093\u3002"
+    - speakerNameOverride: "\u8CB4\u65CF"
+      portraitOverride: {fileID: 0}
+      message: "\u306F\u3044\u3002\u307E\u305A\u3001\u6B8B\u3063\u305F\u8CC7\u91D1\u3068\u7269\u8CC7\u3092\u753A\u306E\u305F\u3081\u306B\u4F7F\u308F\u305B\u3066\u304F\u3060\u3055\u3044\u3002"
+    - speakerNameOverride: "\u8CB4\u65CF"
+      portraitOverride: {fileID: 0}
+      message: "\u6551\u51FA\u3055\u308C\u305F\u4EBA\u3005\u304C\u4ED5\u4E8B\u306B\u623B\u308C\u308B\u3088\u3046\u306B\u3057\u305F\u3044\u3002\u9060\u5F81\u306E\u884C\u65B9\u4E0D\u660E\u8005\u3082\u3001\u3067\u304D\u308B\u9650\u308A\u635C\u3057\u7D9A\u3051\u307E\u3059\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u53E3\u3060\u3051\u306A\u3089\u4F55\u3068\u3067\u3082\u8A00\u3048\u308B\u3002\u50CD\u304D\u3076\u308A\u3092\u898B\u3066\u304B\u3089\u3060\u3002"
+    - speakerNameOverride: "\u8CB4\u65CF"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u627F\u77E5\u3057\u307E\u3057\u305F\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3067\u3001\u3042\u3093\u305F\u3002\u3053\u3044\u3064\u3092\u9023\u308C\u5E30\u3063\u305F\u306E\u306F\u4E0A\u51FA\u6765\u3060\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3042\u3068\u306F\u4ED5\u4E8B\u3092\u3055\u305B\u308B\u305E\u3002\u2026\u2026\u308F\u3057\u306E\u307B\u3046\u304C\u3053\u304D\u4F7F\u3063\u3066\u3084\u308B\u304B\u3089\u306A\u3002"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3054\u4E3B\u4EBA\u69D8\uFF01"
+    - speakerNameOverride: "\u8CB4\u65CF"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u5FC3\u914D\u3092\u639B\u3051\u305F\u3002\u3059\u307E\u306A\u304B\u3063\u305F\u3002"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u3054\u7121\u4E8B\u3067\u2026\u2026\u3002\u305D\u308C\u3060\u3051\u3067\u3001\u79C1\u306F\u2026\u2026\u3002"
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u57F7\u4E8B\u306F\u8A00\u8449\u3092\u8A70\u307E\u3089\u305B\u3001\u6DF1\u304F\u982D\u3092\u4E0B\u3052\u305F\u3002"
+    - speakerNameOverride: "\u8CB4\u65CF"
+      portraitOverride: {fileID: 0}
+      message: "\u3053\u308C\u304B\u3089\u5FD9\u3057\u304F\u306A\u308B\u3002\u529B\u3092\u8CB8\u3057\u3066\u304F\u308C\u308B\u304B\u3002"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3082\u3061\u308D\u3093\u3067\u3054\u3056\u3044\u307E\u3059\u3002"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u304A\u5E30\u308A\u306A\u3055\u3044\u307E\u305B\u3002"
+    choices: []
+    nextBlockId: 
+  - blockId: C
+    importantConversation: 1
+    fearShake: 0
+    autoAdvanceDelay: 2.5
+    finalBlockDisplayDuration: 3
+    checkMissionDeliveryOnBlockEnd: 0
+    deliverySuccessBlockId: 
+    deliveryFailureBlockId: 
+    pages:
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u4E3B\u4EBA\u516C\u306F\u3001\u53E4\u57CE\u306E\u5FA9\u8208\u6848\u3068\u4E09\u6D3E\u95A5\u306E\u5354\u529B\u3092\u753A\u9577\u306B\u4F1D\u3048\u305F\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u5F85\u3066\u5F85\u3066\u3002\u3042\u306E\u53E4\u57CE\u3092\u4F4F\u3081\u308B\u3088\u3046\u306B\u3059\u308B\u3060\u3068\uFF01\uFF1F"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u3042\u3093\u305F\u3001\u3064\u3044\u306B\u982D\u307E\u3067\u304A\u304B\u3057\u304F\u306A\u3063\u305F\u3093\u3058\u3083\u306A\u304B\u308D\u3046\u306A\u3002"
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u4E3B\u4EBA\u516C\u306F\u3001\u5DE5\u623F\u533A\u3067\u6C34\u8ECA\u304C\u5FA9\u65E7\u3057\u305F\u3053\u3068\u3001\u901A\u7528\u8DEF\u3068\u8377\u904B\u3073\u306E\u9053\u304C\u898B\u3064\u304B\u3063\u305F\u3053\u3068\u3001\u5EFA\u7269\u306E\u69CB\u9020\u304C\u78BA\u304B\u3081\u3089\u308C\u305F\u3053\u3068\u3092\u4F1D\u3048\u305F\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3075\u3046\u3093\u3002\u304A\u307E\u3051\u306B\u5192\u967A\u8005\u304C\u8B66\u5099\u3001\u76D7\u8CCA\u304C\u8377\u904B\u3073\u3001\u30C9\u30EF\u30FC\u30D5\u304C\u5DE5\u4E8B\u3092\u3084\u308B\u3063\u3066\uFF1F"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u76D7\u8CCA\u304C\u307E\u305F\u8377\u7269\u3092\u304F\u3059\u306D\u305F\u3089\u3069\u3046\u3059\u308B\u3002\u2026\u2026\u3042\u3042\u3001\u8A31\u53EF\u8A3C\u306E\u6761\u4EF6\u4ED8\u304D\u3067\u50CD\u304F\u3093\u3060\u3063\u305F\u306A\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3061\u3063\u3001\u3088\u304F\u305D\u3053\u307E\u3067\u8A71\u3092\u3064\u3051\u305F\u3082\u3093\u3060\u3002"
+    - speakerNameOverride: 
+      portraitOverride: {fileID: 0}
+      message: "\u307B\u3069\u306A\u304F\u8CB4\u65CF\u304C\u753A\u3078\u623B\u308A\u3001\u753A\u9577\u306E\u524D\u3067\u982D\u3092\u4E0B\u3052\u305F\u3002"
+    - speakerNameOverride: "\u8CB4\u65CF"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u753A\u9577\u3002\u4ECA\u56DE\u306E\u9060\u5F81\u3067\u3001\u591A\u304F\u306E\u4EBA\u3005\u306B\u82E6\u52B4\u3092\u639B\u3051\u307E\u3057\u305F\u3002"
+    - speakerNameOverride: "\u8CB4\u65CF"
+      portraitOverride: {fileID: 0}
+      message: "\u79C1\u306E\u77E5\u3089\u306A\u304B\u3063\u305F\u3053\u3068\u3068\u306F\u3044\u3048\u3001\u8CAC\u4EFB\u304C\u6D88\u3048\u308B\u308F\u3051\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002"
+    - speakerNameOverride: "\u8CB4\u65CF"
+      portraitOverride: {fileID: 0}
+      message: "\u53E4\u57CE\u306E\u518D\u5EFA\u3092\u3001\u7686\u306E\u4ED5\u4E8B\u3068\u3057\u3066\u59CB\u3081\u305F\u3044\u306E\u3067\u3059\u3002"
+    - speakerNameOverride: "\u8CB4\u65CF"
+      portraitOverride: {fileID: 0}
+      message: "\u5730\u4E0A\u306E\u753A\u3092\u898B\u6368\u3066\u308B\u306E\u3067\u306F\u3042\u308A\u307E\u305B\u3093\u3002\u53E4\u57CE\u3068\u753A\u3092\u3064\u306A\u304E\u3001\u5BBF\u3084\u5E97\u3001\u5DE5\u623F\u3092\u5897\u3084\u3057\u305F\u3044\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3075\u3093\u3002\u4E0A\u7B49\u306A\u3053\u3068\u3092\u8A00\u3046\u3058\u3083\u306A\u3044\u304B\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u4E00\u3064\u3060\u3051\u8A00\u3063\u3068\u304F\u3002\u753A\u306E\u9023\u4E2D\u3092\u3001\u4ECA\u5EA6\u306F\u52DD\u624B\u306B\u9023\u308C\u3066\u304F\u3093\u3058\u3083\u306A\u3044\u305E\u3002"
+    - speakerNameOverride: "\u8CB4\u65CF"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u306F\u3044\u3002\u4ED5\u4E8B\u3082\u79FB\u4F4F\u3082\u3001\u672C\u4EBA\u304C\u671B\u3080\u5F62\u3067\u9032\u3081\u307E\u3059\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u306A\u3089\u3001\u8003\u3048\u3066\u3084\u3089\u3093\u3053\u3068\u3082\u306A\u3044\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u308F\u3057\u3082\u753A\u9577\u3060\u304B\u3089\u306A\u3002\u753A\u304C\u6F64\u3046\u8A71\u307E\u3067\u8E74\u308B\u307B\u3069\u9593\u629C\u3051\u3058\u3083\u306A\u3044\u3002"
+    - speakerNameOverride: "\u753A\u9577"
+      portraitOverride: {fileID: 0}
+      message: "\u307B\u3089\u3001\u307C\u3055\u3063\u3068\u3057\u3066\u306A\u3044\u3067\u4EBA\u3092\u96C6\u3081\u308D\uFF01
+        \u3084\u308B\u306A\u3089\u3055\u3063\u3055\u3068\u6BB5\u53D6\u308A\u3092\u6C7A\u3081\u308B\u305E\uFF01"
+    - speakerNameOverride: "\u30ED\u30A2\u30F3"
+      portraitOverride: {fileID: 0}
+      message: "\u53E4\u57CE\u306E\u8B66\u5099\u3060\u3063\u3066\uFF1F \u2026\u2026\u3042\u3042\u3001\u7D04\u675F\u306F\u899A\u3048\u3066\u308B\u3002"
+    - speakerNameOverride: "\u30ED\u30A2\u30F3"
+      portraitOverride: {fileID: 0}
+      message: "\u307E\u305A\u306F\u5D29\u308C\u305F\u9053\u306E\u898B\u5F35\u308A\u3060\u3002\u65C5\u4EBA\u304C\u5B89\u5168\u306B\u901A\u308C\u306A\u304D\u3083\u8A71\u306B\u306A\u3089\u3093\u3002"
+    - speakerNameOverride: "\u30ED\u30A2\u30F3"
+      portraitOverride: {fileID: 0}
+      message: "\u76D7\u8CCA\u306E\u9023\u4E2D\u3068\u306F\u3001\u6C7A\u3081\u305F\u56DE\u5ECA\u3060\u3051\u4E92\u3044\u306B\u624B\u3092\u51FA\u3055\u306A\u3044\u3002\u305D\u3053\u306F\u5B88\u308B\u3055\u3002"
+    - speakerNameOverride: "\u30ED\u30A2\u30F3"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u6C17\u306B\u98DF\u308F\u306A\u3044\u9854\u3082\u3044\u308B\u304C\u3001\u4ECA\u306F\u7686\u3067\u751F\u304D\u3066\u5E30\u308B\u307B\u3046\u304C\u5927\u4E8B\u3060\u3002"
+    - speakerNameOverride: "\u30D0\u30EB\u30C9"
+      portraitOverride: {fileID: 0}
+      message: "\u53E4\u57CE\u307E\u3067\u8377\u3092\u904B\u3079\u3063\u3066\uFF1F
+        \u304A\u3046\u3001\u4EFB\u305B\u308D\uFF01"
+    - speakerNameOverride: "\u30D0\u30EB\u30C9"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u304A\u3044\u3001\u305D\u3093\u306A\u9854\u3059\u3093\u306A\u3002\u3061\u3083\u3093\u3068\u8A31\u53EF\u8A3C\u306E\u3042\u308B\u4ED5\u4E8B\u3060\u305E\u3002"
+    - speakerNameOverride: "\u30D0\u30EB\u30C9"
+      portraitOverride: {fileID: 0}
+      message: "\u91D1\u3092\u3082\u3089\u3063\u3066\u8377\u8ECA\u3092\u5F15\u304F\u3002\u61D0\u304B\u3057\u3044\u305C\u3001\u3053\u3046\u3044\u3046\u306E\u3002"
+    - speakerNameOverride: "\u30D0\u30EB\u30C9"
+      portraitOverride: {fileID: 0}
+      message: "\u30ED\u30A2\u30F3\u306E\u9023\u4E2D\u3068\u4EF2\u826F\u3057\u306B\u306A\u308B\u6C17\u306F\u306D\u3048\u304C\u3001\u4ED5\u4E8B\u306E\u90AA\u9B54\u306F\u3057\u306D\u3048\u3088\u3002"
+    - speakerNameOverride: "\u30D0\u30EB\u30C9"
+      portraitOverride: {fileID: 0}
+      message: "\u30C8\u30DE\u306B\u3082\u3001\u3082\u3046\u5C11\u3057\u5143\u6C17\u306B\u306A\u3063\u305F\u3089\u5E33\u9762\u3092\u624B\u4F1D\u308F\u305B\u308B\u3064\u3082\u308A\u3060\u3002"
+    - speakerNameOverride: "\u30B0\u30EC\u30F3"
+      portraitOverride: {fileID: 0}
+      message: "\u306F\u3063\u306F\u3063\u306F\uFF01 \u3068\u3046\u3068\u3046\u57CE\u3092\u4E38\u3054\u3068\u76F4\u3059\u8A71\u306B\u306A\u3063\u305F\u304B\uFF01"
+    - speakerNameOverride: "\u30B0\u30EC\u30F3"
+      portraitOverride: {fileID: 0}
+      message: "\u3053\u308C\u3067\u5411\u3053\u3046\u4F55\u5E74\u3082\u4ED5\u4E8B\u306B\u56F0\u3089\u3093\u306A\u3002\u3042\u308A\u304C\u305F\u3044\u3053\u3063\u305F\uFF01"
+    - speakerNameOverride: "\u30B0\u30EC\u30F3"
+      portraitOverride: {fileID: 0}
+      message: "\u3060\u304C\u3001\u624B\u629C\u304D\u3060\u3051\u306F\u305B\u3093\u305E\u3002\u4ED5\u4E8B\u306E\u8155\u3067\u98DF\u3063\u3066\u308B\u3093\u3060\u3001\u308F\u3057\u3089\u306F\u3002"
+    - speakerNameOverride: "\u30B0\u30EC\u30F3"
+      portraitOverride: {fileID: 0}
+      message: "\u307E\u305A\u6C34\u8DEF\u3001\u6B21\u306B\u4F4F\u5C45\u3001\u305D\u308C\u304B\u3089\u5E02\u5834\u3060\u3002\u5132\u3051\u8A71\u306B\u3082\u9806\u756A\u304C\u3042\u308B\u3002"
+    - speakerNameOverride: "\u30B0\u30EC\u30F3"
+      portraitOverride: {fileID: 0}
+      message: "\u2026\u2026\u3042\u3042\u3001\u305D\u3046\u3060\u3002\u624B\u9593\u8CC3\u306E\u76F8\u8AC7\u306F\u5225\u306B\u3057\u3088\u3046\u306A\uFF01"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u3054\u4E3B\u4EBA\u69D8\u304C\u3001\u307E\u305F\u4EBA\u3005\u306E\u305F\u3081\u306B\u50CD\u3053\u3046\u3068\u3057\u3066\u304A\u3089\u308C\u308B\u2026\u2026\u3002"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u3042\u306A\u305F\u306E\u304A\u304B\u3052\u3067\u3001\u5931\u308F\u308C\u305F\u3082\u306E\u3092\u53D6\u308A\u623B\u3059\u9053\u304C\u3067\u304D\u307E\u3057\u305F\u3002"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u4ECA\u5EA6\u306E\u3054\u4E3B\u4EBA\u69D8\u306F\u3001\u304D\u3063\u3068\u7686\u306E\u8A71\u3092\u3088\u304F\u304A\u805E\u304D\u306B\u306A\u308B\u3067\u3057\u3087\u3046\u3002"
+    - speakerNameOverride: "\u57F7\u4E8B"
+      portraitOverride: {fileID: 0}
+      message: "\u672C\u5F53\u306B\u2026\u2026\u3042\u308A\u304C\u3068\u3046\u3054\u3056\u3044\u307E\u3059\u3002"
+    choices: []
+    nextBlockId: 

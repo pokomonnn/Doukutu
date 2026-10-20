@@ -51,6 +51,13 @@ public class CaveConversationNPC : MonoBehaviour
 
     private readonly HashSet<Collider2D> playerColliders =
         new HashSet<Collider2D>();
+    private InteractableOutline2D dialogueOutline;
+    private void Start()
+    {
+        var actor = GetComponent<DialogueActor2D>();
+        if ((actor == null || !actor.UseEKeyInteraction) && GetComponentInChildren<SpriteRenderer>() != null)
+            dialogueOutline = InteractableOutline2D.CreateForDialogue(transform);
+    }
 
     public bool IsPlayerInRange =>
         !requirePlayerInTrigger || playerColliders.Count > 0;
@@ -74,12 +81,17 @@ public class CaveConversationNPC : MonoBehaviour
 
     private void OnDisable()
     {
+        if (dialogueOutline != null) dialogueOutline.SetDialogueHighlight(false);
         playerColliders.Clear();
         RefreshPrompt();
     }
 
     private void Update()
     {
+        if (dialogueOutline != null) dialogueOutline.SetDialogueHighlight(IsPlayerInRange && conversationData != null &&
+            !(GetComponent<CharacterHealth>()?.IsDead ?? false) &&
+            !(GetComponent<CarryableObject2D>()?.IsCarried ?? false) &&
+            (conversationController == null || !conversationController.IsOpen));
         if (!IsPlayerInRange)
         {
             return;
@@ -142,6 +154,7 @@ public class CaveConversationNPC : MonoBehaviour
         // Panelが表示された最初のフレームからNPC頭上へ出せます。
         anchorFollower.SetTarget(DialogueAnchor);
         conversationController.OpenConversation(conversationData);
+        CaveConversationZoom2D.Begin(conversationController, transform);
         anchorFollower.UpdatePositionNow();
         RefreshPrompt();
 

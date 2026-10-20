@@ -16,11 +16,13 @@ using System.Collections.Generic;
 /// 第11段階：酒場の累計利用回数・ラウンド内利用回数・スキル報酬受取状態
 /// 第12段階：町のプレイヤー保管箱（永久倉庫）
 /// 第13段階：生存救出NPC累計人数・救出済み特殊NPC ID
+/// 第14段階：アイテムの4方向回転・応急キット数量
 /// </summary>
 [Serializable]
 public class SaveGameData
 {
-    public int SaveVersion = 13;
+    public int SaveVersion = 14;
+    public SavedMedicalKitData MedicalKit = new SavedMedicalKitData();
     public string SavedAtUtc = string.Empty;
     public string SavedSceneName = string.Empty;
     public int Money;
@@ -132,6 +134,11 @@ public class SavedInventoryItemData
     public int GridX;
     public int GridY;
     public bool IsRotated;
+    // Version 14以降。旧セーブではHasFourWayRotation=falseとして0/90度を復元する。
+    public bool HasFourWayRotation;
+    public int RotationSteps;
+    public int ResolvedRotationSteps => HasFourWayRotation
+        ? ((RotationSteps % 4) + 4) % 4 : (IsRotated ? 1 : 0);
     public int Amount = 1;
     public bool HasStoredMagazineAmmo;
     public int StoredMagazineAmmo;
@@ -214,6 +221,7 @@ public class SavedPlayerStatusData
     public bool HasSurvival;
     public float CurrentFood;
     public float MaximumFoodAtSave;
+    // Legacy water/SAN fields: read-compatible only, ignored by current gameplay.
     public float CurrentWater;
     public float MaximumWaterAtSave;
 

@@ -20,21 +20,16 @@ public class PlayerSurvivalController : MonoBehaviour
 
     [Header("最大値")]
     [SerializeField, Min(1f)] private float maxFood = 100f;
-    [SerializeField, Min(1f)] private float maxWater = 100f;
 
     [Header("開始時の値")]
-    [Tooltip("オンなら、開始時に食料・水分を最大値にします")]
+    [Tooltip("オンなら、開始時に食料を最大値にします")]
     [SerializeField] private bool startWithFullValues = true;
 
     [SerializeField, Min(0f)] private float startingFood = 100f;
-    [SerializeField, Min(0f)] private float startingWater = 100f;
 
     [Header("時間経過による減少")]
     [Tooltip("1分ごとに減る食料値。1.67なら約60分で0になります")]
     [SerializeField, Min(0f)] private float foodDecreasePerMinute = 1.67f;
-
-    [Tooltip("1分ごとに減る水分値。5なら約20分で0になります")]
-    [SerializeField, Min(0f)] private float waterDecreasePerMinute = 5f;
 
     [Header("残量による段階")]
     [Tooltip("この割合以下で警告状態になります")]
@@ -65,32 +60,19 @@ public class PlayerSurvivalController : MonoBehaviour
     [Tooltip("食料が0の時に受けるダメージ")]
     [SerializeField, Min(0)] private int foodEmptyDamage = 1;
 
-    [Tooltip("水分が0の時に受けるダメージ")]
-    [SerializeField, Min(0)] private int waterEmptyDamage = 2;
-
     public float CurrentFood => currentFood;
-    public float CurrentWater => currentWater;
 
     public float MaxFood => maxFood;
-    public float MaxWater => maxWater;
 
     public float FoodPercent =>
         maxFood <= 0f ? 0f : currentFood / maxFood;
 
-    public float WaterPercent =>
-        maxWater <= 0f ? 0f : currentWater / maxWater;
-
     public bool IsFoodFull =>
         currentFood >= maxFood - 0.01f;
 
-    public bool IsWaterFull =>
-        currentWater >= maxWater - 0.01f;
-
     public bool IsFoodEmpty => currentFood <= 0.01f;
-    public bool IsWaterEmpty => currentWater <= 0.01f;
 
     public SurvivalNeedState FoodState => foodState;
-    public SurvivalNeedState WaterState => waterState;
 
     // 後でPlayerWeightControllerから使う速度倍率
     public float FoodMoveSpeedMultiplier =>
@@ -101,23 +83,17 @@ public class PlayerSurvivalController : MonoBehaviour
             foodEmptyMoveSpeedMultiplier
         );
 
-    // 水分不足による移動低下は使用しない。
-    // 水分の視認距離低下は WaterEnemyVisibilityController が担当する。
     public float TotalMoveSpeedMultiplier =>
         FoodMoveSpeedMultiplier;
 
     // UI用イベント
     public event Action<float, float> FoodChanged;
-    public event Action<float, float> WaterChanged;
 
     public event Action<SurvivalNeedState> FoodStateChanged;
-    public event Action<SurvivalNeedState> WaterStateChanged;
 
     private float currentFood;
-    private float currentWater;
 
     private SurvivalNeedState foodState;
-    private SurvivalNeedState waterState;
 
     private float emptyDamageTimer;
 
@@ -128,7 +104,6 @@ public class PlayerSurvivalController : MonoBehaviour
         if (startWithFullValues)
         {
             currentFood = maxFood;
-            currentWater = maxWater;
         }
         else
         {
@@ -138,15 +113,9 @@ public class PlayerSurvivalController : MonoBehaviour
                 maxFood
             );
 
-            currentWater = Mathf.Clamp(
-                startingWater,
-                0f,
-                maxWater
-            );
         }
 
         foodState = GetState(currentFood, maxFood);
-        waterState = GetState(currentWater, maxWater);
     }
 
     private void Start()
@@ -174,14 +143,7 @@ public class PlayerSurvivalController : MonoBehaviour
                 SkillEffectType.FoodDrain
             ) * GetAlcoholFoodDrainMultiplier();
 
-        float waterDecrease =
-            waterDecreasePerMinute / 60f * deltaTime *
-            SkillCardEffectUtility.GetMultiplier(
-                SkillEffectType.WaterDrain
-            );
-
         SetFoodInternal(currentFood - foodDecrease, true);
-        SetWaterInternal(currentWater - waterDecrease, true);
 
         UpdateEmptyDamage(deltaTime);
     }
@@ -209,22 +171,6 @@ public class PlayerSurvivalController : MonoBehaviour
         return currentFood - previousFood;
     }
 
-    // 水分を回復し、実際に回復した量を返す
-    public float RestoreWater(float amount)
-    {
-        if (amount <= 0f ||
-            (playerHealth != null && playerHealth.IsDead))
-        {
-            return 0f;
-        }
-
-        float previousWater = currentWater;
-
-        SetWaterInternal(currentWater + amount, true);
-
-        return currentWater - previousWater;
-    }
-
     // 将来、走る・暑い場所・毒などで使える減少用メソッド
     public float DrainFood(float amount)
     {
@@ -240,49 +186,21 @@ public class PlayerSurvivalController : MonoBehaviour
         return previousFood - currentFood;
     }
 
-    public float DrainWater(float amount)
-    {
-        if (amount <= 0f)
-        {
-            return 0f;
-        }
-
-        float previousWater = currentWater;
-
-        SetWaterInternal(currentWater - amount, true);
-
-        return previousWater - currentWater;
-    }
-
     [ContextMenu("Refill Food")]
     public void RefillFood()
     {
         SetFoodInternal(maxFood, true);
     }
 
-    [ContextMenu("Refill Water")]
-    public void RefillWater()
-    {
-        SetWaterInternal(maxWater, true);
-    }
-
-    [ContextMenu("Refill Food And Water")]
     public void RefillAll()
     {
         SetFoodInternal(maxFood, true);
-        SetWaterInternal(maxWater, true);
     }
 
     [ContextMenu("Empty Food")]
     public void EmptyFood()
     {
         SetFoodInternal(0f, true);
-    }
-
-    [ContextMenu("Empty Water")]
-    public void EmptyWater()
-    {
-        SetWaterInternal(0f, true);
     }
 
     private void UpdateEmptyDamage(float deltaTime)
@@ -294,7 +212,7 @@ public class PlayerSurvivalController : MonoBehaviour
         }
 
         bool shouldTakeDamage =
-            IsFoodEmpty || IsWaterEmpty;
+            IsFoodEmpty;
 
         if (!shouldTakeDamage)
         {
@@ -310,15 +228,6 @@ public class PlayerSurvivalController : MonoBehaviour
         }
 
         emptyDamageTimer = 0f;
-
-        // 水分0を優先する。
-        // 食料・水分ともに0でも、同じタイミングで
-        // ダメージが重複しないようにする。
-        if (IsWaterEmpty && waterEmptyDamage > 0)
-        {
-            playerHealth.TakeDamage(waterEmptyDamage);
-            return;
-        }
 
         if (IsFoodEmpty && foodEmptyDamage > 0)
         {
@@ -345,28 +254,6 @@ public class PlayerSurvivalController : MonoBehaviour
         if (notify && previousState != foodState)
         {
             FoodStateChanged?.Invoke(foodState);
-        }
-    }
-
-    private void SetWaterInternal(
-        float value,
-        bool notify)
-    {
-        float previousWater = currentWater;
-        SurvivalNeedState previousState = waterState;
-
-        currentWater = Mathf.Clamp(value, 0f, maxWater);
-        waterState = GetState(currentWater, maxWater);
-
-        if (notify &&
-            !Mathf.Approximately(previousWater, currentWater))
-        {
-            WaterChanged?.Invoke(currentWater, maxWater);
-        }
-
-        if (notify && previousState != waterState)
-        {
-            WaterStateChanged?.Invoke(waterState);
         }
     }
 
@@ -424,10 +311,8 @@ public class PlayerSurvivalController : MonoBehaviour
     private void NotifyAll()
     {
         FoodChanged?.Invoke(currentFood, maxFood);
-        WaterChanged?.Invoke(currentWater, maxWater);
 
         FoodStateChanged?.Invoke(foodState);
-        WaterStateChanged?.Invoke(waterState);
     }
 
     private bool FindPlayerHealth()
@@ -445,7 +330,6 @@ public class PlayerSurvivalController : MonoBehaviour
     private void OnValidate()
     {
         maxFood = Mathf.Max(1f, maxFood);
-        maxWater = Mathf.Max(1f, maxWater);
 
         startingFood = Mathf.Clamp(
             startingFood,
@@ -453,20 +337,9 @@ public class PlayerSurvivalController : MonoBehaviour
             maxFood
         );
 
-        startingWater = Mathf.Clamp(
-            startingWater,
-            0f,
-            maxWater
-        );
-
         foodDecreasePerMinute = Mathf.Max(
             0f,
             foodDecreasePerMinute
-        );
-
-        waterDecreasePerMinute = Mathf.Max(
-            0f,
-            waterDecreasePerMinute
         );
 
         warningThreshold = Mathf.Clamp01(warningThreshold);
@@ -507,6 +380,5 @@ public class PlayerSurvivalController : MonoBehaviour
         );
 
         foodEmptyDamage = Mathf.Max(0, foodEmptyDamage);
-        waterEmptyDamage = Mathf.Max(0, waterEmptyDamage);
     }
 }

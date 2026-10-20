@@ -207,6 +207,8 @@ public class ElevatorCarryReceiver2D : MonoBehaviour
     /// </summary>
     public bool TryStoreCargo(CarryableObject2D target)
     {
+        // Finn belongs to Baldo's local delivery, not the town rescue shipment.
+        if (target != null && target.GetComponent<StoryFinnDelivery>() != null) return false;
         if (target == null || target.IsCarried ||
             cargoRecords.ContainsKey(target) || movingTargets.Contains(target))
         {

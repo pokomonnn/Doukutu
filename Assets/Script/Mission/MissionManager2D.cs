@@ -23,6 +23,7 @@ public class MissionEntry2D
 
     public MissionDefinition2D Mission => mission;
     public MissionEnemyTarget2D TargetEnemy => targetEnemy;
+    public void SetCompassTarget(Transform target) => compassTarget = target;
 
     public Transform GetCompassTarget()
     {
@@ -109,9 +110,11 @@ public class MissionManager2D : MonoBehaviour
             : null;
 
     public bool HasTrackedMission =>
-        IsValidMissionIndex(trackedMissionIndex) &&
-        GetMissionState(trackedMissionIndex) ==
-            MissionProgressState2D.InProgress;
+        CanTrackMission(trackedMissionIndex);
+
+    public bool CanTrackMission(int index) => IsValidMissionIndex(index) &&
+        (GetMissionState(index)==MissionProgressState2D.InProgress ||
+         GetMissionState(index)==MissionProgressState2D.Completed && MissionObjectiveDisplayState.HasPending(GetMissionDefinition(index)));
 
     public int TrackedMissionIndex => trackedMissionIndex;
 
@@ -178,6 +181,22 @@ public class MissionManager2D : MonoBehaviour
     private int trackedMissionIndex = -1;
     private bool inventorySubscribed;
     private bool enemyTargetGlobalSubscribed;
+    private GameSessionManager objectiveSession;
+    private bool objectiveFlagsDirty;
+
+    private void Update()
+    {
+        if (objectiveSession != GameSessionManager.Instance)
+        {
+            if (objectiveSession != null) objectiveSession.StorySessionChanged -= OnObjectiveFlagsChanged;
+            objectiveSession = GameSessionManager.Instance;
+            if (objectiveSession != null) objectiveSession.StorySessionChanged += OnObjectiveFlagsChanged;
+        }
+        // Defer until gameplay has finished changing its related flags.
+        if (objectiveFlagsDirty) { objectiveFlagsDirty = false; RefreshAllMissionProgress(); }
+    }
+
+    private void OnObjectiveFlagsChanged() { objectiveFlagsDirty = true; }
 
     private void Awake()
     {
@@ -206,6 +225,8 @@ public class MissionManager2D : MonoBehaviour
 
     private void OnDisable()
     {
+        if (objectiveSession != null) objectiveSession.StorySessionChanged -= OnObjectiveFlagsChanged;
+        objectiveSession = null;
         UnsubscribeInventory();
         UnsubscribeEnemyTargets();
     }
@@ -217,6 +238,11 @@ public class MissionManager2D : MonoBehaviour
     /// </summary>
     public bool StartMission(int missionIndex)
     {
+        return StartMissionInternal(missionIndex, true);
+    }
+
+    private bool StartMissionInternal(int missionIndex, bool trackNewAcceptance)
+    {
         FindInventoryController();
         SubscribeInventory();
         SubscribeEnemyTargets();
@@ -227,6 +253,9 @@ public class MissionManager2D : MonoBehaviour
             return false;
         }
 
+        if (entry.Mission.ObjectiveType == MissionObjectiveType2D.StoryFlag &&
+            (GameSessionManager.Instance == null ||
+             !GameSessionManager.Instance.HasStoryFlag(entry.Mission.ActivationStoryFlag))) return false;
         if (!allowRestartCompletedMissions &&
             completedMissionIndices.Contains(missionIndex))
         {
@@ -258,8 +287,10 @@ public class MissionManager2D : MonoBehaviour
             Log($"ミッション開始: {entry.Mission.DisplayName}");
         }
 
-        if (!HasTrackedMission &&
-            automaticallyTrackFirstStartedMission)
+        var campaignScene = FindFirstObjectByType<StoryCampaignScene>();
+        bool newlyAcceptedInDungeon = trackNewAcceptance && !wasAlreadyInProgress && campaignScene != null && campaignScene.stage > 0;
+        if (newlyAcceptedInDungeon || (!HasTrackedMission &&
+            automaticallyTrackFirstStartedMission))
         {
             SetTrackedMission(missionIndex);
         }
@@ -351,12 +382,12 @@ public class MissionManager2D : MonoBehaviour
         }
 
         if (trackedMissionIndex == missionIndex &&
-            state != MissionProgressState2D.InProgress)
+            !CanTrackMission(missionIndex))
         {
             trackedMissionIndex = -1;
         }
 
-        if (state == MissionProgressState2D.InProgress)
+        if (CanTrackMission(missionIndex))
         {
             NotifyMissionProgress(missionIndex);
 
@@ -397,7 +428,7 @@ public class MissionManager2D : MonoBehaviour
             bool wasInProgress =
                 inProgressMissionIndices.Contains(i);
 
-            if (StartMission(i) && !wasInProgress)
+            if (StartMissionInternal(i, false) && !wasInProgress)
             {
                 startedCount++;
             }
@@ -445,8 +476,7 @@ public class MissionManager2D : MonoBehaviour
             return false;
         }
 
-        if (GetMissionState(missionIndex) !=
-            MissionProgressState2D.InProgress)
+        if (!CanTrackMission(missionIndex))
         {
             LogWarning(
                 $"{entry.Mission.DisplayName} は進行中ではないため追跡できません。"
@@ -513,6 +543,13 @@ public class MissionManager2D : MonoBehaviour
                 RefreshCollectItemProgress(missionIndex);
             }
 
+            if (mission != null && mission.ObjectiveType == MissionObjectiveType2D.StoryFlag)
+            {
+                var data = GetOrCreateRuntimeData(missionIndex);
+                int progress = GameSessionManager.Instance != null &&
+                    GameSessionManager.Instance.HasStoryFlag(mission.CompletionStoryFlag) ? mission.RequiredAmount : 0;
+                if (data.Progress != progress) { data.Progress = progress; NotifyMissionProgress(missionIndex); }
+            }
             if (IsMissionComplete(missionIndex))
             {
                 completionCandidates.Add(missionIndex);
@@ -522,6 +559,9 @@ public class MissionManager2D : MonoBehaviour
         foreach (int missionIndex in completionCandidates)
         {
             CompleteMission(missionIndex);
+        }
+        if(trackedMissionIndex>=0 && !CanTrackMission(trackedMissionIndex)) {
+            trackedMissionIndex=-1;SelectFirstInProgressMission();MissionStateChanged?.Invoke();
         }
     }
 
@@ -1551,7 +1591,7 @@ public class MissionManager2D : MonoBehaviour
 
         bool wasTracked = trackedMissionIndex == missionIndex;
 
-        if (wasTracked)
+        if (wasTracked && !MissionObjectiveDisplayState.HasPending(entry.Mission))
         {
             trackedMissionIndex = -1;
             SelectFirstInProgressMission();
@@ -1570,8 +1610,7 @@ public class MissionManager2D : MonoBehaviour
     {
         for (int i = 0; i < MissionCount; i++)
         {
-            if (GetMissionState(i) ==
-                MissionProgressState2D.InProgress)
+            if (CanTrackMission(i))
             {
                 SetTrackedMission(i);
                 return;

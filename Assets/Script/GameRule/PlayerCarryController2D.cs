@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -27,7 +27,6 @@ public class PlayerCarryController2D : MonoBehaviour
     [SerializeField] private CharacterHealth playerHealth;
     [SerializeField] private PlayerEquipmentVisualController equipmentVisualController;
     [SerializeField] private WallClimbController wallClimbController;
-    [SerializeField] private PlayerRopePullController ropePullController;
     [SerializeField] private StoneThrower stoneThrower;
     [SerializeField] private PlayerProneController proneController;
     [SerializeField] private PlayerWeightController playerWeightController;
@@ -145,7 +144,6 @@ public class PlayerCarryController2D : MonoBehaviour
     [SerializeField] private bool dropWhenControllerDisabled = true;
     [SerializeField] private bool blockPickupWhileProne = true;
     [SerializeField] private bool blockPickupWhileWallClimbing = true;
-    [SerializeField] private bool blockPickupWhileRopeMode = true;
 
     [Header("Animator（任意）")]
     [SerializeField] private Animator playerAnimator;
@@ -435,12 +433,6 @@ public class PlayerCarryController2D : MonoBehaviour
                 $"理由={GetNewPickupBlockReason()}"
             );
             return false;
-        }
-
-        if (ropePullController != null && ropePullController.IsRopeAttached)
-        {
-            Log("[Carry診断] 引っ張りロープ接続中のため、持ち上げる前に切り離します。");
-            ropePullController.DetachRope();
         }
 
         if (!target.TryBeginCarry(this))
@@ -747,13 +739,6 @@ public class PlayerCarryController2D : MonoBehaviour
             return "壁登り中";
         }
 
-        if (blockPickupWhileRopeMode &&
-            ropePullController != null &&
-            ropePullController.IsRopeMode)
-        {
-            return "引っ張りロープモード中";
-        }
-
         return string.Empty;
     }
 
@@ -769,7 +754,6 @@ public class PlayerCarryController2D : MonoBehaviour
         }
 
         wallClimbController?.SetWallClimbLock(this, frontCarry);
-        ropePullController?.SetRopeControlLock(this, carrying);
         stoneThrower?.SetThrowControlLock(this, carrying);
 
         SetAnimatorBool(frontCarryBoolName, frontCarry);
@@ -781,7 +765,6 @@ public class PlayerCarryController2D : MonoBehaviour
         equipmentVisualController?.SetWeaponControlLock(this, false);
         equipmentVisualController?.SetWeaponVisibilityLock(this, false);
         wallClimbController?.SetWallClimbLock(this, false);
-        ropePullController?.SetRopeControlLock(this, false);
         stoneThrower?.SetThrowControlLock(this, false);
 
         SetAnimatorBool(frontCarryBoolName, false);
@@ -1286,18 +1269,8 @@ public class PlayerCarryController2D : MonoBehaviour
             return;
         }
 
-        if (!IsCarrying)
-        {
-            carryModeText.text = string.Empty;
-            carryModeText.gameObject.SetActive(false);
-            return;
-        }
-
-        carryModeText.text = currentState == PlayerCarryState2D.Front
-            ? frontCarryLabel
-            : backpackLabel;
-
-        carryModeText.gameObject.SetActive(true);
+        carryModeText.text = string.Empty;
+        carryModeText.gameObject.SetActive(false);
     }
 
     private void GetCurrentCarryPose(out Vector2 position, out float rotation)
@@ -1549,11 +1522,6 @@ public class PlayerCarryController2D : MonoBehaviour
             wallClimbController = GetComponent<WallClimbController>();
         }
 
-        if (ropePullController == null)
-        {
-            ropePullController = GetComponent<PlayerRopePullController>();
-        }
-
         if (stoneThrower == null)
         {
             stoneThrower = GetComponent<StoneThrower>();
@@ -1600,7 +1568,6 @@ public class PlayerCarryController2D : MonoBehaviour
             $"Health={(playerHealth != null ? "OK" : "未設定")}, " +
             $"EquipmentVisual={(equipmentVisualController != null ? "OK" : "未設定")}, " +
             $"WallClimb={(wallClimbController != null ? "OK" : "未設定")}, " +
-            $"RopePull={(ropePullController != null ? "OK" : "未設定")}, " +
             $"StoneThrower={(stoneThrower != null ? "OK" : "未設定")}, " +
             $"Prone={(proneController != null ? "OK" : "未設定")}, " +
             $"Weight={(playerWeightController != null ? "OK" : "未設定")}",

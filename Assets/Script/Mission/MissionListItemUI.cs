@@ -146,9 +146,9 @@ public class MissionListItemUI : MonoBehaviour
 
         if (statusText != null)
         {
-            statusText.gameObject.SetActive(showStatusTextOnButton);
+            statusText.gameObject.SetActive(showStatusTextOnButton || mission!=null && mission.HasDisplayObjectives);
 
-            if (showStatusTextOnButton)
+            if (showStatusTextOnButton || mission!=null && mission.HasDisplayObjectives)
             {
                 statusText.text = BuildStatusText(missionState);
             }
@@ -190,6 +190,9 @@ public class MissionListItemUI : MonoBehaviour
         }
 
         int safeProgress = Mathf.Max(0, progress);
+        if(missionDefinition.HasDisplayObjectives)return MissionObjectiveDisplayState.Current(missionDefinition);
+        if(missionDefinition.ObjectiveType==MissionObjectiveType2D.StoryFlag)return "進捗 "+progress+" / "+requiredAmount;
+        if(missionDefinition.ObjectiveType==MissionObjectiveType2D.RescueTargetNpc)return "救出 "+progress+" / "+requiredAmount;
         int safeRequired = Mathf.Max(0, requiredAmount);
 
         if (missionDefinition.ObjectiveType ==
@@ -231,6 +234,8 @@ public class MissionListItemUI : MonoBehaviour
 
     private string BuildStatusText(MissionProgressState2D missionState)
     {
+        if(mission!=null && mission.HasDisplayObjectives && missionState!=MissionProgressState2D.Inactive)
+            return MissionObjectiveDisplayState.HasPending(mission)?"受注中":"完了済み";
         switch (missionState)
         {
             case MissionProgressState2D.InProgress:

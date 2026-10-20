@@ -381,7 +381,7 @@ public class StageExpeditionPanelController : MonoBehaviour
 
         if (departButton != null)
         {
-            departButton.interactable = true;
+            departButton.interactable = !StoryDestinationLocked();
         }
 
         if (closeButton != null)
@@ -500,6 +500,7 @@ public class StageExpeditionPanelController : MonoBehaviour
 
     private bool CanStartDeparture()
     {
+        if (StoryDestinationLocked()) return false;
         if (selectedStageData == null)
         {
             Debug.LogWarning("[StageExpeditionPanelController] 出発先ステージが選択されていません。", this);
@@ -522,6 +523,13 @@ public class StageExpeditionPanelController : MonoBehaviour
             return false;
         }
         return true;
+    }
+
+    private bool StoryDestinationLocked()
+    {
+        var story = StoryCampaignRuntime.Database;
+        return story != null && selectedTransitionButton != null &&
+            selectedTransitionButton.TargetSceneName == story.stageScenes[4] && !StoryCampaignRuntime.GardenOpen;
     }
 
     private bool TryStartFinalDeparture(bool supplyFadeAlreadyCompleted = false)
@@ -939,7 +947,7 @@ public class StageExpeditionPanelController : MonoBehaviour
         if (stageNameText != null)
         {
             stageNameText.text =
-                selectedStageData.StageName;
+                selectedStageData.StageName + (StoryDestinationLocked() ? "\n町長へのメイン報告3件で開放" : "");
         }
 
         if (combatDangerText != null)

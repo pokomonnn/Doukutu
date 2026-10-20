@@ -12,7 +12,9 @@ public enum DialogueConditionKind2D
     [InspectorName("話者の所属派閥が一致")] ActorFactionIs = 4,
     [InspectorName("話者の性格が一致")] ActorPersonalityIs = 5,
     [InspectorName("話者がPlayerに敵対")] ActorHostileToPlayer = 6,
-    [InspectorName("話者がPlayerに敵対していない")] ActorNotHostileToPlayer = 7
+    [InspectorName("話者がPlayerに敵対していない")] ActorNotHostileToPlayer = 7,
+    [InspectorName("Story Flagあり")] StoryFlagSet = 8,
+    [InspectorName("Story Flagなし")] StoryFlagUnset = 9
 }
 
 [Serializable]
@@ -24,6 +26,7 @@ public sealed class DialogueCondition2D
     [Tooltip("友好度条件なら対象派閥、所属条件なら話者の派閥。例: bandits")]
     public string factionId = "bandits";
     public CharacterAIPersonalityType2D personality = CharacterAIPersonalityType2D.Balanced;
+    public string storyFlag;
 }
 
 [Serializable]
@@ -56,6 +59,11 @@ public static class DialogueConditions2D
         if (condition == null) return false;
         switch (condition.kind)
         {
+            case DialogueConditionKind2D.StoryFlagSet:
+            case DialogueConditionKind2D.StoryFlagUnset:
+                if (string.IsNullOrWhiteSpace(condition.storyFlag)) return false;
+                bool set = GameSessionManager.Instance != null && GameSessionManager.Instance.HasStoryFlag(condition.storyFlag);
+                return condition.kind == DialogueConditionKind2D.StoryFlagSet ? set : !set;
             case DialogueConditionKind2D.KarmaAtLeast:
             case DialogueConditionKind2D.KarmaAtMost:
             case DialogueConditionKind2D.ReputationAtLeast:

@@ -94,12 +94,19 @@ public class RescueProgressManager2D : MonoBehaviour
                 CarryableObject2D target = rescuedTargets[i];
 
                 if (target == null) continue;
+                if (target.GetComponent<StoryFinnDelivery>() != null) continue;
 
                 if (!counted.Add(target.GetInstanceID()))
                 {
                     continue;
                 }
 
+                StoryRescueIdentity identity = target.GetComponent<StoryRescueIdentity>();
+                if (identity != null)
+                {
+                    var health = target.GetComponent<CharacterHealth>();
+                    if (identity.AlreadyRescued || (health != null && health.IsDead)) continue;
+                }
                 rescuedThisExpedition++;
 
                 ApplySpecialNpcUnlocks(target, session);

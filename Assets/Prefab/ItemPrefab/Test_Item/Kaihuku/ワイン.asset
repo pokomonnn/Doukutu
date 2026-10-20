@@ -37,6 +37,8 @@ MonoBehaviour:
   width: 1
   height: 2
   canRotate: 1
+  useCustomShape: 0
+  customShapeCells: []
   maxStack: 1
   purchasePrice: 200
   sellPrice: 200
@@ -45,7 +47,6 @@ MonoBehaviour:
   canDiscard: 1
   healAmount: 5
   foodRestoreAmount: 5
-  waterRestoreAmount: 20
   torchRestoreAmount: 0
   curedConditions: 0
   slowdownDuration: 3
@@ -57,8 +58,6 @@ MonoBehaviour:
   weightLimitBonusKg: 5
   rescueCarrySpeedMultiplier: 1.15
   foodDrainMultiplier: 1.25
-  sanityRecovery: 12
-  waterLoss: 6
   drunkDurationSeconds: 45
   drunkMoveSpeedMultiplier: 0.8
   references:

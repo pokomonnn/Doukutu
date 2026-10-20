@@ -1,201 +1,121 @@
+using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
-/// <summary>
-/// 任意のミッション表示UIです。
-/// Canvas内のTextMeshProUGUIへ、現在のミッション名・説明・進捗を表示します。
-/// 使わなくてもミッションとコンパスは動作します。
-/// </summary>
+/// <summary>Existing tracked-mission HUD, extended with data-driven objectives. Never changes gameplay progress.</summary>
 [DisallowMultipleComponent]
 public class MissionHUD2D : MonoBehaviour
 {
-    [Header("参照")]
     [SerializeField] private MissionManager2D missionManager;
-
-    [Tooltip("ミッション表示全体。空欄ならこのObjectを使います")]
     [SerializeField] private GameObject hudRoot;
-
-    [SerializeField] private TMP_Text missionTitleText;
-    [SerializeField] private TMP_Text missionDescriptionText;
-    [SerializeField] private TMP_Text missionProgressText;
-
-    [Header("表示文")]
+    [SerializeField] private TMP_Text missionTitleText, missionDescriptionText, missionProgressText;
     [SerializeField] private string collectFormat = "{0} {1} / {2}";
-    [SerializeField] private string deliverFormat = "納品 {0}  {1} / {2}";
+    [SerializeField] private string deliverFormat = "納品 {0} {1} / {2}";
     [SerializeField] private string defeatFormat = "討伐 {0} / {1}";
+    [Header("目標更新の演出（任意）")]
+    [SerializeField] private CanvasGroup objectiveGroup, completionGroup;
+    [SerializeField] private TMP_Text completionText;
+    [SerializeField, Min(.1f)] private float fadeSeconds = .3f;
+    [SerializeField, Min(.1f)] private float completionHoldSeconds = 2.5f;
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip objectiveCompletedSound;
+    [SerializeField, Range(0,1)] private float soundVolume = .25f;
+    private readonly Queue<string> notices = new Queue<string>();
+    private MissionDefinition2D observed;
+    private bool[] previous;
+    private int revision = -1;
+    private bool initialized;
+    private float nextRefresh, noticeElapsed;
+    private string activeNotice, lastBody;
+    private int readyFrame;
+    private MissionHUDSafeArea2D layout;
+    public int CompletionNoticeCount { get; private set; }
+    public string CurrentObjectiveText => missionDescriptionText != null ? missionDescriptionText.text : "";
 
-    private bool isSubscribed;
-
-    private void Awake()
+    void OnEnable()
     {
-        FindReferences();
+        layout=GetComponent<MissionHUDSafeArea2D>();
+        if(missionManager==null)missionManager=FindFirstObjectByType<MissionManager2D>();
+        if(missionManager!=null)missionManager.MissionStateChanged+=RefreshUI;
+        initialized=false;readyFrame=Time.frameCount+3;RefreshUI();
+        ClearNotices();
     }
-
-    private void OnEnable()
+    void OnDisable()
     {
-        FindReferences();
-        SubscribeEvents();
-        RefreshUI();
+        if(missionManager!=null)missionManager.MissionStateChanged-=RefreshUI;
+        initialized=false;ClearNotices();
     }
-
-    private void OnDisable()
+    public void RefreshUI() { nextRefresh=0; }
+    void LateUpdate()
     {
-        UnsubscribeEvents();
-    }
-
-    public void RefreshUI()
-    {
-        if (missionManager == null ||
-            !missionManager.HasActiveMission)
-        {
-            SetRootVisible(false);
-            return;
+        if(Time.frameCount<readyFrame)return;
+        // Keep completion notices queued while a conversation or mission menu covers the HUD.
+        if(layout!=null && layout.IsObscured)return;
+        if(Time.unscaledTime>=nextRefresh){RefreshPresentation();nextRefresh=Time.unscaledTime+.1f;}
+        if(objectiveGroup!=null)objectiveGroup.alpha=Mathf.MoveTowards(objectiveGroup.alpha,1,Time.unscaledDeltaTime/Mathf.Max(.1f,fadeSeconds));
+        if(activeNotice==null && notices.Count>0) {
+            activeNotice=notices.Dequeue();noticeElapsed=0;
+            if(completionText!=null)completionText.text=activeNotice;
+            if(audioSource!=null && objectiveCompletedSound!=null)audioSource.PlayOneShot(objectiveCompletedSound,soundVolume);
         }
-
-        MissionDefinition2D mission =
-            missionManager.ActiveMission;
-
-        SetRootVisible(true);
-
-        if (missionTitleText != null)
-        {
-            missionTitleText.text = mission.DisplayName;
-        }
-
-        if (missionDescriptionText != null)
-        {
-            missionDescriptionText.text = mission.Description;
-        }
-
-        if (missionProgressText != null)
-        {
-            missionProgressText.text = BuildProgressText(
-                mission,
-                missionManager.ActiveProgress,
-                missionManager.ActiveRequiredAmount
-            );
-        }
-    }
-
-    private string BuildProgressText(
-        MissionDefinition2D mission,
-        int progress,
-        int required)
-    {
-        if (mission.ObjectiveType ==
-            MissionObjectiveType2D.CollectItem)
-        {
-            string itemName = mission.RequiredItem != null
-                ? mission.RequiredItem.DisplayName
-                : "Item";
-
-            return string.Format(
-                collectFormat,
-                itemName,
-                progress,
-                required
-            );
-        }
-
-        if (mission.ObjectiveType ==
-            MissionObjectiveType2D.DeliverItem)
-        {
-            string itemName = mission.RequiredItem != null
-                ? mission.RequiredItem.DisplayName
-                : "Item";
-
-            return string.Format(
-                deliverFormat,
-                itemName,
-                progress,
-                required
-            );
-        }
-
-        return string.Format(
-            defeatFormat,
-            progress,
-            required
-        );
-    }
-
-    private void HandleMissionStateChanged()
-    {
-        RefreshUI();
-    }
-
-    private void SubscribeEvents()
-    {
-        if (isSubscribed || missionManager == null)
-        {
-            return;
-        }
-
-        missionManager.MissionStateChanged +=
-            HandleMissionStateChanged;
-
-        isSubscribed = true;
-    }
-
-    private void UnsubscribeEvents()
-    {
-        if (!isSubscribed || missionManager == null)
-        {
-            return;
-        }
-
-        missionManager.MissionStateChanged -=
-            HandleMissionStateChanged;
-
-        isSubscribed = false;
-    }
-
-    private void SetRootVisible(bool visible)
-    {
-        // このコンポーネント自身のGameObjectを非表示にすると、
-        // 次のミッション開始時に再表示するUpdate/Eventを受け取れなくなります。
-        // その場合はTextだけを隠して、MissionHUD2D自体は有効のままにします。
-        GameObject root = hudRoot != null
-            ? hudRoot
-            : gameObject;
-
-        if (root != gameObject)
-        {
-            if (root.activeSelf != visible)
-            {
-                root.SetActive(visible);
-            }
-
-            return;
-        }
-
-        if (missionTitleText != null)
-        {
-            missionTitleText.enabled = visible;
-        }
-
-        if (missionDescriptionText != null)
-        {
-            missionDescriptionText.enabled = visible;
-        }
-
-        if (missionProgressText != null)
-        {
-            missionProgressText.enabled = visible;
+        if(activeNotice!=null) {
+            noticeElapsed+=Time.unscaledDeltaTime;
+            float duration=completionHoldSeconds+fadeSeconds*2;
+            if(completionGroup!=null)completionGroup.alpha=Mathf.Clamp01(Mathf.Min(noticeElapsed/fadeSeconds,(duration-noticeElapsed)/fadeSeconds));
+            if(noticeElapsed>=duration){activeNotice=null;if(completionGroup!=null)completionGroup.alpha=0;RefreshUI();}
         }
     }
-
-    private void FindReferences()
+    void ClearNotices()
     {
-        if (missionManager == null)
-        {
-            missionManager =
-                FindAnyObjectByType<MissionManager2D>();
+        notices.Clear();activeNotice=null;
+        if(completionGroup!=null)completionGroup.alpha=0;
+        if(completionText!=null)completionText.text="";
+    }
+    void ObserveCompletion(MissionDefinition2D mission,bool[] now)
+    {
+        if(previous==null || previous.Length!=now.Length)return;
+        string tick=completionText!=null && completionText.font!=null && completionText.font.HasCharacter('✓')?"✓ ":"";
+        bool changed=false;
+        for(int i=0;i<now.Length;i++)if(now[i] && !previous[i]) {
+            notices.Enqueue(tick+"完了："+mission.DisplayObjectives[i]?.text);CompletionNoticeCount++;changed=true;
         }
-
-        if (hudRoot == null)
-        {
-            hudRoot = gameObject;
+        if(changed && now.Length>0 && now.All(v=>v)) {
+            notices.Enqueue("クエスト完了："+mission.DisplayName);CompletionNoticeCount++;
         }
+    }
+    void RefreshPresentation()
+    {
+        if(missionManager==null)missionManager=FindFirstObjectByType<MissionManager2D>();
+        var current=missionManager!=null?missionManager.TrackedMission:null;
+        int currentRevision=GameSessionManager.Instance!=null?GameSessionManager.Instance.SaveRestoreRevision:0;
+        bool reset=!initialized || revision!=currentRevision;
+        if(reset)ClearNotices();
+        if(!reset && observed!=null && observed.HasDisplayObjectives) {
+            var now=MissionObjectiveDisplayState.Snapshot(observed);
+            // Switching to another unfinished quest is a silent baseline; finishing the old one can notify.
+            if(current==observed || now.All(v=>v))ObserveCompletion(observed,now);
+        }
+        if(!reset && current!=observed && observed!=null && MissionObjectiveDisplayState.HasPending(observed))ClearNotices();
+        observed=current;previous=MissionObjectiveDisplayState.Snapshot(current);revision=currentRevision;initialized=true;
+        bool visible=current!=null || notices.Count>0 || activeNotice!=null;
+        if(hudRoot!=null && hudRoot!=gameObject)hudRoot.SetActive(visible);
+        if(missionTitleText!=null){missionTitleText.enabled=visible;missionTitleText.text=current!=null?"【"+current.DisplayName+"】":"";}
+        string body=current==null?"":current.HasDisplayObjectives?"□ "+MissionObjectiveDisplayState.Current(current):current.Description;
+        if(missionDescriptionText!=null){missionDescriptionText.enabled=visible;missionDescriptionText.text=body;}
+        if(body!=lastBody && objectiveGroup!=null)objectiveGroup.alpha=reset?1:0;
+        lastBody=body;
+        if(missionProgressText!=null) {
+            missionProgressText.enabled=visible;
+            missionProgressText.text=current==null?"":current.HasDisplayObjectives?"":BuildProgressText(current,missionManager.TrackedProgress,missionManager.TrackedRequiredAmount);
+        }
+    }
+    string BuildProgressText(MissionDefinition2D mission,int progress,int required)
+    {
+        string item=mission.RequiredItem!=null?mission.RequiredItem.DisplayName:"アイテム";
+        if(mission.ObjectiveType==MissionObjectiveType2D.CollectItem)return string.Format(collectFormat,item,progress,required);
+        if(mission.ObjectiveType==MissionObjectiveType2D.DeliverItem)return string.Format(deliverFormat,item,progress,required);
+        if(mission.ObjectiveType==MissionObjectiveType2D.DefeatTargetEnemy)return string.Format(defeatFormat,progress,required);
+        return (mission.ObjectiveType==MissionObjectiveType2D.RescueTargetNpc?"救出 ":"進捗 ")+progress+" / "+required;
     }
 }

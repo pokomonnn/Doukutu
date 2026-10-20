@@ -14,3 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StoryQuestDatabase
   stories:
   - {fileID: 11400000, guid: 815cb06616e99cb4688b91aaab78abd9, type: 2}
+  - {fileID: 11400000, guid: 66be64688be8e424bbbd0b9254ccbc1c, type: 2}
+  - {fileID: 11400000, guid: 8e3685eea41455340bc77423234ab873, type: 2}
+  - {fileID: 11400000, guid: 82cc13a9dc2ca08449a007263ca2c791, type: 2}
+  - {fileID: 11400000, guid: 2a2c4380790eb9548ac001d4e90ed8ef, type: 2}
+  - {fileID: 11400000, guid: 46ea7f8d22362db47a0bea3d9cae37cc, type: 2}
+  - {fileID: 11400000, guid: 3605205865acc9c418a8306256873139, type: 2}
+  - {fileID: 11400000, guid: 0ce5cce939e17c449bcdb49b73692b21, type: 2}
+  - {fileID: 11400000, guid: db3f86dbfdb903249bd194b9b6e52a3a, type: 2}
+  - {fileID: 11400000, guid: 69038547d81884d4296684b478195776, type: 2}
+  - {fileID: 11400000, guid: 77ba9e5ca5e974c43869d2d015ed3bb5, type: 2}
+  - {fileID: 11400000, guid: 5e26de125466413478f32d9625dc499c, type: 2}
+  - {fileID: 11400000, guid: cb4de1c7730d7bd4cbf03dc32024f13e, type: 2}

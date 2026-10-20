@@ -28,14 +28,14 @@ public enum SkillEffectType
     MoveSpeed,
     CarryWeightLimitAddKg,
     FoodDrain,
-    WaterDrain,
-    SanityDrain,
+    WaterDrain, // 廃止済み。既存アセットの番号互換のため予約。
+    SanityDrain, // 廃止済み。既存アセットの番号互換のため予約。
     TorchDrain,
     DamageTaken,
     HealingReceived,
 
     // 2026-09 Alpha skill expansion
-    SanityRecovery,
+    SanityRecovery, // 廃止済みの予約値。
     ItemBoxExtraLootChance,
     RescueCarryPenaltyReduction,
     JumpPower
@@ -51,8 +51,8 @@ public enum SkillConditionType
     Always,
     HealthPercentAtOrBelow,
     HealthPercentAtOrAbove,
-    SanityPercentAtOrBelow,
-    SanityPercentAtOrAbove,
+    SanityPercentAtOrBelow, // 廃止済み。反転設定でも発動しない。
+    SanityPercentAtOrAbove, // 廃止済み。反転設定でも発動しない。
     WeightAtOrBelowKg,
     WeightAtOrAboveKg,
     EquippedWeapon,
@@ -65,7 +65,7 @@ public class SkillCardCondition
     [SerializeField] private SkillConditionType conditionType = SkillConditionType.Always;
 
     [Tooltip(
-        "HP/SAN条件で使用します。0.30=30%、0.50=50%です。" +
+        "HP条件で使用します。0.30=30%、0.50=50%です。" +
         "この条件を使わない場合は無視されます。"
     )]
     [SerializeField, Range(0f, 1f)] private float percentThreshold = 0.5f;
@@ -93,6 +93,9 @@ public class SkillCardCondition
 
     public bool IsMet()
     {
+        // Reserved legacy values never activate, including inverted conditions.
+        if (conditionType == SkillConditionType.SanityPercentAtOrBelow ||
+            conditionType == SkillConditionType.SanityPercentAtOrAbove) return false;
         bool result = SkillCardEffectUtility.EvaluateCondition(this);
         return invert ? !result : result;
     }
@@ -226,7 +229,6 @@ public class SkillCardData : ItemData
 public static class SkillCardEffectUtility
 {
     private static PlayerWeightController cachedWeightController;
-    private static PlayerSanityController cachedSanityController;
     private static PlayerSurvivalController cachedSurvivalController;
     private static PlayerCarryController2D cachedCarryController;
     private static EquipmentController cachedEquipmentController;
@@ -298,18 +300,10 @@ public static class SkillCardEffectUtility
             }
 
             case SkillConditionType.SanityPercentAtOrBelow:
-            {
-                PlayerSanityController sanity = GetSanityController();
-                return sanity != null &&
-                       sanity.SanityPercent <= condition.PercentThreshold;
-            }
+                return false; // Retired condition; keep the serialized enum value.
 
             case SkillConditionType.SanityPercentAtOrAbove:
-            {
-                PlayerSanityController sanity = GetSanityController();
-                return sanity != null &&
-                       sanity.SanityPercent >= condition.PercentThreshold;
-            }
+                return false; // Retired condition; keep the serialized enum value.
 
             case SkillConditionType.WeightAtOrBelowKg:
             {
@@ -429,16 +423,6 @@ public static class SkillCardEffectUtility
             }
         }
 
-        PlayerSanityController sanity = GetSanityController();
-        if (sanity != null)
-        {
-            CharacterHealth health = sanity.GetComponent<CharacterHealth>();
-            if (health != null)
-            {
-                return health;
-            }
-        }
-
         PlayerSurvivalController survival = GetSurvivalController();
         return survival != null
             ? survival.GetComponent<CharacterHealth>()
@@ -454,17 +438,6 @@ public static class SkillCardEffectUtility
         }
 
         return cachedWeightController;
-    }
-
-    private static PlayerSanityController GetSanityController()
-    {
-        if (cachedSanityController == null)
-        {
-            cachedSanityController =
-                UnityEngine.Object.FindAnyObjectByType<PlayerSanityController>();
-        }
-
-        return cachedSanityController;
     }
 
     private static PlayerSurvivalController GetSurvivalController()
@@ -507,7 +480,6 @@ public static class SkillCardEffectUtility
     public static void ClearRuntimeReferenceCache()
     {
         cachedWeightController = null;
-        cachedSanityController = null;
         cachedSurvivalController = null;
         cachedCarryController = null;
         cachedEquipmentController = null;

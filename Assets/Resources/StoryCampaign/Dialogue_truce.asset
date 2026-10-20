@@ -1,0 +1,113 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33ea86acbcf5364d97ad2501b8af980, type: 3}
+  m_Name: Dialogue_truce
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueData2D
+  dialogueId: story_truce
+  displayName: "\u30D0\u30EB\u30C9\u3068\u901A\u8DEF\u306E\u505C\u6226\u4EA4\u6E09"
+  startNodeId: start
+  nodes:
+  - id: start
+    speakerName: 
+    body: "\u30D0\u30EB\u30C9\u3068\u901A\u8DEF\u306E\u505C\u6226\u4EA4\u6E09"
+    onEnterEventId: 
+    nextNodeId: 
+    choices:
+    - label: "\u8ABF\u3079\u308B\u30FB\u8A71\u3059"
+      nextNodeId: line0
+      eventId: step/truce
+      conditions:
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S3S01_Proposal
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S3S01_Completed
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/step_truce
+    - label: "\u4ECA\u306F\u3084\u3081\u3066\u304A\u304F"
+      nextNodeId: 
+      eventId: 
+      conditions: []
+    nextRoutes: []
+  - id: line0
+    speakerName: "\u30D0\u30EB\u30C9"
+    body: "\u5171\u540C\u56DE\u5ECA\u3067\u6483\u3064\u306A\u3001\u8377\u3092\u596A\u3046\u306A\u3001\u9053\u3092\u585E\u3050\u306A\u2026\u2026\u305A\u3044\u3076\u3093\u304D\u308C\u3044\u306A\u8A71\u3060\u306A\u3002"
+    onEnterEventId: 
+    nextNodeId: line1
+    choices: []
+    nextRoutes: []
+  - id: line1
+    speakerName: "\u30D0\u30EB\u30C9"
+    body: "\u305D\u3082\u305D\u3082\u3042\u3044\u3064\u3089\u304C\u3053\u3063\u3061\u3078\u8E0F\u307F\u8FBC\u3093\u3067\u6765\u305F\u3089\u3001\u4FFA\u305F\u3061\u306F\u3069\u3046\u3059\u308A\u3083\u3044\u3044\uFF1F"
+    onEnterEventId: 
+    nextNodeId: line2
+    choices: []
+    nextRoutes: []
+  - id: line2
+    speakerName: "\u30D0\u30EB\u30C9"
+    body: "\u2026\u2026\u901A\u308C\u308B\u9053\u3092\u898B\u3064\u3051\u305F\u3063\u3066\uFF1F
+      \u306A\u3089\u3001\u3042\u3044\u3064\u3089\u3082\u3053\u3053\u3092\u901A\u3089\u305A\u306B\u6E08\u3080\u308F\u3051\u3060\u3002"
+    onEnterEventId: 
+    nextNodeId: line3
+    choices: []
+    nextRoutes: []
+  - id: line3
+    speakerName: "\u30D0\u30EB\u30C9"
+    body: "\u4FFA\u306F\u5225\u306B\u55A7\u5629\u304C\u3057\u305F\u3044\u308F\u3051\u3058\u3083\u306D\u3048\u3002\u5BDD\u5E8A\u3068\u3001\u4EF2\u9593\u306E\u98EF\u3092\u5B88\u308A\u305F\u3044\u3060\u3051\u3060\u3002"
+    onEnterEventId: 
+    nextNodeId: line4
+    choices: []
+    nextRoutes: []
+  - id: line4
+    speakerName: "\u30D0\u30EB\u30C9"
+    body: "\u3060\u304C\u3001\u624B\u4E0B\u306E\u4E2D\u306B\u306F\u3001\u5192\u967A\u8005\u3092\u898B\u308B\u3060\u3051\u3067\u982D\u306B\u8840\u304C\u4E0A\u308B\u5974\u3082\u3044\u308B\u3002"
+    onEnterEventId: 
+    nextNodeId: line5
+    choices: []
+    nextRoutes: []
+  - id: line5
+    speakerName: "\u30D0\u30EB\u30C9"
+    body: "\u3053\u3063\u3061\u304B\u3089\u6483\u305F\u306A\u3044\u3088\u3046\u8A00\u3063\u3066\u3084\u308B\u3002\u305F\u3060\u3057\u3001\u3042\u3044\u3064\u3089\u306B\u3082\u7D04\u675F\u3092\u5B88\u3089\u305B\u308D\u3088\u3002"
+    onEnterEventId: 
+    nextNodeId: line6
+    choices: []
+    nextRoutes: []
+  - id: line6
+    speakerName: "\u30D0\u30EB\u30C9"
+    body: "\u2026\u2026\u4ECA\u56DE\u306F\u3042\u3093\u305F\u306E\u9854\u3092\u7ACB\u3066\u308B\u3002\u52D8\u9055\u3044\u3059\u308B\u306A\u3001\u53CB\u9054\u306B\u306A\u3063\u305F\u308F\u3051\u3058\u3083\u306D\u3048\u305E\u3002"
+    onEnterEventId: 
+    nextNodeId: line7
+    choices: []
+    nextRoutes: []
+  - id: line7
+    speakerName: 
+    body: "\u3010\u76D7\u8CCA\u5074\u306E\u9650\u5B9A\u7684\u306A\u505C\u6226\u540C\u610F\u3011\u3092\u5F97\u305F\u3002\u30ED\u30A2\u30F3\u3078\u5831\u544A\u3057\u3088\u3046\u3002"
+    onEnterEventId: 
+    nextNodeId: 
+    choices: []
+    nextRoutes: []
+  startRoutes: []
+  actions:
+  - eventId: step/truce
+    kind: 5
+    missionIndex: 0
+    item: {fileID: 0}
+    amount: 1
+    oncePerRuntime: 0

@@ -284,6 +284,9 @@ public class MedicalKitInventoryUI2D : MonoBehaviour
     private bool IsValidMainInventoryRoot(GameObject main)
     {
         if (main == null) return false;
+        // Canvasは常時有効なので、Tabで閉じる実際のパネルを優先する。
+        GameObject tabPanel = GetTabInventoryPanel();
+        if (tabPanel != null && main != tabPanel) return false;
         if (panelRoot != null &&
             (main == panelRoot || main.transform.IsChildOf(panelRoot.transform))) return false;
         if (openMedicalKitButton != null &&
@@ -293,6 +296,8 @@ public class MedicalKitInventoryUI2D : MonoBehaviour
 
     private GameObject FindCommonInventoryRoot()
     {
+        GameObject tabPanel = GetTabInventoryPanel();
+        if (IsValidMainInventoryRoot(tabPanel)) return tabPanel;
         if (openMedicalKitButton == null) return null;
         // ControllerとOpenButtonに共通する最も近い親。
         // 今回のHierarchyならCanvas/Inventorysに該当します。
@@ -777,7 +782,9 @@ public class MedicalKitInventoryUI2D : MonoBehaviour
         if (!IsValidMainInventoryRoot(mainInventoryPanel))
             Warn("【参照ミス】Main Inventory Panelの参照が誤っています。通常Inventoryの親（例：Canvas/Inventorys）を選択してください。");
         if (openMedicalKitButton == null) Warn("OpenButtonがNULLです。OpenMedicalKitButtonを設定してください。");
-        else if (!openMedicalKitButton.gameObject.activeInHierarchy) Warn("OpenButtonが非表示です（親の非Activeも含む）。");
+        else if (mainInventoryPanel != null && mainInventoryPanel.activeInHierarchy &&
+                 !openMedicalKitButton.gameObject.activeInHierarchy)
+            Warn("OpenButtonが非表示です（親の非Activeも含む）。");
         if (closeMedicalKitButton == null) Warn("CloseButtonがNULLです。MedicalKitPanel配下のCloseButtonを設定してください。");
         if (openMedicalKitButton != null && panelRoot != null && openMedicalKitButton.transform.IsChildOf(panelRoot.transform))
             Warn("OpenButtonがMedicalKitPanelの子になっています。OpenButtonはPanelの外、通常InventoryPanelの中に置いてください。");

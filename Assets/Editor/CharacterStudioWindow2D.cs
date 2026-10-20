@@ -399,7 +399,6 @@ public sealed partial class CharacterStudioWindow2D : EditorWindow
             if (p != null && p.objectReferenceValue == null)
                 EditorGUILayout.HelpBox("遠距離攻撃にはProjectile Prefabが必須です。弾にはDamageDealerとRigidbody2Dを設定してください。", MessageType.Warning);
         }
-        DrawOptionalByClassName("EnemySanityAura2D", "特殊攻撃 / Sanity Aura（導入済みの場合）");
     }
 
     private void DrawAnimation()
@@ -695,13 +694,7 @@ public sealed partial class CharacterStudioWindow2D : EditorWindow
         Transform muzzle = draft.transform.Find("ProjectileSpawnPoint");
         if (muzzle == null && ranged != null && addMissing) { GameObject m = new GameObject("ProjectileSpawnPoint"); m.transform.SetParent(draft.transform, false); m.transform.localPosition = new Vector3(.5f, .2f, 0f); muzzle = m.transform; }
         Ref(ranged, "projectileSpawnPoint", muzzle);
-        Component sanity = null;
-        foreach (Type type in TypeCache.GetTypesDerivedFrom<MonoBehaviour>())
-        {
-            if (type.Name == "EnemySanityAura2D") { sanity = draft.GetComponent(type); break; }
-        }
-        Ref(death, "sanityAura", sanity);
-        Ref(animate, "sanityAura", sanity);
+
         Ref(hit, "health", health); Ref(hit, "enemyRigidbody", rb); Ref(hit, "enemyChaser", chaser);
         Ref(death, "health", health); Ref(death, "enemyRigidbody", rb); Ref(death, "enemyChaser", chaser);
         Ref(death, "hitReaction", hit);

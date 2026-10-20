@@ -33,6 +33,7 @@ public sealed class RescueNpcResultDiagnostics2D : MonoBehaviour
     private string previousSceneName;
     private readonly Dictionary<int, bool> exitWasConfirming = new Dictionary<int, bool>();
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void InstallOnce()
     {
@@ -40,6 +41,7 @@ public sealed class RescueNpcResultDiagnostics2D : MonoBehaviour
         GameObject host = new GameObject("[診断] RescueNPC_ResultFlow_v3_5");
         host.AddComponent<RescueNpcResultDiagnostics2D>();
     }
+#endif
 
     private void Awake()
     {

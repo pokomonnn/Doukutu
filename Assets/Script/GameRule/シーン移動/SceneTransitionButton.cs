@@ -74,6 +74,12 @@ public class SceneTransitionButton : MonoBehaviour
     /// </summary>
     public void LoadSceneByName(string sceneName)
     {
+        var storyDatabase = StoryCampaignRuntime.Database;
+        if (storyDatabase != null && sceneName == storyDatabase.stageScenes[4] && !StoryCampaignRuntime.GardenOpen)
+        {
+            Debug.Log("深層昇降路は3件のメイン報告後に開放されます。");
+            return;
+        }
         if (isLoading)
         {
             return;

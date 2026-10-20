@@ -1226,6 +1226,14 @@ MonoBehaviour:
   cellSize: 64
   cellSpacing: 2
   cellColor: {r: 0.16, g: 0.16, b: 0.16, a: 1}
+  useExpeditionMedievalTheme: 0
+  medievalCellSprite: {fileID: 0}
+  medievalItemSprite: {fileID: 0}
+  medievalSelectedItemSprite: {fileID: 0}
+  medievalCellTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalItemTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalSelectedTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalStackTextTint: {r: 0.96, g: 0.88, b: 0.68, a: 1}
 --- !u!114 &5615093493179991188
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1241,6 +1249,7 @@ MonoBehaviour:
   boxDisplayName: "\u30A2\u30A4\u30C6\u30E0\u30DC\u30C3\u30AF\u30B9"
   boxKind: 0
   allowDirectItemTransfer: 1
+  allowDirectEquipToEquipmentSlot: 0
   gridWidth: 7
   gridHeight: 10
   addStartingItemsOnAwake: 1
@@ -2767,6 +2776,14 @@ MonoBehaviour:
   cellSize: 64
   cellSpacing: 2
   cellColor: {r: 0.16, g: 0.16, b: 0.16, a: 1}
+  useExpeditionMedievalTheme: 0
+  medievalCellSprite: {fileID: 0}
+  medievalItemSprite: {fileID: 0}
+  medievalSelectedItemSprite: {fileID: 0}
+  medievalCellTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalItemTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalSelectedTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalStackTextTint: {r: 0.96, g: 0.88, b: 0.68, a: 1}
 --- !u!1 &1123151582777934740
 GameObject:
   m_ObjectHideFlags: 0
@@ -2826,6 +2843,14 @@ MonoBehaviour:
   collectFormat: '{0} {1} / {2}'
   deliverFormat: "\u7D0D\u54C1  {0}  {1} / {2}"
   defeatFormat: "\u8A0E\u4F10 {0} / {1}"
+  objectiveGroup: {fileID: 0}
+  completionGroup: {fileID: 0}
+  completionText: {fileID: 0}
+  fadeSeconds: 0.3
+  completionHoldSeconds: 2.5
+  audioSource: {fileID: 0}
+  objectiveCompletedSound: {fileID: 0}
+  soundVolume: 0.25
 --- !u!1 &1145269172045088694
 GameObject:
   m_ObjectHideFlags: 0
@@ -3374,7 +3399,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4606394045459294037
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3547,6 +3572,9 @@ MonoBehaviour:
   informationButton: {fileID: 6819114089050292154}
   repairButton: {fileID: 3245055845267703015}
   trashButton: {fileID: 715779061215521567}
+  emergencyBackButton: {fileID: 0}
+  emergencyTakeOutButtonToHide: {fileID: 0}
+  emergencyMenuUseOnlyForConsumables: 1
   informationPanel: {fileID: 1529981599075111135}
   informationTitleText: {fileID: 7247649582549355744}
   informationDescriptionText: {fileID: 3775809969562917322}
@@ -6128,8 +6156,8 @@ MonoBehaviour:
   foodSlider: {fileID: 1523398018591417664}
   foodText: {fileID: 6955769130917195605}
   foodFillImage: {fileID: 0}
-  waterSlider: {fileID: 429594508056704210}
-  waterText: {fileID: 5475385643780495014}
+  waterSlider: {fileID: 0}
+  waterText: {fileID: 0}
   waterFillImage: {fileID: 0}
   normalColor: {r: 0.25, g: 0.85, b: 0.35, a: 1}
   warningColor: {r: 0.95, g: 0.8, b: 0.2, a: 1}
@@ -6682,6 +6710,7 @@ MonoBehaviour:
   pawnShopUIController: {fileID: 0}
   rewardInventoryController: {fileID: 0}
   gameSessionManager: {fileID: 0}
+  storyProgressManager: {fileID: 0}
   historyManager: {fileID: 0}
   facilityUpgradeManager: {fileID: 0}
   portraitCanvasGroup: {fileID: 0}
@@ -7660,7 +7689,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2560668751995968526
 RectTransform:
   m_ObjectHideFlags: 0
@@ -9621,7 +9650,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3279819857092413674
 RectTransform:
   m_ObjectHideFlags: 0
@@ -14012,7 +14041,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2922841857411431468
 RectTransform:
   m_ObjectHideFlags: 0
@@ -15608,14 +15637,13 @@ GameObject:
   - component: {fileID: 4728254310343522144}
   - component: {fileID: 4714341396961568840}
   - component: {fileID: 7777556985102619636}
-  - component: {fileID: 4722617127843068240}
   m_Layer: 5
   m_Name: FoodVignetteOverlay
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4728254310343522144
 RectTransform:
   m_ObjectHideFlags: 0
@@ -15650,7 +15678,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5043293132741157458}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -15673,28 +15701,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &4722617127843068240
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5043293132741157458}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 11cf877875348094b8219309da6da376, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WaterVignetteUI
-  survivalController: {fileID: 0}
-  vignetteImage: {fileID: 7777556985102619636}
-  darkenStartWaterPercent: 0.5
-  maxDarknessAlpha: 0.95
-  fadeSpeed: 4
-  createVignetteSpriteAtRuntime: 1
-  innerClearArea: 0.2
-  gradientPower: 0.45
-  textureSize: 254
-  vignetteColor: {r: 0, g: 0, b: 0, a: 1}
 --- !u!1 &5061647581405549005
 GameObject:
   m_ObjectHideFlags: 0
@@ -15850,14 +15856,13 @@ GameObject:
   m_Component:
   - component: {fileID: 7738204575604458027}
   - component: {fileID: 7112356121171073142}
-  - component: {fileID: 6984882403432790565}
   m_Layer: 5
   m_Name: Slider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &7738204575604458027
 RectTransform:
   m_ObjectHideFlags: 0
@@ -15930,23 +15935,6 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &6984882403432790565
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5095427706093214849}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bcb61739bce564a409e86600f9aba9a8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SanityBarUI
-  sanityController: {fileID: 0}
-  sanitySlider: {fileID: 7112356121171073142}
-  sanityText: {fileID: 4460174921939379817}
-  showMaxSanity: 1
-  label: SAN
 --- !u!1 &5118855701299071351
 GameObject:
   m_ObjectHideFlags: 0
@@ -19021,6 +19009,8 @@ MonoBehaviour:
   playerGridUI: {fileID: 7897928266499445150}
   itemBoxGridUI: {fileID: 8230930652802418645}
   playerInventoryController: {fileID: 0}
+  enableEmergencyItemMenu: 0
+  emergencyMenuTargetItemBox: {fileID: 0}
   titleText: {fileID: 5564187918309543428}
   storageTitleFormat: '{0}'
   shopTitleFormat: "\u30B7\u30E7\u30C3\u30D7\uFF1A{0}"
@@ -19667,7 +19657,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6851392938583970915
 RectTransform:
   m_ObjectHideFlags: 0
@@ -21028,8 +21018,8 @@ MonoBehaviour:
   foodSlider: {fileID: 6312212032442917006}
   foodText: {fileID: 5211418588130325718}
   foodFillImage: {fileID: 0}
-  waterSlider: {fileID: 2586587243176037067}
-  waterText: {fileID: 5403765785706990325}
+  waterSlider: {fileID: 0}
+  waterText: {fileID: 0}
   waterFillImage: {fileID: 0}
   normalColor: {r: 0.25, g: 0.85, b: 0.35, a: 1}
   warningColor: {r: 0.95, g: 0.8, b: 0.2, a: 1}
@@ -21381,7 +21371,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &5406681572823783183
 RectTransform:
   m_ObjectHideFlags: 0
@@ -24639,7 +24629,7 @@ RectTransform:
   m_Father: {fileID: 2972485152649359670}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 3.800003, y: 2}
   m_SizeDelta: {x: 17.3501, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -25617,7 +25607,7 @@ RectTransform:
   m_Father: {fileID: 5233859072596142895}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0.578, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -29104,14 +29094,13 @@ GameObject:
   m_Component:
   - component: {fileID: 6697580915296693729}
   - component: {fileID: 6403097877414870048}
-  - component: {fileID: 7302296106026254384}
   m_Layer: 5
   m_Name: Slider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6697580915296693729
 RectTransform:
   m_ObjectHideFlags: 0
@@ -29184,23 +29173,6 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &7302296106026254384
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8915363968471056380}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bcb61739bce564a409e86600f9aba9a8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SanityBarUI
-  sanityController: {fileID: 0}
-  sanitySlider: {fileID: 6403097877414870048}
-  sanityText: {fileID: 2194530389462818722}
-  showMaxSanity: 1
-  label: SAN
 --- !u!1 &8959790802481435406
 GameObject:
   m_ObjectHideFlags: 0
@@ -29263,6 +29235,14 @@ MonoBehaviour:
   cellSize: 64
   cellSpacing: 2
   cellColor: {r: 0.23584908, g: 0.23584908, b: 0.23584908, a: 1}
+  useExpeditionMedievalTheme: 0
+  medievalCellSprite: {fileID: 0}
+  medievalItemSprite: {fileID: 0}
+  medievalSelectedItemSprite: {fileID: 0}
+  medievalCellTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalItemTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalSelectedTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalStackTextTint: {r: 0.96, g: 0.88, b: 0.68, a: 1}
 --- !u!82 &750568657132728425
 AudioSource:
   m_ObjectHideFlags: 0

@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e40ccca5d0d395b44b7cd41360470e57, type: 3}
+  m_Name: Mission_S3S02
+  m_EditorClassIdentifier: Assembly-CSharp::MissionDefinition2D
+  displayObjectives:
+  - id: route
+    minimapScene: Doukutu_3
+    minimapPointIds:
+    - trade
+    minimapFollowMissionId: 
+    text: "\u30B9\u30C6\u30FC\u30B83\u3067\u5730\u4E0A\u3078\u306E\u4EA4\u6613\u8DEF\u3092\u8ABF\u3079\u308B"
+    anyOfFlags:
+    - story/S3S02_RouteFound
+    allOfFlags: []
+  - id: permit
+    minimapScene: Doukutu_3
+    minimapPointIds:
+    - permit
+    minimapFollowMissionId: story_S2S02
+    text: "\u300C\u65B0\u305F\u306A\u7A3C\u304E\u53E3\u300D\u3092\u5B8C\u4E86\u3057\u3001\u30B9\u30C6\u30FC\u30B82\u306E\u30D0\u30EB\u30C9\u3078\u5165\u753A\u8A31\u53EF\u3092\u4F1D\u3048\u308B"
+    anyOfFlags:
+    - story/S2S02_Completed
+    allOfFlags: []
+  - id: report
+    minimapScene: Doukutu_3
+    minimapPointIds:
+    - hub_3_Baldo
+    minimapFollowMissionId: 
+    text: "\u30B9\u30C6\u30FC\u30B83\u306E\u30D0\u30EB\u30C9\u306B\u4EA4\u6613\u8DEF\u3092\u5831\u544A\u3059\u308B"
+    anyOfFlags:
+    - story/S3S02_Completed
+    allOfFlags: []
+  objectiveFinishFlag: story/S3S02_Completed
+  completionStoryFlag: story/S3S02_Completed
+  activationStoryFlag: story/S3S02_Started
+  storyMoneyReward: 0
+  missionId: story_S3S02
+  displayName: "\u5931\u308F\u308C\u305F\u4EA4\u6613\u8DEF"
+  description: "\u5730\u4E0A\u3078\u306E\u4EA4\u6613\u8DEF\n\u30D0\u30EB\u30C9\u306B\u4EA4\u6613\u8DEF\u3092\u5831\u544A"
+  missionImage: {fileID: 0}
+  objectiveType: 4
+  requiredAmount: 1
+  requiredItem: {fileID: 0}
+  countItemsAlreadyHeldWhenMissionStarts: 0
+  consumeCollectedItemsOnResult: 0
+  targetEnemyId: 
+  targetRescueNpcId: 
+  expeditionMoneyReward: 0
+  expeditionItemRewards: []
+  skillCardRewards: []
+  skillSlotUnlockAmount: 0

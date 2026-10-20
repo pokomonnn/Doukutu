@@ -132,7 +132,6 @@ GameObject:
   - component: {fileID: 4948478288471753222}
   - component: {fileID: 7005886438022472650}
   - component: {fileID: 5338500716690516690}
-  - component: {fileID: 2069411104809567984}
   - component: {fileID: 1967704061900163163}
   - component: {fileID: -7203093665786376469}
   - component: {fileID: 7083273089661257365}
@@ -305,6 +304,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 60
+  preventDeath: 0
   invincibilityDuration: 0.1
   enableDamageDebugLog: 1
   includePlayerDamageInDebugLog: 0
@@ -579,31 +579,6 @@ MonoBehaviour:
   damageReductionPerArmorPoint: 0.01
   maximumDamageReduction: 0.8
   showArmorLogs: 0
---- !u!114 &2069411104809567984
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3040853378183444072}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e3e22ad297d6ef9469108df40710551a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemySanityAura2D
-  ownHealth: {fileID: 0}
-  enemyChaser: {fileID: 0}
-  playerSanity: {fileID: 0}
-  effectRadius: 5
-  sanityDrainPerSecond: 4
-  pulseInterval: 0.5
-  requireDetectedPlayer: 0
-  requireLineOfSight: 0
-  obstacleLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  showRangeGizmo: 1
-  showLogs: 0
 --- !u!114 &1967704061900163163
 MonoBehaviour:
   m_ObjectHideFlags: 0

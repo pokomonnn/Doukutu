@@ -1,0 +1,98 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33ea86acbcf5364d97ad2501b8af980, type: 3}
+  m_Name: Dialogue_water
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueData2D
+  dialogueId: story_water
+  displayName: "\u4FEE\u7406\u6E08\u307F\u306E\u6C34\u9580"
+  startNodeId: start
+  nodes:
+  - id: start
+    speakerName: 
+    body: "\u4FEE\u7406\u6E08\u307F\u306E\u6C34\u9580"
+    onEnterEventId: 
+    nextNodeId: 
+    choices:
+    - label: "\u8ABF\u3079\u308B\u30FB\u8A71\u3059"
+      nextNodeId: line0
+      eventId: step/water
+      conditions:
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S2S03_Installed
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S2S03_Completed
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/step_water
+    - label: "\u4ECA\u306F\u3084\u3081\u3066\u304A\u304F"
+      nextNodeId: 
+      eventId: 
+      conditions: []
+    nextRoutes: []
+  - id: line0
+    speakerName: 
+    body: "\u56FA\u307E\u3063\u3066\u3044\u305F\u6C34\u9580\u304C\u3001\u3086\u3063\u304F\u308A\u3068\u958B\u3044\u3066\u3044\u304F\u3002"
+    onEnterEventId: 
+    nextNodeId: line1
+    choices: []
+    nextRoutes: []
+  - id: line1
+    speakerName: 
+    body: "\u6697\u3044\u6C34\u8DEF\u3092\u6C34\u304C\u8D70\u308A\u3001\u53E4\u3044\u6C34\u8ECA\u304C\u8ECB\u3080\u97F3\u3092\u7ACB\u3066\u3066\u56DE\u308A\u59CB\u3081\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: line2
+    choices: []
+    nextRoutes: []
+  - id: line2
+    speakerName: 
+    body: "\u3057\u3070\u3089\u304F\u3057\u3066\u3001\u305D\u306E\u52D5\u304D\u306F\u4E00\u5B9A\u306E\u30EA\u30BA\u30E0\u306B\u843D\u3061\u7740\u3044\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: line3
+    choices: []
+    nextRoutes: []
+  - id: line3
+    speakerName: "\u30B0\u30EC\u30F3\uFF08\u9060\u304F\u304B\u3089\uFF09"
+    body: "\u304A\u304A\u3063\u2026\u2026\u52D5\u3044\u305F\uFF01 \u52D5\u3044\u305F\u305E\uFF01"
+    onEnterEventId: 
+    nextNodeId: line4
+    choices: []
+    nextRoutes: []
+  - id: line4
+    speakerName: "\u30B0\u30EC\u30F3\uFF08\u9060\u304F\u304B\u3089\uFF09"
+    body: "\u306F\u3063\u306F\u3063\u306F\uFF01 \u4F55\u5341\u5E74\u7720\u3063\u3066\u305F\u304B\u77E5\u3089\u3093\u304C\u3001\u307E\u3060\u307E\u3060\u73FE\u5F79\u3058\u3083\u306D\u3048\u304B\uFF01"
+    onEnterEventId: 
+    nextNodeId: line5
+    choices: []
+    nextRoutes: []
+  - id: line5
+    speakerName: 
+    body: "\u3010\u5DE5\u623F\u533A\u306E\u6C34\u8DEF\u3011\u304C\u5FA9\u65E7\u3057\u305F\u3002\u30B0\u30EC\u30F3\u306B\u5831\u544A\u3057\u3088\u3046\u3002"
+    onEnterEventId: 
+    nextNodeId: 
+    choices: []
+    nextRoutes: []
+  startRoutes: []
+  actions:
+  - eventId: step/water
+    kind: 5
+    missionIndex: 0
+    item: {fileID: 0}
+    amount: 1
+    oncePerRuntime: 0

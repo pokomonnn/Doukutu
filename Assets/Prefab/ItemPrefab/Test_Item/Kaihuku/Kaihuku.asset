@@ -37,6 +37,8 @@ MonoBehaviour:
   width: 1
   height: 1
   canRotate: 1
+  useCustomShape: 0
+  customShapeCells: []
   maxStack: 1
   purchasePrice: 0
   sellPrice: 0
@@ -45,7 +47,6 @@ MonoBehaviour:
   canDiscard: 1
   healAmount: 20
   foodRestoreAmount: 0
-  waterRestoreAmount: 0
   torchRestoreAmount: 0
   curedConditions: 0
   slowdownDuration: 5

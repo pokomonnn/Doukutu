@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e40ccca5d0d395b44b7cd41360470e57, type: 3}
+  m_Name: Mission_S1S01
+  m_EditorClassIdentifier: Assembly-CSharp::MissionDefinition2D
+  displayObjectives:
+  - id: find
+    minimapScene: stage1
+    minimapPointIds:
+    - finn
+    minimapFollowMissionId: 
+    text: "\u65E7\u5C45\u4F4F\u533A\u3067\u30D5\u30A3\u30F3\u3092\u635C\u3057\u3001\u6CBB\u7642\u3092\u7533\u3057\u51FA\u308B"
+    anyOfFlags:
+    - story/step_finn
+    - story/S1S01_Treated
+    - story/S1S01_Delivered
+    allOfFlags: []
+  - id: treat
+    minimapScene: stage1
+    minimapPointIds:
+    - finn
+    minimapFollowMissionId: 
+    text: "\u6551\u6025\u30AD\u30C3\u30C8\u306E\u89E3\u6BD2\u5264\u3067\u30D5\u30A3\u30F3\u3092\u6CBB\u7642\u3059\u308B"
+    anyOfFlags:
+    - story/S1S01_Treated
+    - story/S1S01_Delivered
+    allOfFlags: []
+  - id: deliver
+    minimapScene: stage1
+    minimapPointIds:
+    - hub_1_Baldo
+    minimapFollowMissionId: 
+    text: "\u30D5\u30A3\u30F3\u3092\u30D0\u30EB\u30C9\u306E\u3082\u3068\u3078\u904B\u3076"
+    anyOfFlags:
+    - story/S1S01_Delivered
+    allOfFlags: []
+  - id: report
+    minimapScene: stage1
+    minimapPointIds:
+    - hub_1_Baldo
+    minimapFollowMissionId: 
+    text: "\u30D0\u30EB\u30C9\u306B\u5831\u544A\u3057\u3066\u5831\u916C\u3092\u53D7\u3051\u53D6\u308B"
+    anyOfFlags:
+    - story/S1S01_Completed
+    allOfFlags: []
+  objectiveFinishFlag: story/S1S01_Completed
+  completionStoryFlag: story/S1S01_Delivered
+  activationStoryFlag: story/S1S01_Started
+  storyMoneyReward: 100
+  missionId: story_S1S01
+  displayName: "\u6BD2\u306B\u5012\u308C\u305F\u30D5\u30A3\u30F3"
+  description: "\u6BD2\u306B\u5012\u308C\u305F\u30D5\u30A3\u30F3\uFF08\u6551\u6025\u30AD\u30C3\u30C8\u3067\u6CBB\u7642\uFF09\n\u30D0\u30EB\u30C9\u304B\u3089\u30D5\u30A3\u30F3\u6551\u52A9\u306E\u5831\u916C\u3092\u53D7\u3051\u53D6\u308B"
+  missionImage: {fileID: 0}
+  objectiveType: 4
+  requiredAmount: 1
+  requiredItem: {fileID: 0}
+  countItemsAlreadyHeldWhenMissionStarts: 0
+  consumeCollectedItemsOnResult: 0
+  targetEnemyId: 
+  targetRescueNpcId: 
+  expeditionMoneyReward: 0
+  expeditionItemRewards: []
+  skillCardRewards: []
+  skillSlotUnlockAmount: 0

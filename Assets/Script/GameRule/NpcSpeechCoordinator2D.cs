@@ -97,8 +97,14 @@ public sealed class NpcSpeechCoordinator2D : MonoBehaviour
         MonoBehaviour speaker, int priority, float duration, Action onInterrupted)
     {
         if (speaker == null || !speaker.isActiveAndEnabled) return false;
+        if (DialoguePresenter2D.Active != null && DialoguePresenter2D.Active.IsPlaying) return false;
         return GetOrCreate().TryShowInternal(
             speaker, priority, duration, onInterrupted);
+    }
+
+    public static void Silence()
+    {
+        if (instance != null) instance.ClearActive(true);
     }
 
     /// <summary>自然終了やGameObject無効化時の解放。</summary>

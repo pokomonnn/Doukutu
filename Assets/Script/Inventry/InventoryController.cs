@@ -64,7 +64,7 @@ public class InventoryController : MonoBehaviour
         playerStatusConditions;
 
     [Tooltip(
-        "プレイヤーの食料・水分管理。" +
+        "プレイヤーの食料管理。" +
         "未設定ならPlayerタグから自動取得します。"
     )]
     [SerializeField]
@@ -106,7 +106,6 @@ public class InventoryController : MonoBehaviour
     [SerializeField]
     private PlayerConsumableUseController
     playerConsumableUseController;
-
 
     private void Awake()
     {
@@ -229,7 +228,6 @@ public class InventoryController : MonoBehaviour
 
         return moved;
     }
-
 
     // IrregularShapesV2: preserves all 4 orientations through the usual notification path.
     public bool TryMoveItem(InventoryItem item, int targetX, int targetY, int rotationSteps)
@@ -600,7 +598,7 @@ public class InventoryController : MonoBehaviour
         }
 
         // [AlcoholSystem v1.0 / InventoryController]
-        // 通常の回復アイテムと分岐し、SAN・水分・酔い状態を専用コントローラへ委譲。
+        // 飲酒アイテムの効果は専用コントローラへ委譲。
         if (consumableData is AlcoholItemData alcoholItem)
         {
             PlayerAlcoholEffect2D alcoholEffect =
@@ -628,8 +626,7 @@ public class InventoryController : MonoBehaviour
             StatusConditionType.None;
 
         bool needsSurvivalController =
-            consumableData.CanRestoreFood ||
-            consumableData.CanRestoreWater;
+            consumableData.CanRestoreFood;
 
         bool needsTorchController =
             consumableData.CanRestoreTorch;
@@ -652,7 +649,7 @@ public class InventoryController : MonoBehaviour
             return false;
         }
 
-        // 食料・水分を回復するアイテムなのにControllerが無い場合も、
+        // 食料を回復するアイテムなのにControllerが無い場合も、
         // アイテムだけ消費されないようにする
         if (needsSurvivalController &&
             !FindPlayerSurvivalController())
@@ -698,10 +695,6 @@ public class InventoryController : MonoBehaviour
             consumableData.CanRestoreFood &&
             playerSurvivalController.IsFoodFull;
 
-        bool waterIsFull =
-            consumableData.CanRestoreWater &&
-            playerSurvivalController.IsWaterFull;
-
         bool torchIsFull =
             consumableData.CanRestoreTorch &&
             torchController.IsFull;
@@ -724,21 +717,6 @@ public class InventoryController : MonoBehaviour
                 );
 
             if (restoredFood > 0f)
-            {
-                usedEffect = true;
-            }
-        }
-
-        // 水分回復
-        if (consumableData.CanRestoreWater &&
-            !waterIsFull)
-        {
-            float restoredWater =
-                playerSurvivalController.RestoreWater(
-                    consumableData.WaterRestoreAmount
-                );
-
-            if (restoredWater > 0f)
             {
                 usedEffect = true;
             }
@@ -775,7 +753,6 @@ public class InventoryController : MonoBehaviour
                 consumableData,
                 healthIsFull,
                 foodIsFull,
-                waterIsFull,
                 torchIsFull
             );
 
@@ -815,14 +792,10 @@ public class InventoryController : MonoBehaviour
         ConsumableItemData consumableData,
         bool healthIsFull,
         bool foodIsFull,
-        bool waterIsFull,
         bool torchIsFull)
     {
         bool restoresFood =
             consumableData.CanRestoreFood;
-
-        bool restoresWater =
-            consumableData.CanRestoreWater;
 
         bool restoresTorch =
             consumableData.CanRestoreTorch;
@@ -830,19 +803,6 @@ public class InventoryController : MonoBehaviour
         if (restoresTorch && torchIsFull)
         {
             return ItemUseResult.TorchIsFull;
-        }
-
-        if (restoresFood &&
-            restoresWater &&
-            foodIsFull &&
-            waterIsFull)
-        {
-            return ItemUseResult.FoodAndWaterAreFull;
-        }
-
-        if (restoresWater && waterIsFull)
-        {
-            return ItemUseResult.WaterIsFull;
         }
 
         if (restoresFood && foodIsFull)

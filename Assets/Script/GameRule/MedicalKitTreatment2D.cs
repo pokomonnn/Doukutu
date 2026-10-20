@@ -282,6 +282,7 @@ public sealed class MedicalKitTreatment2D : MonoBehaviour
             StatusConditionType newlyStabilized =
                 npc.StabilizedSymptoms & ~treatmentBeforeFlags;
             RescueNpcTreatmentResultSession2D.RecordSuccessfulTreatment(npc, newlyStabilized);
+            npc.GetComponent<StoryFinnDelivery>()?.OnTreatmentSucceeded(newlyStabilized);
 
             // NPCの3秒処置完了後、実際に治療が成功した場合だけ1回通知。
             GameEventLogManager2D.NpcTreated(data.DisplayName);

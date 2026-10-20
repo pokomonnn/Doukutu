@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -63,7 +63,7 @@ public class CaveExitElevator2D : MonoBehaviour
     [SerializeField] private bool lockPlayerMovement = true;
     [SerializeField] private bool lockWeaponControls = true;
 
-    [Tooltip("確認画面中に追加で停止したいBehaviour。StoneThrowerやPlayerRopePullControllerなどを任意で入れられます")]
+    [Tooltip("確認画面中に追加で停止したいBehaviour。StoneThrowerなどを任意で入れられます")]
     [SerializeField] private Behaviour[] behavioursToDisableWhileConfirming;
 
     [Header("カーソル")]
@@ -290,7 +290,14 @@ public class CaveExitElevator2D : MonoBehaviour
         }
 
         // 現金削除後に保存するのが重要です。OnDisableでもこの状態が再保存されます。
-        CaptureSessionBeforeResult();
+        expeditionResultCollector.ConfirmStoryRescuesBeforeDeparture();
+        if (!CaptureSessionBeforeResult())
+        {
+            transitionStarted = false;
+            SetPromptVisible(playerInside);
+            Debug.LogWarning("[CaveExitElevator2D] 所持品を保存できないため帰還を中止しました。", this);
+            return;
+        }
         Log($"現金回収={recoveredMoney:N0}G / リザルトSceneへ移動します: {resultSceneName}");
         SceneManager.LoadScene(resultSceneName);
     }
@@ -300,7 +307,7 @@ public class CaveExitElevator2D : MonoBehaviour
     /// GameSessionManagerへ明示的に保存します。
     /// OnDisable任せにせず先に保存することで、最後の瞬間のMission ClearもResultへ反映します。
     /// </summary>
-    private void CaptureSessionBeforeResult()
+    private bool CaptureSessionBeforeResult()
     {
         GameSessionManager session =
             GameSessionManager.Instance;
@@ -320,62 +327,20 @@ public class CaveExitElevator2D : MonoBehaviour
                 "Result移動前のInventory / Mission保存を実行できません。",
                 this
             );
-            return;
+            return false;
         }
 
-        // Inventory
-        GameObject playerObject =
-            currentPlayerMove != null
-                ? currentPlayerMove.gameObject
-                : null;
-
-        if (playerObject != null)
+        // UI/装備が実際に使用するBridgeの参照を採用する。
+        // Player本体には旧InventoryControllerが残る場合があるため、直接取得しない。
+        PlayerInventorySessionBridge bridge = currentPlayerMove != null
+            ? currentPlayerMove.GetComponent<PlayerInventorySessionBridge>() : null;
+        if (bridge == null)
         {
-            InventoryController inventoryController =
-                playerObject.GetComponent<InventoryController>();
-
-            if (inventoryController == null)
-            {
-                inventoryController =
-                    playerObject.GetComponentInChildren<
-                        InventoryController
-                    >(true);
-            }
-
-            EquipmentController equipmentController =
-                playerObject.GetComponent<EquipmentController>();
-
-            if (equipmentController == null)
-            {
-                equipmentController =
-                    playerObject.GetComponentInChildren<
-                        EquipmentController
-                    >(true);
-            }
-
-            if (inventoryController != null)
-            {
-                bool inventoryCaptured =
-                    session.CapturePlayerInventory(
-                        inventoryController,
-                        equipmentController
-                    );
-
-                Log(
-                    "Result移動前Inventory保存=" +
-                    (inventoryCaptured ? "成功" : "失敗")
-                );
-            }
-            else
-            {
-                Debug.LogWarning(
-                    "[CaveExitElevator2D] PlayerのInventoryControllerが見つかりません。" +
-                    " Result移動前Inventory保存をスキップします。",
-                    this
-                );
-            }
+            foreach (var candidate in FindObjectsByType<PlayerInventorySessionBridge>(FindObjectsInactive.Include))
+                if (candidate.gameObject.scene == gameObject.scene && candidate.isActiveAndEnabled)
+                { bridge = candidate; break; }
         }
-
+        if (bridge == null || !bridge.CaptureToSession()) return false;
         // Mission
         MissionManager2D missionManager =
             FindAnyObjectByType<MissionManager2D>(
@@ -402,6 +367,7 @@ public class CaveExitElevator2D : MonoBehaviour
                 this
             );
         }
+        return true;
     }
 
     private void CollectExpeditionResult()
@@ -735,3 +701,4 @@ public class CaveExitElevator2D : MonoBehaviour
         SetupUIReferences();
     }
 }
+

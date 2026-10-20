@@ -3,15 +3,12 @@ using UnityEngine;
 
 /// <summary>
 /// ダーケストダンジョン風の松明残量を管理します。
-/// 時間経過で残量が減り、完全に消えた後はSAN値を徐々に減らします。
-/// 同一プレイ中は、シーンを移動してPlayerが作り直されても残量を保持します。
+/// 時間経過による松明残量と照明状態を管理します。
+/// 通常は新しいシーンで満タンに戻します。同じシーンでのセーブ復元は別途適用します。
 /// </summary>
 [DisallowMultipleComponent]
 public class TorchController : MonoBehaviour
 {
-    [Header("参照")]
-    [Tooltip("未設定ならPlayerから自動取得します")]
-    [SerializeField] private PlayerSanityController sanityController;
 
     [Tooltip("未設定ならPlayerから自動取得します")]
     [SerializeField] private CharacterHealth playerHealth;
@@ -28,18 +25,13 @@ public class TorchController : MonoBehaviour
     [Tooltip("1秒ごとに減る松明値。1なら100秒で100から0になります")]
     [SerializeField, Min(0f)] private float decreasePerSecond = 0.15f;
 
-    [Header("消灯後のSAN減少")]
-    [Tooltip("松明が完全に消えてからSAN減少が始まるまでの猶予秒数")]
-    [SerializeField, Min(0f)] private float sanityDrainDelay = 1f;
-
-    [Tooltip("松明が消えている間、1秒ごとに減るSAN値")]
-    [SerializeField, Min(0f)] private float sanityDrainPerSecond = 0.2f;
-
     [Header("停止条件")]
     [SerializeField] private bool pauseDecreaseWhilePlayerIsDead = true;
     [SerializeField] private bool pauseDecreaseWhileCamping = true;
 
     [Header("シーン間保持")]
+    [SerializeField] private bool refillOnSceneEntry = true;
+    public bool RefillOnSceneEntry => refillOnSceneEntry;
     [Tooltip("オンなら、同一プレイ中にシーンを移動しても松明残量を引き継ぎます")]
     [SerializeField] private bool persistBetweenScenes = true;
 
@@ -80,7 +72,7 @@ public class TorchController : MonoBehaviour
     {
         FindReferences();
 
-        float initialValue = persistBetweenScenes && hasSessionValue
+        float initialValue = refillOnSceneEntry ? maximumTorch : persistBetweenScenes && hasSessionValue
             ? sessionTorchValue
             : startingTorch;
 
@@ -123,16 +115,6 @@ public class TorchController : MonoBehaviour
 
         extinguishedDuration += Time.deltaTime;
 
-        if (extinguishedDuration < sanityDrainDelay ||
-            sanityDrainPerSecond <= 0f ||
-            sanityController == null)
-        {
-            return;
-        }
-
-        sanityController.DrainSanity(
-            sanityDrainPerSecond * Time.deltaTime
-        );
     }
 
     private void OnDisable()
@@ -245,7 +227,7 @@ public class TorchController : MonoBehaviour
             {
                 Debug.Log(
                     isNowExtinguished
-                        ? "[TorchController] 松明が完全に消えました。SAN減少を開始します。"
+                        ? "[TorchController] 松明が完全に消えました。"
                         : "[TorchController] 松明を再点火しました。",
                     this
                 );
@@ -292,20 +274,6 @@ public class TorchController : MonoBehaviour
 
     private void FindReferences()
     {
-        if (sanityController == null)
-        {
-            sanityController = GetComponent<PlayerSanityController>();
-        }
-
-        if (sanityController == null)
-        {
-            sanityController = GetComponentInParent<PlayerSanityController>();
-        }
-
-        if (sanityController == null)
-        {
-            sanityController = FindAnyObjectByType<PlayerSanityController>();
-        }
 
         if (playerHealth == null)
         {
@@ -328,7 +296,5 @@ public class TorchController : MonoBehaviour
         maximumTorch = Mathf.Max(1f, maximumTorch);
         startingTorch = Mathf.Clamp(startingTorch, 0f, maximumTorch);
         decreasePerSecond = Mathf.Max(0f, decreasePerSecond);
-        sanityDrainDelay = Mathf.Max(0f, sanityDrainDelay);
-        sanityDrainPerSecond = Mathf.Max(0f, sanityDrainPerSecond);
     }
 }

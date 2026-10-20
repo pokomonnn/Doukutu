@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e40ccca5d0d395b44b7cd41360470e57, type: 3}
+  m_Name: Mission_S1S03
+  m_EditorClassIdentifier: Assembly-CSharp::MissionDefinition2D
+  displayObjectives:
+  - id: blueprint
+    minimapScene: stage1
+    minimapPointIds:
+    - blueprint
+    minimapFollowMissionId: 
+    text: "\u30B9\u30C6\u30FC\u30B81\u306E\u8CC7\u6599\u5BA4\u3067\u53E4\u57CE\u306E\u8A2D\u8A08\u56F3\u3092\u56DE\u53CE\u3059\u308B"
+    anyOfFlags:
+    - story/S1S03_BlueprintTaken
+    allOfFlags: []
+  - id: report
+    minimapScene: stage1
+    minimapPointIds:
+    - hub_1_Glen
+    minimapFollowMissionId: 
+    text: "\u8A2D\u8A08\u56F3\u3092\u6240\u6301\u54C1\u306B\u5165\u308C\u3001\u30B9\u30C6\u30FC\u30B81\u306E\u30B0\u30EC\u30F3\u306B\u6E21\u3059\uFF08\u7D1B\u5931\u6642\u306F\u8CC7\u6599\u5BA4\u3067\u518D\u53D6\u5F97\uFF09"
+    anyOfFlags:
+    - story/S1S03_Completed
+    allOfFlags: []
+  objectiveFinishFlag: story/S1S03_Completed
+  completionStoryFlag: story/S1S03_Completed
+  activationStoryFlag: story/S1S03_Started
+  storyMoneyReward: 0
+  missionId: story_S1S03
+  displayName: "\u53E4\u57CE\u306E\u8A2D\u8A08\u56F3"
+  description: "\u8CC7\u6599\u5BA4\u306E\u8A2D\u8A08\u56F3\n\u30B0\u30EC\u30F3\u306B\u8A2D\u8A08\u56F3\u3092\u6E21\u3059"
+  missionImage: {fileID: 0}
+  objectiveType: 4
+  requiredAmount: 1
+  requiredItem: {fileID: 0}
+  countItemsAlreadyHeldWhenMissionStarts: 0
+  consumeCollectedItemsOnResult: 0
+  targetEnemyId: 
+  targetRescueNpcId: 
+  expeditionMoneyReward: 0
+  expeditionItemRewards: []
+  skillCardRewards: []
+  skillSlotUnlockAmount: 0

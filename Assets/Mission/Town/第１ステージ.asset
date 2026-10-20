@@ -33,7 +33,6 @@ MonoBehaviour:
   missionPool:
   - {fileID: 11400000, guid: e4c4c9e4b9a85514086ba143d21ce4f4, type: 2}
   - {fileID: 11400000, guid: 25e45a7ed7fce5e4e8be432db0793e5c, type: 2}
-  - {fileID: 11400000, guid: 82eb2ac90f640a846b366dcb88491b0a, type: 2}
   - {fileID: 11400000, guid: 6667a088a29b2f7499a806c7e3464f63, type: 2}
   - {fileID: 11400000, guid: c4ea86f6399d336479c1f7f15f13c35b, type: 2}
   randomMissionCount: 5

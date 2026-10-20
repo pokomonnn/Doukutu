@@ -17,7 +17,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &8315247335661622384
 RectTransform:
   m_ObjectHideFlags: 0
@@ -468,7 +468,7 @@ RectTransform:
   m_Father: {fileID: 3702920675534919783}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0.578, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -902,7 +902,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2173460460765546443
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2603,6 +2603,14 @@ MonoBehaviour:
   cellSize: 64
   cellSpacing: 2
   cellColor: {r: 0.23584908, g: 0.23584908, b: 0.23584908, a: 1}
+  useExpeditionMedievalTheme: 0
+  medievalCellSprite: {fileID: 0}
+  medievalItemSprite: {fileID: 0}
+  medievalSelectedItemSprite: {fileID: 0}
+  medievalCellTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalItemTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalSelectedTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalStackTextTint: {r: 0.96, g: 0.88, b: 0.68, a: 1}
 --- !u!82 &5743635529212237531
 AudioSource:
   m_ObjectHideFlags: 0
@@ -2796,6 +2804,7 @@ MonoBehaviour:
   inventoryPanel: {fileID: 3122432340894050300}
   toggleKey: 9
   itemBoxUIController: {fileID: 3393758358001720366}
+  skillCardPanelController: {fileID: 0}
   audioSource: {fileID: 0}
   openClip: {fileID: 8300000, guid: e55d88e357f56a74a82746e20ca7750f, type: 3}
   closeClip: {fileID: 8300000, guid: e55d88e357f56a74a82746e20ca7750f, type: 3}
@@ -2933,6 +2942,9 @@ MonoBehaviour:
   contextMenuCloseVolume: 0.8
   useVolume: 0.9
   keepUseSoundPlayingWhenInventoryCloses: 1
+  showSoundDebugLogs: 1
+  showDetailedSoundDiagnostics: 1
+  logSuccessfulPlaybackRequests: 1
 --- !u!114 &3393758358001720366
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2948,10 +2960,31 @@ MonoBehaviour:
   itemBoxPanel: {fileID: 4780714574161106217}
   playerGridUI: {fileID: 7901377921448641749}
   itemBoxGridUI: {fileID: 8551754057257954297}
+  playerInventoryController: {fileID: 0}
+  enableEmergencyItemMenu: 0
+  emergencyMenuTargetItemBox: {fileID: 0}
   titleText: {fileID: 4775934531088998017}
   storageTitleFormat: '{0}'
   shopTitleFormat: "\u30B7\u30E7\u30C3\u30D7\uFF1A{0}"
   inventoryPanelToggle: {fileID: 5168868454178387839}
+  itemBoxWeightUI: {fileID: 6205147874667022359}
+  playerWeightController: {fileID: 0}
+  refreshWeightUIWhileOpen: 1
+  enableTakeAllWithT: 1
+  takeAllHoldDuration: 1
+  takeAllHoldSlider: {fileID: 0}
+  takeAllStatusText: {fileID: 0}
+  takeAllPromptText: "T\u3000\u3059\u3079\u3066\u56DE\u53CE"
+  inventoryFullText: "\u30A4\u30F3\u30D9\u30F3\u30C8\u30EA\u304C\u3044\u3063\u3071\u3044\u3067\u3059"
+  inventoryFullMessageDuration: 3
+  inventoryFullShakeDuration: 0.45
+  inventoryFullShakeStrength: 8
+  takeAllAudioSource: {fileID: 0}
+  takeAllSuccessSound: {fileID: 0}
+  takeAllFailedSound: {fileID: 0}
+  takeAllSuccessVolume: 1
+  takeAllFailedVolume: 1
+  enableTakeAllDebugLogs: 1
   lockPlayerMovementWhileOpen: 1
   playerMove: {fileID: 0}
   lockWeaponControlsWhileOpen: 1
@@ -2966,14 +2999,13 @@ GameObject:
   m_Component:
   - component: {fileID: 6026832000711789523}
   - component: {fileID: 6391225734816812949}
-  - component: {fileID: 6675904207714924373}
   m_Layer: 5
   m_Name: Slider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6026832000711789523
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3046,23 +3078,6 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &6675904207714924373
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3153386198915175273}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bcb61739bce564a409e86600f9aba9a8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SanityBarUI
-  sanityController: {fileID: 0}
-  sanitySlider: {fileID: 6391225734816812949}
-  sanityText: {fileID: 4378181355608806147}
-  showMaxSanity: 1
-  label: SAN
 --- !u!1 &3172474053111382918
 GameObject:
   m_ObjectHideFlags: 0
@@ -3213,7 +3228,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6911190678057520411
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3447,7 +3462,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4889711289422353241
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3530,14 +3545,13 @@ GameObject:
   m_Component:
   - component: {fileID: 635904606215388160}
   - component: {fileID: 7610201195820422244}
-  - component: {fileID: 6025110556996581614}
   m_Layer: 5
   m_Name: Slider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &635904606215388160
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3610,23 +3624,6 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &6025110556996581614
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4319752977650006719}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bcb61739bce564a409e86600f9aba9a8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SanityBarUI
-  sanityController: {fileID: 0}
-  sanitySlider: {fileID: 7610201195820422244}
-  sanityText: {fileID: 7949236481086287986}
-  showMaxSanity: 1
-  label: SAN
 --- !u!1 &4501941990716165140
 GameObject:
   m_ObjectHideFlags: 0
@@ -3643,7 +3640,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6079647223901518487
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3813,11 +3810,19 @@ MonoBehaviour:
   equipButton: {fileID: 2207589185419042345}
   useButton: {fileID: 3510417484099460834}
   informationButton: {fileID: 8573536224702773508}
+  repairButton: {fileID: 0}
   trashButton: {fileID: 7120467786552122102}
+  emergencyBackButton: {fileID: 0}
+  emergencyTakeOutButtonToHide: {fileID: 0}
+  emergencyMenuUseOnlyForConsumables: 1
   informationPanel: {fileID: 2914799217904608935}
   informationTitleText: {fileID: 8721436468061256170}
   informationDescriptionText: {fileID: 5169050228539613776}
   equipmentController: {fileID: 0}
+  equipmentVisualController: {fileID: 0}
+  repairKitMissingMessage: "\u4FEE\u7406\u30AD\u30C3\u30C8\u3092\u6301\u3063\u3066\u3044\u307E\u305B\u3093"
+  weaponAlreadyFullMessage: "\u3053\u306E\u6B66\u5668\u306F\u4FEE\u7406\u3059\u308B\u5FC5\u8981\u304C\u3042\u308A\u307E\u305B\u3093"
+  weaponRepairSuccessFormat: "{0} \u3092\u4FEE\u7406\u3057\u307E\u3057\u305F\uFF08+{1:0.#}\uFF09"
   playerItemDropper: {fileID: 0}
   cursorOffset: {x: 12, y: -12}
   closeWhenClickOutside: 1
@@ -4033,6 +4038,14 @@ MonoBehaviour:
   cellSize: 64
   cellSpacing: 2
   cellColor: {r: 0.16, g: 0.16, b: 0.16, a: 1}
+  useExpeditionMedievalTheme: 0
+  medievalCellSprite: {fileID: 0}
+  medievalItemSprite: {fileID: 0}
+  medievalSelectedItemSprite: {fileID: 0}
+  medievalCellTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalItemTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalSelectedTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalStackTextTint: {r: 0.96, g: 0.88, b: 0.68, a: 1}
 --- !u!1 &5351341904599432973
 GameObject:
   m_ObjectHideFlags: 0
@@ -4138,7 +4151,7 @@ RectTransform:
   m_Father: {fileID: 2677312607922915359}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0.578, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -4240,8 +4253,8 @@ MonoBehaviour:
   foodSlider: {fileID: 7491372297222655855}
   foodText: {fileID: 4522129119243181867}
   foodFillImage: {fileID: 0}
-  waterSlider: {fileID: 4188749502208998342}
-  waterText: {fileID: 3658567116179179189}
+  waterSlider: {fileID: 0}
+  waterText: {fileID: 0}
   waterFillImage: {fileID: 0}
   normalColor: {r: 0.25, g: 0.85, b: 0.35, a: 1}
   warningColor: {r: 0.95, g: 0.8, b: 0.2, a: 1}
@@ -4955,8 +4968,8 @@ MonoBehaviour:
   foodSlider: {fileID: 3517935804231558321}
   foodText: {fileID: 4417384996864734589}
   foodFillImage: {fileID: 0}
-  waterSlider: {fileID: 4291298406345059814}
-  waterText: {fileID: 6107227947984460282}
+  waterSlider: {fileID: 0}
+  waterText: {fileID: 0}
   waterFillImage: {fileID: 0}
   normalColor: {r: 0.25, g: 0.85, b: 0.35, a: 1}
   warningColor: {r: 0.95, g: 0.8, b: 0.2, a: 1}
@@ -5346,7 +5359,7 @@ RectTransform:
   m_Father: {fileID: 7824454719210991336}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 3.800003, y: 2}
   m_SizeDelta: {x: 17.3501, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -5759,7 +5772,7 @@ RectTransform:
   m_Father: {fileID: 1390652308691834103}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 3.800003, y: 2}
   m_SizeDelta: {x: 17.3501, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -5990,6 +6003,14 @@ MonoBehaviour:
   cellSize: 64
   cellSpacing: 2
   cellColor: {r: 0.16, g: 0.16, b: 0.16, a: 1}
+  useExpeditionMedievalTheme: 0
+  medievalCellSprite: {fileID: 0}
+  medievalItemSprite: {fileID: 0}
+  medievalSelectedItemSprite: {fileID: 0}
+  medievalCellTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalItemTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalSelectedTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalStackTextTint: {r: 0.96, g: 0.88, b: 0.68, a: 1}
 --- !u!114 &9026287944519903328
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6005,6 +6026,7 @@ MonoBehaviour:
   boxDisplayName: "\u30A2\u30A4\u30C6\u30E0\u30DC\u30C3\u30AF\u30B9"
   boxKind: 0
   allowDirectItemTransfer: 1
+  allowDirectEquipToEquipmentSlot: 0
   gridWidth: 7
   gridHeight: 10
   addStartingItemsOnAwake: 1
@@ -6544,7 +6566,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &385531936965593982
 RectTransform:
   m_ObjectHideFlags: 0

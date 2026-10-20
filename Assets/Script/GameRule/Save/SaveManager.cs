@@ -389,6 +389,7 @@ public class SaveManager : MonoBehaviour
             new SavedPlayerStatusData();
 
         saveData.SaveVersion = GameSessionManager.CurrentSaveVersion;
+        saveData.MedicalKit = MedicalKitSessionStore2D.CreateSnapshot();
         saveData.WorldState = WorldStateSessionStore.CreateSnapshot();
         saveData.Checkpoint = saveCheckpoint
             ? GameManager.CreateCheckpointSaveData()
@@ -412,10 +413,13 @@ public class SaveManager : MonoBehaviour
 
             if (File.Exists(savePath))
             {
-                File.Delete(savePath);
+                // 置換失敗時も既存のセーブを保持する。
+                File.Replace(tempPath, savePath, savePath + ".bak");
             }
-
-            File.Move(tempPath, savePath);
+            else
+            {
+                File.Move(tempPath, savePath);
+            }
 
             if (!File.Exists(savePath))
             {
@@ -511,6 +515,7 @@ public class SaveManager : MonoBehaviour
             Log("このセーブデータには第2段階のプレイヤー状態がありません。現在のHP等は変更しません。");
         }
 
+        MedicalKitSessionStore2D.RestoreSnapshot(saveData.MedicalKit);
         WorldStateSessionStore.SetData(saveData.WorldState);
         ApplyConversationHistory(saveData.ConversationHistory);
         GameManager.ApplyCheckpointSaveData(saveData.Checkpoint);
@@ -895,6 +900,7 @@ public class SaveManager : MonoBehaviour
         }
 
         PlayerStatusSessionStore.Clear();
+        MedicalKitSessionStore2D.ResetForNewGame();
         WorldStateSessionStore.Clear();
         TorchController.ClearStoredSessionValue();
 
@@ -1010,8 +1016,19 @@ public class SaveManager : MonoBehaviour
 
     public string GetSaveFolderPath()
     {
+#if UNITY_EDITOR
+        // Playモードの統合テストだけで使用。通常の保存先とプレイヤービルドには影響しない。
+        if (!string.IsNullOrEmpty(EditorTestSaveFolder))
+            return EditorTestSaveFolder;
+#endif
         return Path.Combine(Application.persistentDataPath, "Saves");
     }
+
+#if UNITY_EDITOR
+    public static string EditorTestSaveFolder { get; set; }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetEditorTestSaveFolder() => EditorTestSaveFolder = null;
+#endif
 
     private static bool IsValidManualSlot(int slotNumber)
     {
@@ -1085,6 +1102,7 @@ public class SaveManager : MonoBehaviour
 
     private void CaptureCurrentSceneToSession()
     {
+        FindBestComponentInActiveScene<TownPlayerItemBoxSessionBridge>()?.CaptureToSession();
         if (captureInventoryBeforeSave)
         {
             PlayerInventorySessionBridge inventoryBridge =
@@ -1213,6 +1231,8 @@ public class SaveManager : MonoBehaviour
                 Log("ロード後反映：現在シーンにWorldStateSaveBridgeがありません。");
             }
         }
+        // ワールド箱の旧保存データより、専用保管箱の保存データを優先する。
+        FindBestComponentInActiveScene<TownPlayerItemBoxSessionBridge>()?.RestoreFromSession();
     }
 
     private System.Collections.Generic.List<SavedConversationHistoryData> CaptureConversationHistory()

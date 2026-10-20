@@ -8,6 +8,7 @@ public enum DialogueActionKind2D
     DeliverMissionItems = 2,
     GiveItemToPlayer = 3,
     TakeItemFromPlayer = 4,
+    StoryCampaign = 5,
 }
 
 [Serializable]

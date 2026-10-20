@@ -6,6 +6,8 @@ public class CharacterHealth : MonoBehaviour
 {
     [Header("Health Settings")]
     [SerializeField, Min(1)] private int maxHealth = 100;
+    [Tooltip("物語上の保護対象のみ有効。ダメージや復元でHPが0になりません。")]
+    [SerializeField] private bool preventDeath;
 
     [Header("Invincibility Settings")]
     [SerializeField, Min(0f)] private float invincibilityDuration = 0.5f;
@@ -229,7 +231,7 @@ public class CharacterHealth : MonoBehaviour
 
         CurrentHealth = Mathf.Max(
             CurrentHealth - finalDamage,
-            0
+            preventDeath ? 1 : 0
         );
 
         // HPが100の敵へ500Damageを与えた場合、
@@ -344,7 +346,7 @@ public class CharacterHealth : MonoBehaviour
 
         CurrentHealth = Mathf.Clamp(
             healthValue,
-            0,
+            preventDeath ? 1 : 0,
             MaxHealth
         );
 

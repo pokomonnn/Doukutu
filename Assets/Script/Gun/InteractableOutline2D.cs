@@ -57,6 +57,26 @@ public sealed class InteractableOutline2D : MonoBehaviour
 
     private Material createdMaterial;
     private bool isHighlighted;
+    private bool dialogueDriven;
+    public bool IsHighlighted => isHighlighted;
+
+    // Dialogue already owns distance/hostility/carry checks; no extra physics trigger is needed.
+    public static InteractableOutline2D CreateForDialogue(Transform root)
+    {
+        var existing = root.GetComponentInChildren<InteractableOutline2D>();
+        if (existing != null) return existing;
+        var child = new GameObject("Dialogue InteractableOutline2D");
+        child.SetActive(false);
+        child.transform.SetParent(root, false);
+        var collider = child.AddComponent<BoxCollider2D>();
+        collider.isTrigger = true; collider.enabled = false;
+        var outline = child.AddComponent<InteractableOutline2D>();
+        outline.visualRoot = root;
+        outline.dialogueDriven = true;
+        child.SetActive(true);
+        return outline;
+    }
+    public void SetDialogueHighlight(bool value) { SetHighlighted(value); }
 
     private void Awake()
     {
@@ -77,6 +97,7 @@ public sealed class InteractableOutline2D : MonoBehaviour
             {
                 createdMaterial = new Material(shader);
                 createdMaterial.name = "Runtime_InteractableWhiteSilhouette";
+                if (dialogueDriven) createdMaterial.SetFloat("_AlphaThreshold", .1f);
                 material = createdMaterial;
             }
             else

@@ -62,7 +62,10 @@ public class TownPlayerItemBoxSessionBridge : MonoBehaviour
     {
         if (captureOnDisable &&
             !isApplicationQuitting &&
-            !isRestoring)
+            !isRestoring &&
+            hasRestoredForThisInstance &&
+            GameSessionManager.Instance != null &&
+            itemBoxInventory != null)
         {
             CaptureToSession();
         }
@@ -85,6 +88,7 @@ public class TownPlayerItemBoxSessionBridge : MonoBehaviour
     /// </summary>
     public void EnsureSessionReady()
     {
+        if (hasRestoredForThisInstance) return;
         FindReferences();
 
         if (gameSessionManager == null || itemBoxInventory == null)
@@ -103,6 +107,7 @@ public class TownPlayerItemBoxSessionBridge : MonoBehaviour
         if (initializeSessionWhenMissing &&
             !gameSessionManager.HasPlayerItemBoxSessionData)
         {
+            hasRestoredForThisInstance = true;
             CaptureToSession();
         }
     }
@@ -111,6 +116,10 @@ public class TownPlayerItemBoxSessionBridge : MonoBehaviour
     public bool CaptureToSession()
     {
         FindReferences();
+
+        if (!hasRestoredForThisInstance && restoreOnStart &&
+            gameSessionManager != null && gameSessionManager.HasPlayerItemBoxSessionData)
+            return RestoreFromSession();
 
         if (gameSessionManager == null || itemBoxInventory == null)
         {
@@ -127,6 +136,7 @@ public class TownPlayerItemBoxSessionBridge : MonoBehaviour
             Log("保管箱をGameSessionManagerへ保存しました。");
         }
 
+        if (result) hasRestoredForThisInstance = true;
         return result;
     }
 
@@ -197,7 +207,7 @@ public class TownPlayerItemBoxSessionBridge : MonoBehaviour
 
     private void HandleInventoryChanged()
     {
-        if (!captureWheneverInventoryChanges || isRestoring)
+        if (!captureWheneverInventoryChanges || isRestoring || !hasRestoredForThisInstance)
         {
             return;
         }
@@ -229,6 +239,8 @@ public class TownPlayerItemBoxSessionBridge : MonoBehaviour
 
     private void FindReferences()
     {
+        if (GameSessionManager.Instance != null)
+            gameSessionManager = GameSessionManager.Instance;
         if (gameSessionManager == null)
         {
             gameSessionManager = GameSessionManager.Instance;

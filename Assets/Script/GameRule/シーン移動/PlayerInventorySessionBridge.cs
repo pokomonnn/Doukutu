@@ -73,6 +73,10 @@ public class PlayerInventorySessionBridge : MonoBehaviour
 
     private void OnDisable()
     {
+        // During scene unload the bound InventoryManager may already be destroyed.
+        // Never fall back to the legacy empty inventory on Player at that point.
+        // SceneTransitionButton / CaveExitElevator capture before unloading.
+        if (inventoryController == null) return;
         if (captureSessionDataOnDisable && !isApplicationQuitting)
         {
             LogTransfer("OnDisable: シーン破棄または無効化を検出。保存を実行します。");
@@ -93,6 +97,16 @@ public class PlayerInventorySessionBridge : MonoBehaviour
     public bool CaptureToSession()
     {
         FindReferences();
+
+        // Town panels can close during Awake, before this bridge's delayed Start.
+        // Restore the incoming inventory before any such close callback captures it.
+        if (restoreSessionDataOnStart && !hasRestoredForThisInstance &&
+            gameSessionManager != null && gameSessionManager.HasInventorySessionData &&
+            inventoryController != null)
+        {
+            inventoryController.InitializeInventory();
+            RestoreFromSession();
+        }
 
         if (gameSessionManager == null || inventoryController == null)
         {
@@ -251,6 +265,11 @@ public class PlayerInventorySessionBridge : MonoBehaviour
 
     private void FindReferences()
     {
+        // A serialized scene manager may be a duplicate awaiting destruction in Awake.
+        if (GameSessionManager.Instance != null)
+        {
+            gameSessionManager = GameSessionManager.Instance;
+        }
         if (gameSessionManager == null)
         {
             gameSessionManager = GameSessionManager.Instance;

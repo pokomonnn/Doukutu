@@ -9,6 +9,7 @@ public static class FactionCombatDamage2D
     public static bool DealDamage(CharacterHealth victim, int amount, Transform attacker)
     {
         if (victim == null || victim.IsDead || amount <= 0) return false;
+        if (attacker != null && StoryNegotiationZone.Protects(attacker.GetComponentInParent<FactionMember2D>(), victim.GetComponentInParent<FactionMember2D>())) return false;
         if (attacker != null && (victim.transform == attacker ||
                                   attacker.IsChildOf(victim.transform))) return false;
 

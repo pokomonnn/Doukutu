@@ -1,0 +1,66 @@
+会話操作・NPC発光・ミッション追跡・完了通知
+更新日：2026-10-20
+
+■ 変更内容
+1. 会話パネルを左クリックして会話を進める。「次へ」ボタンは非表示。
+   文字送り中は全文表示、全文表示後は次の会話へ進む。
+   選択肢があるときは選択肢を選ぶ。背景クリックでは選択肢を飛ばさない。
+   既存TownConversationControllerにもクリック送りを接続。
+   旧洞窟会話が外部送りモードを使用している場合は、その既存処理を維持し二重送りを防ぐ。
+2. 話しかけられるNPCへ既存InteractableOutline2Dを適用。
+   DialogueActor2DのEキー会話、既存CaveConversationNPCに対応。
+   近づくと白く縁取り、距離外や会話中は消灯。死亡中・運搬中も消灯。
+   調査地点など、同じ会話機構を使う対象にも適用。
+   Play開始時に子オブジェクト「Dialogue InteractableOutline2D」を生成する。
+   既存の会話判定を利用するため、追加した輪郭用Colliderは無効。
+   NPC本体の当たり判定・救出・運搬処理は変更しない。
+3. 洞窟で新しく受注したミッションを自動追跡。
+   既存MissionManager2DのStartMissionから切替。町の挙動は維持。
+   同じミッションへの再アクセスや、開始時の一括初期化では追跡先を奪わない。
+   セーブ復元時は既存の保存済み追跡状態を使用。
+4. 「手前に持っています」「背負っています」の状態表示を非表示。
+   持つ・背負う・降ろす操作と、操作用プロンプトは継続。
+5. ダンジョンの「完了：…」「クエスト完了：…」を上部中央へ移動。
+   右上の追跡目標とミニマップはそのまま。通知のフェードも継続。
+
+■ Unityでの追加設定
+既存シーンへの手動設定は不要。スクリプトの再コンパイル後にPlayする。
+NPCを新しく作る場合は、既存DialogueActor2Dの会話データを割り当て、
+Use E Key Interactionを有効にし、SpriteRendererを用意する。
+発光距離は既存Interaction Distanceに連動する。
+輪郭の太さなどはPlay中の子オブジェクトにあるInteractableOutline2Dで確認可能。
+NPC輪郭には透明部分を除外する閾値を使用。ItemBoxの既存設定には適用しない。
+
+■ 主な変更ファイル
+Assets/CharacterAI2D/Runtime/DialogueClickAdvance2D.cs（新規：クリックイベント）
+Assets/CharacterAI2D/Runtime/DialoguePresenter2D.cs
+Assets/CharacterAI2D/Runtime/DialoguePresentationLayout2D.cs
+Assets/CharacterAI2D/Runtime/DialogueActor2D.cs
+Assets/Script/Talk/New/TownConversationController.cs
+Assets/Script/Talk/New/CaveConversationNPC.cs
+Assets/Script/Gun/InteractableOutline2D.cs
+Assets/Settings/InteractableWhiteSilhouette2D.shader
+Assets/Script/GameRule/PlayerCarryController2D.cs
+Assets/Script/Mission/MissionManager2D.cs
+Assets/Script/Mission/MissionHUDSafeArea2D.cs
+Assets/Editor/InteractionPolishTests.cs（新規）
+Assets/Editor/DungeonUIVisualChecks.cs
+Assets/Editor/QuestHUDVisualTests.cs
+
+■ 確認手順
+・stage1でバルドに近づき、白い輪郭が出ることを確認。
+・Eで会話を開始し、本文クリックで全文表示→次の会話へ進むことを確認。
+・選択肢の外をクリックしても勝手に受注・報告しないことを確認。
+・別ミッションを追跡した状態で新規受注し、新しいミッションへ切り替わることを確認。
+・フィンの運搬中に状態説明のテキストが表示されないことを確認。
+・目標達成／報告時の完了通知が、右上ではなく上部中央に表示されることを確認。
+
+■ 検証
+Unity Playモードでクリックによる全文表示・終了、選択肢の誤スキップ防止、
+新規受注／再受注の追跡条件、NPCの近距離／遠距離の発光を自動検証。
+1280×720、1920×1080、2560×1440、2560×1080、1024×768のUI配置を検証。
+全12クエスト・フィンの救出・報酬・セーブ往復の回帰テスト成功：
+Logs/InteractionPolishStoryRegression.log
+最終UI・操作テスト成功：Logs/InteractionPolishVisualFinal.log
+保存画像でもNPCの白い輪郭と上部中央の完了通知を確認済み。
+手動での全ステージ通しプレイは未実施。

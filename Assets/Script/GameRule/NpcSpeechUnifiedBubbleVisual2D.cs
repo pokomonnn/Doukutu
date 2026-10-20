@@ -73,11 +73,14 @@ public static class NpcSpeechUnifiedBubbleVisual2D
             messageText.font = s.JapaneseFont;
 
         messageText.fontSize = Mathf.Max(8f, s.FontSize);
-        messageText.color = s.TextColor;
+        messageText.color = Color.white;
+        TextOnlyUIStyle2D.Apply(messageText);
         messageText.alignment = TextAlignmentOptions.Center;
         messageText.enableAutoSizing = false;
         messageText.enableWordWrapping = true;
         messageText.raycastTarget = false;
+        root.sizeDelta = new Vector2(root.sizeDelta.x, Mathf.Max(root.sizeDelta.y,
+            messageText.GetPreferredValues(messageText.text, root.sizeDelta.x - 32, 0).y + 18));
 
         RectTransform bgRect = background.rectTransform;
         bgRect.anchorMin = Vector2.zero;
@@ -91,6 +94,7 @@ public static class NpcSpeechUnifiedBubbleVisual2D
         background.type = s.BubbleBackgroundSprite != null &&
             s.BubbleBackgroundSprite.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
         background.raycastTarget = false;
+        background.enabled = false;
 
         RectTransform textRect = messageText.rectTransform;
         textRect.anchorMin = Vector2.zero;
@@ -107,7 +111,7 @@ public static class NpcSpeechUnifiedBubbleVisual2D
         RectTransform border = GetOrCreateDecoration(root, "UnifiedBorder");
         RectTransform tailBorder = GetOrCreateDecoration(root, "UnifiedTailBorder");
         RectTransform tail = GetOrCreateDecoration(root, "UnifiedTail");
-        bool visible = s.DrawBorderAndTail;
+        bool visible = false; // NPC speech uses text only, including legacy serialized appearances.
         border.gameObject.SetActive(visible);
         tailBorder.gameObject.SetActive(visible);
         tail.gameObject.SetActive(visible);

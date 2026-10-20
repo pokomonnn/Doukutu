@@ -1,0 +1,27 @@
+旧persistentIdは変更せず、重複した配置に保存専用キーを追加。旧セーブの読み取り照合は維持。
+Assets/Scenes/stage/Start_Doukustu.unity | tutorial/ItemBox | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-0b47bd0c5975e54498c55283dff802cf-7290886218217426457-2585565810351337930
+Assets/Scenes/stage/Start_Doukustu.unity | tutorial/ItemBox (1) | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-0b47bd0c5975e54498c55283dff802cf-7290886218217426457-1832182309
+Assets/Scenes/stage/Start_Doukustu.unity | tutorial/ItemBox | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-0b47bd0c5975e54498c55283dff802cf-7290886218217426457-919127021
+Assets/Scenes/Doukutu_3.unity | ItemBox | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-3f5dae4dfa54e894b8809ee853ac1ecd-7290886218217426457-356394595
+Assets/Scenes/Doukutu_3.unity | ItemBox (2) | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-3f5dae4dfa54e894b8809ee853ac1ecd-7290886218217426457-136107400
+Assets/Scenes/Doukutu_3.unity | ItemBox (1) | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-3f5dae4dfa54e894b8809ee853ac1ecd-7290886218217426457-798203284
+Assets/Scenes/stage/stage1.unity | tutorial/ItemBox | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-2585565810351337930
+Assets/Scenes/stage/stage1.unity | tutorial/ItemBox (1) | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-1832182309
+Assets/Scenes/stage/stage1.unity | tutorial/ItemBox | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-919127021
+Assets/Scenes/stage/stage1.unity | ItemBox | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-1965828192
+Assets/Scenes/stage/stage1.unity | ItemBox 4 | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-51937238
+Assets/Scenes/stage/stage1.unity | ItemBox 3 | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-1302624580
+Assets/Scenes/stage/stage1.unity | ItemBox 2 | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-1326490067
+Assets/Scenes/stage/stage1.unity | ItemBox 1 | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-921175376
+Assets/Scenes/stage/stage1.unity | ItemBox 11 | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-1757454063
+Assets/Scenes/stage/stage1.unity | ItemBox 6 | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-923930596
+Assets/Scenes/stage/stage1.unity | ItemBox 5 | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-1607251374
+Assets/Scenes/stage/stage1.unity | ItemBox 5 (1) | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-29099203
+Assets/Scenes/stage/stage1.unity | ItemBox 4 (1) | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-873947722
+Assets/Scenes/stage/stage1.unity | ItemBox 3 (1) | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-286205748
+Assets/Scenes/stage/stage1.unity | ItemBox (1) | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-302256258
+Assets/Scenes/stage/stage1.unity | ItemBox (2) | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-516269072
+Assets/Scenes/stage/stage1.unity | GameObject/あさるBOX/ItemBox 11 | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-1148341849
+Assets/Scenes/stage/stage1.unity | GameObject/あさるBOX/ItemBox 11 (1) | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-1664614645
+Assets/Scenes/stage/stage1.unity | GameObject/あさるBOX/ItemBox 11 (2) | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-1499705266
+Assets/Scenes/stage/stage1.unity | GameObject/あさるBOX/ItemBox 11 (3) | old=70c72586a1e049758203a65b4690df9b | key=placed:GlobalObjectId_V1-2-9446d8b8889667748b512c850a1e665e-7290886218217426457-949497470

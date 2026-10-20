@@ -1148,11 +1148,8 @@ GameObject:
   - component: {fileID: 1744139609449430758}
   - component: {fileID: 8659391753788018212}
   - component: {fileID: 1484419611754063742}
-  - component: {fileID: 3654925758163817857}
   - component: {fileID: 2177830321353433869}
   - component: {fileID: 624081966487689268}
-  - component: {fileID: 2629674874419213332}
-  - component: {fileID: 6708094597720075152}
   - component: {fileID: 4008555806758548720}
   - component: {fileID: 9140815255896050091}
   - component: {fileID: 3510867257314980472}
@@ -1161,7 +1158,6 @@ GameObject:
   - component: {fileID: 5434254533848271883}
   - component: {fileID: 8216126741569414212}
   - component: {fileID: 1003010323677137009}
-  - component: {fileID: 2221818009085774639}
   - component: {fileID: 8495706650310381090}
   - component: {fileID: 3423022338156088498}
   - component: {fileID: -5237936051337415146}
@@ -1428,6 +1424,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 100
+  preventDeath: 0
   invincibilityDuration: 0.1
   enableDamageDebugLog: 1
   includePlayerDamageInDebugLog: 0
@@ -1710,12 +1707,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSurvivalController
   playerHealth: {fileID: 2681148601091786327}
   maxFood: 100
-  maxWater: 100
   startWithFullValues: 0
   startingFood: 100
-  startingWater: 100
   foodDecreasePerMinute: 1.67
-  waterDecreasePerMinute: 5
   warningThreshold: 0.6
   lowThreshold: 0.3
   criticalThreshold: 0.1
@@ -1725,30 +1719,6 @@ MonoBehaviour:
   enableDamageAtZero: 0
   emptyDamageInterval: 5
   foodEmptyDamage: 0
-  waterEmptyDamage: 0
---- !u!114 &3654925758163817857
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6641261635897217815}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 00c8175ec62d57441aacd186f188b137, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WaterEnemyVisibilityController
-  survivalController: {fileID: 1484419611754063742}
-  enemyLayer:
-    serializedVersion: 2
-    m_Bits: 2048
-  lowWaterVisibilityDistance: 14
-  criticalWaterVisibilityDistance: 8
-  emptyWaterVisibilityDistance: 4
-  fadeInDistance: 4
-  fadeSpeed: 5
-  refreshInterval: 0.5
-  showVisibilityRangeGizmo: 1
 --- !u!114 &2177830321353433869
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1791,63 +1761,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &2629674874419213332
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6641261635897217815}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 14ebea6cbd0aa154e817092989052639, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerSanityController
-  playerHealth: {fileID: 2681148601091786327}
-  maxSanity: 100
-  startWithFullSanity: 0
-  startingSanity: 100
-  decreaseOverTime: 1
-  sanityDecreasePerMinute: 5
-  warningThreshold: 0.7
-  lowThreshold: 0.4
-  criticalThreshold: 0.15
---- !u!114 &6708094597720075152
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6641261635897217815}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ab8df015f27b8564a8e02bdc7ba076a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RopeClimbController
-  playerMove: {fileID: 1055887331551840538}
-  playerRigidbody: {fileID: 2176403364774730449}
-  playerBodyCollider: {fileID: 3613988157345933330}
-  equipmentVisualController: {fileID: 3441318303056482534}
-  stoneThrower: {fileID: 8493051125357147361}
-  playerAnimator: {fileID: 624081966487689268}
-  climbingBoolName: 
-  climbUpKey: 119
-  climbDownKey: 115
-  requireVerticalKeyToStart: 1
-  climbSpeed: 2.5
-  exitThreshold: 0.06
-  horizontalSnapSpeed: 18
-  jumpOffKey: 32
-  useHorizontalInputForJumpOff: 1
-  jumpOffHorizontalPower: 6
-  jumpOffVerticalPower: 9
-  jumpOffHorizontalOffset: 0.12
-  jumpOffControlLockDuration: 0.12
-  disablePlayerBodyColliderWhileClimbing: 1
-  regrabDelayAfterExit: 0.35
-  lockWeaponControlsWhileClimbing: 1
-  disableStoneThrowWhileClimbing: 1
-  showDebugLogs: 0
 --- !u!114 &4008555806758548720
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1885,7 +1798,6 @@ MonoBehaviour:
   playerBodyCollider: {fileID: 3613988157345933330}
   equipmentVisualController: {fileID: 3441318303056482534}
   stoneThrower: {fileID: 8493051125357147361}
-  ropeClimbController: {fileID: 6708094597720075152}
   playerHealth: {fileID: 2681148601091786327}
   playerAnimator: {fileID: 624081966487689268}
   wallClimbingBoolName: 
@@ -1988,16 +1900,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6afaba96561e51c4392e2ae83875a78e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TorchController
-  sanityController: {fileID: 2629674874419213332}
   playerHealth: {fileID: 2681148601091786327}
   campModeController: {fileID: 0}
   maximumTorch: 100
   startingTorch: 100
   decreasePerSecond: 0.8
-  sanityDrainDelay: 1
-  sanityDrainPerSecond: 0.2
   pauseDecreaseWhilePlayerIsDead: 1
   pauseDecreaseWhileCamping: 1
+  refillOnSceneEntry: 1
   persistBetweenScenes: 0
   showDebugLogs: 0
 --- !u!114 &8216126741569414212
@@ -2014,7 +1924,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStatusSaveBridge
   characterHealth: {fileID: 2681148601091786327}
   survivalController: {fileID: 1484419611754063742}
-  sanityController: {fileID: 2629674874419213332}
   statusConditionController: {fileID: 8659391753788018212}
   torchController: {fileID: 5434254533848271883}
   restoreOnStart: 1
@@ -2040,7 +1949,6 @@ MonoBehaviour:
   playerHealth: {fileID: 2681148601091786327}
   bodyCollider: {fileID: 3613988157345933330}
   wallClimbController: {fileID: 9140815255896050091}
-  ropeClimbController: {fileID: 6708094597720075152}
   proneKey: 304
   allowRightAlt: 1
   proneMoveSpeedMultiplier: 0.706
@@ -2066,105 +1974,6 @@ MonoBehaviour:
   - {fileID: 0}
   showDebugLogs: 0
   showDetailedDiagnostics: 0
---- !u!114 &2221818009085774639
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6641261635897217815}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 437698e6e2e928648a0a8b7553b1b1b9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerRopePullController
-  playerRigidbody: {fileID: 2176403364774730449}
-  playerMove: {fileID: 1055887331551840538}
-  playerHealth: {fileID: 2681148601091786327}
-  equipmentVisualController: {fileID: 3441318303056482534}
-  stoneThrower: {fileID: 8493051125357147361}
-  proneController: {fileID: 1003010323677137009}
-  ropeClimbController: {fileID: 6708094597720075152}
-  wallClimbController: {fileID: 9140815255896050091}
-  playerRopeHoldPoint: {fileID: 480795652783764080}
-  fallbackHoldOffset: {x: 0, y: 0.45}
-  weaponModeKey: 49
-  ropeModeKey: 50
-  interactKey: 102
-  shortenKey: 101
-  lengthenKey: 114
-  pullableObjectLayers:
-    serializedVersion: 2
-    m_Bits: 8192
-  interactionRadius: 2
-  minimumRopeLength: 0.8
-  maximumRopeLength: 14
-  initialSlack: 0.35
-  ropeLengthChangeSpeed: 3
-  allowObjectToPullPlayer: 1
-  ropeBreakForce: 0
-  enableCollisionBetweenBodies: 1
-  usePhysicalCollisionRope: 0
-  ropeGroundLayers:
-    serializedVersion: 2
-    m_Bits: 64
-  ropeSegmentLayerName: Rope
-  forceEnableGroundCollisionAtRuntime: 1
-  preferredPhysicalSegmentLength: 0.08
-  minimumPhysicalSegmentCount: 7
-  maximumPhysicalSegmentCount: 40
-  physicalRopeThickness: 0.12
-  physicalSegmentMass: 0.05
-  physicalSegmentGravityScale: 1
-  physicalSegmentLinearDamping: 3
-  physicalSegmentAngularDamping: 1
-  physicalRopeMaterial: {fileID: 0}
-  ignorePhysicalRopeCollisionWithPlayer: 1
-  ignorePhysicalRopeCollisionWithTarget: 1
-  ropeLineRenderer: {fileID: 0}
-  ropeVisualPointCount: 18
-  ropeWidth: 0.06
-  ropeColor: {r: 0.35, g: 0.2, b: 0.08, a: 1}
-  sagMultiplier: 0.75
-  maximumVisualSag: 3
-  visualFollowSpeed: 18
-  ropeSortingLayerName: Ground
-  ropeSortingOrder: 10
-  modeText: {fileID: 0}
-  attachPrompt: "F\uFF1A\u30ED\u30FC\u30D7\u3092\u3064\u306A\u3050"
-  detachPrompt: "F\uFF1A\u5207\u308A\u96E2\u3059"
-  carryableAttachPrompt: "E\uFF1A\u6301\u3064\u3000F\uFF1A\u30ED\u30FC\u30D7\u3092\u3064\u306A\u3050"
-  carryableDetachPrompt: "E\uFF1A\u6301\u3064\u3000F\uFF1A\u5207\u308A\u96E2\u3059"
-  weaponModeLabel: "1\uFF1A\u6B66\u5668\u30E2\u30FC\u30C9\u30002\uFF1A\u30ED\u30FC\u30D7\u30E2\u30FC\u30C9"
-  ropeModeLabel: "\u30ED\u30FC\u30D7\u30E2\u30FC\u30C9\u3000E\uFF1A\u77ED\u304F\u3059\u308B\u3000R\uFF1A\u9577\u304F\u3059\u308B\u30001\uFF1A\u6B66\u5668"
-  panelsThatBlockInput: []
-  detachWhenPlayerDies: 1
-  detachWhenClimbing: 1
-  detachWhenWallClimbing: 0
-  blockRopeModeWhileProne: 1
-  attachSound: {fileID: 8300000, guid: 4be1d121a033aee43b410634bbad483a, type: 3}
-  detachSound: {fileID: 8300000, guid: 1794986046c16ea4388232e43e8e3ea9, type: 3}
-  draggingLoopSound: {fileID: 8300000, guid: 20364a3819febb74389a396ec75ee23f, type: 3}
-  oneShotAudioSource: {fileID: 0}
-  draggingAudioSource: {fileID: 0}
-  attachSoundVolume: 0.9
-  detachSoundVolume: 0.9
-  draggingSoundVolume: 0.75
-  soundSpatialBlend: 0.7
-  dragSurfaceLayers:
-    serializedVersion: 2
-    m_Bits: 64
-  minimumDraggingSpeed: 0.2
-  maximumDraggingSpeed: 4
-  ropeTensionTolerance: 0.15
-  dragSurfaceCheckDistance: 0.12
-  draggingSoundFadeSpeed: 6
-  minimumDraggingPitch: 0.85
-  maximumDraggingPitch: 1.15
-  requireTautRopeForDraggingSound: 1
-  requireSurfaceContactForDraggingSound: 1
-  showDebugLogs: 0
-  showInteractionGizmo: 0
 --- !u!114 &8495706650310381090
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2182,7 +1991,6 @@ MonoBehaviour:
   playerHealth: {fileID: 2681148601091786327}
   equipmentVisualController: {fileID: 3441318303056482534}
   wallClimbController: {fileID: 9140815255896050091}
-  ropePullController: {fileID: 2221818009085774639}
   stoneThrower: {fileID: 8493051125357147361}
   proneController: {fileID: 1003010323677137009}
   playerWeightController: {fileID: 293587376742321391}
@@ -2230,7 +2038,6 @@ MonoBehaviour:
   dropWhenControllerDisabled: 1
   blockPickupWhileProne: 1
   blockPickupWhileWallClimbing: 1
-  blockPickupWhileRopeMode: 1
   playerAnimator: {fileID: 0}
   frontCarryBoolName: 
   backpackBoolName: 
@@ -2351,6 +2158,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerTradeInventoryBridge
   inventoryController: {fileID: 3423022338156088498}
+  usualPlayerInventoryGridUI: {fileID: 0}
   equipmentController: {fileID: -5237936051337415146}
   sessionBridge: {fileID: 7396760112016090575}
 --- !u!114 &6749107279624333898
@@ -2386,11 +2194,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MedicalKitInventory2D
   playerInventory: {fileID: 3423022338156088498}
   fixedSlots:
+  - itemData: {fileID: 11400000, guid: bf573d7b41da84d43b821299255cdeeb, type: 2}
+    amount: 3
   - itemData: {fileID: 11400000, guid: c9fd4e26b48a0ab4995b954c5847b9c7, type: 2}
     amount: 3
-  - itemData: {fileID: 11400000, guid: 0d2dd774c2af1554fb1d5a54475d3883, type: 2}
-    amount: 3
-  - itemData: {fileID: 11400000, guid: 59d3f0fec4f9cde41820b132c33ef8ea, type: 2}
+  - itemData: {fileID: 11400000, guid: 02efeecc30065eb41a00acae938f978e, type: 2}
     amount: 3
   maxAmountPerSlot: 3
   npcSlot0Treats: 4

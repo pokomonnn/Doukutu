@@ -582,6 +582,9 @@ MonoBehaviour:
   informationButton: {fileID: 1229530333}
   repairButton: {fileID: 0}
   trashButton: {fileID: 1646697378}
+  emergencyBackButton: {fileID: 0}
+  emergencyTakeOutButtonToHide: {fileID: 0}
+  emergencyMenuUseOnlyForConsumables: 1
   informationPanel: {fileID: 1733046579}
   informationTitleText: {fileID: 765318041}
   informationDescriptionText: {fileID: 585713031}
@@ -806,6 +809,8 @@ MonoBehaviour:
   playerGridUI: {fileID: 1180549794}
   itemBoxGridUI: {fileID: 933644580}
   playerInventoryController: {fileID: 0}
+  enableEmergencyItemMenu: 0
+  emergencyMenuTargetItemBox: {fileID: 0}
   titleText: {fileID: 217631862}
   storageTitleFormat: '{0}'
   shopTitleFormat: "\u30B7\u30E7\u30C3\u30D7\uFF1A{0}"
@@ -967,7 +972,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &86516551
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1489,7 +1494,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &179711332
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1786,6 +1791,14 @@ MonoBehaviour:
   cellSize: 64
   cellSpacing: 2
   cellColor: {r: 0.16, g: 0.16, b: 0.16, a: 1}
+  useExpeditionMedievalTheme: 0
+  medievalCellSprite: {fileID: 0}
+  medievalItemSprite: {fileID: 0}
+  medievalSelectedItemSprite: {fileID: 0}
+  medievalCellTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalItemTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalSelectedTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalStackTextTint: {r: 0.96, g: 0.88, b: 0.68, a: 1}
 --- !u!224 &247341359
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2705,8 +2718,8 @@ MonoBehaviour:
   foodSlider: {fileID: 1512106496}
   foodText: {fileID: 1992041327}
   foodFillImage: {fileID: 0}
-  waterSlider: {fileID: 1706222829}
-  waterText: {fileID: 2143681476}
+  waterSlider: {fileID: 0}
+  waterText: {fileID: 0}
   waterFillImage: {fileID: 0}
   normalColor: {r: 0.25, g: 0.85, b: 0.35, a: 1}
   warningColor: {r: 0.95, g: 0.8, b: 0.2, a: 1}
@@ -2851,7 +2864,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &456318865
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3456,7 +3469,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &490142214
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3539,14 +3552,13 @@ GameObject:
   m_Component:
   - component: {fileID: 506803632}
   - component: {fileID: 506803634}
-  - component: {fileID: 506803633}
   m_Layer: 5
   m_Name: Slider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &506803632
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3568,23 +3580,6 @@ RectTransform:
   m_AnchoredPosition: {x: 316, y: 103.48}
   m_SizeDelta: {x: 160, y: 33.4753}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &506803633
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 506803631}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bcb61739bce564a409e86600f9aba9a8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SanityBarUI
-  sanityController: {fileID: 0}
-  sanitySlider: {fileID: 506803634}
-  sanityText: {fileID: 86516552}
-  showMaxSanity: 1
-  label: SAN
 --- !u!114 &506803634
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3671,6 +3666,14 @@ MonoBehaviour:
   cellSize: 64
   cellSpacing: 2
   cellColor: {r: 0.16, g: 0.16, b: 0.16, a: 1}
+  useExpeditionMedievalTheme: 0
+  medievalCellSprite: {fileID: 0}
+  medievalItemSprite: {fileID: 0}
+  medievalSelectedItemSprite: {fileID: 0}
+  medievalCellTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalItemTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalSelectedTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalStackTextTint: {r: 0.96, g: 0.88, b: 0.68, a: 1}
 --- !u!224 &513392761
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4535,7 +4538,12 @@ MonoBehaviour:
   sellCart: {fileID: 1072597637}
   transactionController: {fileID: 642643246}
   townPlayerInventory: {fileID: 2116477402}
+  gameSessionManager: {fileID: 0}
   merchantPurchaseController: {fileID: 0}
+  unifiedTownTradeScreen: {fileID: 0}
+  useUnifiedTownTrade: 1
+  preferAssignedPlayerGridInventory: 1
+  fallbackToPlayerTradeInventoryBridge: 1
   weaponRepairController: {fileID: 0}
   playerInventoryGridUI: {fileID: 247341358}
   sellCartGridUI: {fileID: 513392760}
@@ -4544,7 +4552,6 @@ MonoBehaviour:
   returnCartItemsWhenClosing: 1
   captureInventoryWhenClosing: 1
   showDebugLogs: 1
-  showQuickSellDiagnostics: 1
 --- !u!114 &642643246
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5960,6 +5967,14 @@ MonoBehaviour:
   cellSize: 64
   cellSpacing: 2
   cellColor: {r: 0.23584908, g: 0.23584908, b: 0.23584908, a: 1}
+  useExpeditionMedievalTheme: 0
+  medievalCellSprite: {fileID: 0}
+  medievalItemSprite: {fileID: 0}
+  medievalSelectedItemSprite: {fileID: 0}
+  medievalCellTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalItemTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalSelectedTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalStackTextTint: {r: 0.96, g: 0.88, b: 0.68, a: 1}
 --- !u!1 &933644578
 GameObject:
   m_ObjectHideFlags: 0
@@ -6014,6 +6029,14 @@ MonoBehaviour:
   cellSize: 64
   cellSpacing: 2
   cellColor: {r: 0.16, g: 0.16, b: 0.16, a: 1}
+  useExpeditionMedievalTheme: 0
+  medievalCellSprite: {fileID: 0}
+  medievalItemSprite: {fileID: 0}
+  medievalSelectedItemSprite: {fileID: 0}
+  medievalCellTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalItemTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalSelectedTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalStackTextTint: {r: 0.96, g: 0.88, b: 0.68, a: 1}
 --- !u!114 &947439438 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2980911334170515147, guid: ad852bc85ff551c469c32be6eb91ca33, type: 3}
@@ -6786,6 +6809,7 @@ MonoBehaviour:
   boxDisplayName: hanbai_yotei
   boxKind: 0
   allowDirectItemTransfer: 1
+  allowDirectEquipToEquipmentSlot: 0
   gridWidth: 8
   gridHeight: 4
   addStartingItemsOnAwake: 0
@@ -7526,6 +7550,14 @@ MonoBehaviour:
   cellSize: 64
   cellSpacing: 2
   cellColor: {r: 0.16, g: 0.16, b: 0.16, a: 1}
+  useExpeditionMedievalTheme: 0
+  medievalCellSprite: {fileID: 0}
+  medievalItemSprite: {fileID: 0}
+  medievalSelectedItemSprite: {fileID: 0}
+  medievalCellTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalItemTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalSelectedTint: {r: 1, g: 1, b: 1, a: 1}
+  medievalStackTextTint: {r: 0.96, g: 0.88, b: 0.68, a: 1}
 --- !u!1 &1184116919
 GameObject:
   m_ObjectHideFlags: 0
@@ -10373,8 +10405,8 @@ MonoBehaviour:
   foodSlider: {fileID: 668072978}
   foodText: {fileID: 1599401708}
   foodFillImage: {fileID: 0}
-  waterSlider: {fileID: 490142215}
-  waterText: {fileID: 456318867}
+  waterSlider: {fileID: 0}
+  waterText: {fileID: 0}
   waterFillImage: {fileID: 0}
   normalColor: {r: 0.25, g: 0.85, b: 0.35, a: 1}
   warningColor: {r: 0.95, g: 0.8, b: 0.2, a: 1}
@@ -11151,7 +11183,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1706222828
 RectTransform:
   m_ObjectHideFlags: 0
@@ -12700,14 +12732,13 @@ GameObject:
   m_Component:
   - component: {fileID: 2104672308}
   - component: {fileID: 2104672310}
-  - component: {fileID: 2104672309}
   m_Layer: 5
   m_Name: Slider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2104672308
 RectTransform:
   m_ObjectHideFlags: 0
@@ -12729,23 +12760,6 @@ RectTransform:
   m_AnchoredPosition: {x: 316, y: 103.48}
   m_SizeDelta: {x: 160, y: 33.4753}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &2104672309
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2104672307}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bcb61739bce564a409e86600f9aba9a8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SanityBarUI
-  sanityController: {fileID: 0}
-  sanitySlider: {fileID: 2104672310}
-  sanityText: {fileID: 179711333}
-  showMaxSanity: 1
-  label: SAN
 --- !u!114 &2104672310
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12830,6 +12844,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownPlayerInventoryController
   inventoryController: {fileID: 2116477405}
+  usualPlayerInventoryGridUI: {fileID: 0}
   equipmentController: {fileID: 2116477404}
   sessionBridge: {fileID: 2116477403}
 --- !u!114 &2116477403
@@ -12870,6 +12885,8 @@ MonoBehaviour:
     gridX: 0
     gridY: 0
     isRotated: 0
+    rotationSteps: 0
+    hasFourWayRotation: 0
     amount: 0
     hasStoredMagazineAmmo: 0
     storedMagazineAmmo: 0
@@ -12883,6 +12900,8 @@ MonoBehaviour:
     gridX: 0
     gridY: 0
     isRotated: 0
+    rotationSteps: 0
+    hasFourWayRotation: 0
     amount: 0
     hasStoredMagazineAmmo: 0
     storedMagazineAmmo: 0
@@ -12955,7 +12974,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2143681474
 RectTransform:
   m_ObjectHideFlags: 0
@@ -13172,6 +13191,7 @@ MonoBehaviour:
   pawnShopUIController: {fileID: 642643245}
   rewardInventoryController: {fileID: 2116477405}
   gameSessionManager: {fileID: 611929847}
+  storyProgressManager: {fileID: 0}
   historyManager: {fileID: 611929850}
   facilityUpgradeManager: {fileID: 1262383652}
   portraitCanvasGroup: {fileID: 0}

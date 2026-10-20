@@ -1,0 +1,72 @@
+クエスト配置見本（本編の配置は変更していません）
+
+開くシーン: Assets/Scenes/QuestPlacementCatalog.unity
+Sceneビューで2Dを選択し、Hierarchyの各区画／配置単位を選択してFで寄ってください。
+確認シーンは静的な見本です。セーブへの干渉を避けるため、見本インスタンスの動作スクリプトと物理を停止しています。
+本編で使用する場合は Project の Assets/Prefabs/StoryPlacement にあるプレハブを使用してください。
+確認シーンのインスタンスを直接コピーすると、停止したスクリプトや確認用マテリアルも引き継ぐため、配置用にはProject側のプレハブを使ってください。
+見た目は現在の素材を引き継いでいます。フィンなど元から仮表示の対象について、新しいキャラクター画像は制作していません。
+Townは既存の町長・執事・後日談ボタン、ダンジョンはEキーの会話／調査地点です。
+本編には同じ対象が既にあります。追加で置くと二重になるため、通常は本編の既存対象を移動してください。
+プレハブで置換する場合は既存対象を無効化し、MissionManager2DのcompassTargetを新しい対象へ付け替えてください。
+TownプレハブにはCanvasを含みます。TownConversationControllerは既存シーンのものを使います。
+ダンジョンには既存プレイヤー、会話UI、MissionManager、進行・セーブの仕組みが必要です。
+進行処理は本編のシーン名を判定します。確認シーンや別名シーンでクエストは進行しません。
+Stage1はフィンとバルドを同じプレハブに保持しています。個別に複製せず子の配置単位を動かしてください。
+Stage4には庭の会話切り替え用StoryCampaignSceneを保持しています。
+Stage4で置換する場合、既存StoryCampaignSceneのgardenActorも新しい庭のActorに付け替え、会話切り替えを担当するStoryCampaignSceneは一つだけ有効にしてください。
+配置単位ごと動かすとラベル・交渉範囲も一緒に動きます。地形に合わせた高さ調整は本編側で必要です。
+アイテムは元の会話処理で取得します。下記ItemDataは別の拾得物として重ねて配置しないでください。
+救急キットは既存のプレイヤー所持品を使用します。治療所の薬は追加していません。
+
+■ Town_受付 / 配置先 Assets/Scenes/Town_Main.unity
+町長: S1M01・S2M01・S3M01の受注／報告、S2S02の入町許可。執事: 物語の補足。後日談: 結末後。
+
+■ Stage1_日誌とフィンと設計図 / 配置先 Assets/Scenes/stage/stage1.unity
+  S1S01 / バルド（受注・報告） / 対象 StoryHub_Baldo / 入手ItemData: なし（会話・フラグ条件）
+  S1S03 / グレン（受注・報告） / 対象 StoryHub_Glen / 入手ItemData: なし（会話・フラグ条件）
+  S1S01 / ロアン（受注のみ） / 対象 StoryHub_Roan / 入手ItemData: なし（会話・フラグ条件）
+  S1S03 / 資料室の設計図 / 対象 Story_blueprint / 入手ItemData: Assets/Resources/StoryCampaign/Item_blueprint.asset
+  S1M01 / 古い図書室 / 対象 Story_diary / 入手ItemData: なし（会話・フラグ条件）
+  S1S01 / 毒に倒れたフィン（救急キットで治療） / 対象 Story_finn / 入手ItemData: なし（会話・フラグ条件）
+
+■ Stage2_昇降路と補給と水路 / 配置先 Assets/Scenes/Doukutu_2.unity
+  S2S02 / バルド（受注・報告） / 対象 StoryHub_Baldo / 入手ItemData: なし（会話・フラグ条件）
+  S2S03 / グレン（受注・報告） / 対象 StoryHub_Glen / 入手ItemData: なし（会話・フラグ条件）
+  S2S01 / ロアン（受注・報告） / 対象 StoryHub_Roan / 入手ItemData: なし（会話・フラグ条件）
+  S2S01 / 旧配給所の代替物資 / 対象 Story_alternative / 入手ItemData: Assets/Resources/StoryCampaign/Item_original.asset
+  S2S03 / 水車の軸受け / 対象 Story_bearing / 入手ItemData: Assets/Resources/StoryCampaign/Item_bearing.asset
+  S2S03 / 予備の歯車 / 対象 Story_gear / 入手ItemData: Assets/Resources/StoryCampaign/Item_gear.asset
+  S2S02 / 倉庫の搬入記録 / 対象 Story_ledger / 入手ItemData: なし（会話・フラグ条件）
+  S2M01 / 機械室の記録箱 / 対象 Story_machine / 入手ItemData: なし（会話・フラグ条件）
+  S2S01 / 奪われた補給箱 / 対象 Story_original / 入手ItemData: Assets/Resources/StoryCampaign/Item_original.asset
+  S2S03 / 配管の弁 / 対象 Story_valve / 入手ItemData: Assets/Resources/StoryCampaign/Item_valve.asset
+  S2S03 / 修理済みの水門 / 対象 Story_water / 入手ItemData: なし（会話・フラグ条件）
+
+■ Stage3_巡礼路と停戦と交易 / 配置先 Assets/Scenes/Doukutu_3.unity
+  S3S02 / バルド（受注・報告） / 対象 StoryHub_Baldo / 入手ItemData: なし（会話・フラグ条件）
+  S3S03 / グレン（受注・報告） / 対象 StoryHub_Glen / 入手ItemData: なし（会話・フラグ条件）
+  S3S01 / ロアン（受注・報告） / 対象 StoryHub_Roan / 入手ItemData: なし（会話・フラグ条件）
+  S3S03 / 古城の修繕台帳 / 対象 Story_castleLedger / 入手ItemData: なし（会話・フラグ条件）
+  S3M01 / 巡礼路の経路図 / 対象 Story_map / 入手ItemData: なし（会話・フラグ条件）
+  S3S01 / 裏方用の通路 / 対象 Story_route / 入手ItemData: なし（会話・フラグ条件）
+  S3S03 / 回廊の構造調査 / 対象 Story_structure / 入手ItemData: なし（会話・フラグ条件）
+  S3S02 / 地上への交易路 / 対象 Story_trade / 入手ItemData: なし（会話・フラグ条件）
+
+■ Stage4_庭と結末 / 配置先 Assets/Scenes/Doukutu_4.unity
+  S4M01 / 庭の貴族と話す / 対象 Story_garden / 入手ItemData: なし（会話・フラグ条件）
+
+
+■ クエスト名の索引（4メイン / 8サブ）
+S1M01 / 消えた遠征隊の足跡
+S1S01 / 毒に倒れたフィン
+S1S03 / 古城の設計図
+S2M01 / 封鎖された昇降路
+S2S01 / 奪われた補給物資
+S2S02 / 新たな稼ぎ口
+S2S03 / 止まった水路
+S3M01 / 失われた巡礼路
+S3S01 / 争いの終わる場所
+S3S02 / 失われた交易路
+S3S03 / 眠れる古城
+S4M01 / 消えた貴族

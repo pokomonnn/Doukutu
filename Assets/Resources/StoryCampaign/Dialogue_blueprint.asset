@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33ea86acbcf5364d97ad2501b8af980, type: 3}
+  m_Name: Dialogue_blueprint
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueData2D
+  dialogueId: story_blueprint
+  displayName: "\u8CC7\u6599\u5BA4\u306E\u8A2D\u8A08\u56F3"
+  startNodeId: start
+  nodes:
+  - id: start
+    speakerName: 
+    body: "\u8CC7\u6599\u5BA4\u306E\u8A2D\u8A08\u56F3"
+    onEnterEventId: 
+    nextNodeId: 
+    choices:
+    - label: "\u56DE\u53CE\u3059\u308B"
+      nextNodeId: line0
+      eventId: step/blueprint
+      conditions:
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S1S03_Completed
+    - label: "\u4ECA\u306F\u3084\u3081\u3066\u304A\u304F"
+      nextNodeId: 
+      eventId: 
+      conditions: []
+    nextRoutes: []
+  - id: line0
+    speakerName: 
+    body: "\u300C\u53E4\u57CE\u306E\u8A2D\u8A08\u56F3\u300D\u3092\u5165\u624B\u3057\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: 
+    choices: []
+    nextRoutes: []
+  startRoutes: []
+  actions:
+  - eventId: step/blueprint
+    kind: 5
+    missionIndex: 0
+    item: {fileID: 0}
+    amount: 1
+    oncePerRuntime: 0

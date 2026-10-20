@@ -47,7 +47,6 @@ MonoBehaviour:
   canDiscard: 1
   healAmount: 5
   foodRestoreAmount: 0
-  waterRestoreAmount: 10
   torchRestoreAmount: 0
   curedConditions: 4
   slowdownDuration: 3
@@ -59,8 +58,6 @@ MonoBehaviour:
   weightLimitBonusKg: 0
   rescueCarrySpeedMultiplier: 1
   foodDrainMultiplier: 1
-  sanityRecovery: 12
-  waterLoss: 6
   drunkDurationSeconds: 45
   drunkMoveSpeedMultiplier: 0.8
   references:

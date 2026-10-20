@@ -24,23 +24,6 @@ public class GunShooter : MonoBehaviour
     [SerializeField]
     private PlayerWeightController playerWeightController;
 
-    [Header("SAN値による射撃精度")]
-    [Tooltip("未設定ならPlayerから自動取得します")]
-    [SerializeField]
-    private PlayerSanityController playerSanityController;
-
-    [Tooltip("このSAN割合を下回ると、弾がランダムにブレ始めます")]
-    [SerializeField, Range(0f, 1f)]
-    private float accuracyLossStartSanityPercent = 0.7f;
-
-    [Tooltip("SAN値が0の時に、左右どちらかへ最大何度ブレるか")]
-    [SerializeField, Min(0f)]
-    private float maxSpreadAngleAtZeroSanity = 12f;
-
-    [Tooltip("オフならSAN値に関係なく通常どおり真っすぐ飛びます")]
-    [SerializeField]
-    private bool useSanityAccuracyPenalty = true;
-
     [Header("弾薬連携")]
     [Tooltip("装備時にPlayerEquipmentVisualControllerから設定されます。Prefab側では未設定でOKです。")]
     [SerializeField] private WeaponItemData weaponItemData;
@@ -440,7 +423,7 @@ public class GunShooter : MonoBehaviour
             EmitCasing();
         }
 
-        // SAN値・低耐久による照準ブレは1回の射撃につき1回決める。
+        // 低耐久による照準ブレは1回の射撃につき1回決める。
         // ショットガンの各Pelletは、この中心方向からさらに散弾角度を加える。
         Vector2 shotCenterDirection = GetShotDirection();
 
@@ -668,29 +651,7 @@ public class GunShooter : MonoBehaviour
         Vector2 baseDirection = muzzlePoint.right.normalized;
         float totalAngleOffset = 0f;
 
-        // SAN値によるブレ
-        if (useSanityAccuracyPenalty &&
-            maxSpreadAngleAtZeroSanity > 0f &&
-            FindPlayerSanityController())
-        {
-            float sanityPercent = playerSanityController.SanityPercent;
-
-            if (sanityPercent < accuracyLossStartSanityPercent)
-            {
-                float spreadStrength = Mathf.InverseLerp(
-                    accuracyLossStartSanityPercent,
-                    0f,
-                    sanityPercent
-                );
-
-                totalAngleOffset += UnityEngine.Random.Range(
-                    -maxSpreadAngleAtZeroSanity,
-                    maxSpreadAngleAtZeroSanity
-                ) * spreadStrength;
-            }
-        }
-
-        // 武器の低耐久によるブレ。SANのブレと加算されます。
+        // 武器の低耐久によるブレ。
         if (weaponItemData != null)
         {
             float durabilitySpread =
@@ -1425,39 +1386,6 @@ public class GunShooter : MonoBehaviour
         return playerWeightController != null;
     }
 
-    private bool FindPlayerSanityController()
-    {
-        if (playerSanityController != null)
-        {
-            return true;
-        }
-
-        playerSanityController =
-            GetComponentInParent<PlayerSanityController>();
-
-        if (playerSanityController != null)
-        {
-            return true;
-        }
-
-        GameObject player =
-            GameObject.FindGameObjectWithTag("Player");
-
-        if (player != null)
-        {
-            playerSanityController =
-                player.GetComponent<PlayerSanityController>();
-        }
-
-        if (playerSanityController == null)
-        {
-            playerSanityController =
-                FindAnyObjectByType<PlayerSanityController>();
-        }
-
-        return playerSanityController != null;
-    }
-
     private void CancelCocking()
     {
         cockingToken++;
@@ -1541,12 +1469,6 @@ public class GunShooter : MonoBehaviour
         currentAmmo = Mathf.Clamp(currentAmmo, 0, magazineSize);
         reloadDuration = Mathf.Max(0f, reloadDuration);
         emptySoundInterval = Mathf.Max(0f, emptySoundInterval);
-
-        accuracyLossStartSanityPercent =
-            Mathf.Clamp01(accuracyLossStartSanityPercent);
-
-        maxSpreadAngleAtZeroSanity =
-            Mathf.Max(0f, maxSpreadAngleAtZeroSanity);
 
         maxDurability = Mathf.Max(1f, maxDurability);
         currentDurability = Mathf.Clamp(

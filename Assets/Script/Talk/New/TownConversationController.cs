@@ -174,6 +174,13 @@ public class TownConversationController : MonoBehaviour
     private void Awake()
     {
         FindReferences();
+        if (dialoguePanel != null) {
+            var click = dialoguePanel.GetComponent<DialogueClickAdvance2D>();
+            if (click == null) click = dialoguePanel.AddComponent<DialogueClickAdvance2D>();
+            click.town = this;
+            var background = dialoguePanel.GetComponent<Image>();
+            if (background != null) background.raycastTarget = true;
+        }
         SetupAudioSource();
         SetupPortraitUI();
         SetupStatusMessageUI();
@@ -303,6 +310,7 @@ public class TownConversationController : MonoBehaviour
             RefreshNextButton();
         }
     }
+    public bool UsesExternalNavigation => externalNavigationMode;
 
     public void AdvanceConversation()
     {
@@ -364,7 +372,7 @@ public class TownConversationController : MonoBehaviour
 
         TownConversationChoice choice = currentBlock.GetChoice(choiceIndex);
 
-        if (choice == null)
+        if (choice == null || !choice.IsAvailable)
         {
             LogWarning($"Choice Index={choiceIndex} が無効です。");
             return;
@@ -383,6 +391,15 @@ public class TownConversationController : MonoBehaviour
 
         switch (choice.Action)
         {
+            case TownConversationChoiceAction.StoryCampaign:
+                if (StoryCampaignRuntime.TryExecute(choice.storyEventId, out string storyMessage))
+                    GoToBlockOrClose(choice.NextBlockId);
+                else
+                {
+                    ShowStatusMessage(storyMessage, true);
+                    SetChoiceButtonsInteractable(true);
+                }
+                break;
             case TownConversationChoiceAction.GoToBlock:
                 GoToBlockOrClose(choice.NextBlockId);
                 break;
@@ -870,7 +887,7 @@ public class TownConversationController : MonoBehaviour
         {
             TownConversationChoice choice = block.GetChoice(i);
 
-            if (choice == null)
+            if (choice == null || !choice.IsAvailable)
             {
                 continue;
             }
@@ -919,7 +936,7 @@ public class TownConversationController : MonoBehaviour
         bool hasChoices = currentBlock.ChoiceCount > 0 &&
             currentPageIndex >= currentBlock.PageCount - 1;
 
-        nextButton.gameObject.SetActive(!hasChoices);
+        nextButton.gameObject.SetActive(false);
 
         if (hasChoices || nextButtonText == null)
         {

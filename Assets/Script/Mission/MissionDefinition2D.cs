@@ -8,7 +8,8 @@ public enum MissionObjectiveType2D
     CollectItem = 0,
     DefeatTargetEnemy = 1,
     DeliverItem = 2,
-    RescueTargetNpc = 3
+    RescueTargetNpc = 3,
+    StoryFlag = 4
 }
 
 /// <summary>
@@ -36,6 +37,20 @@ public class MissionRewardItem
 )]
 public class MissionDefinition2D : ScriptableObject
 {
+    [Header("共通の目標表示（空欄なら従来の進捗表示）")]
+    [SerializeField] private List<MissionObjectiveDisplay2D> displayObjectives = new List<MissionObjectiveDisplay2D>();
+    [SerializeField] private string objectiveFinishFlag;
+    public IReadOnlyList<MissionObjectiveDisplay2D> DisplayObjectives => displayObjectives;
+    public bool HasDisplayObjectives => displayObjectives != null && displayObjectives.Count > 0;
+    public string ObjectiveFinishFlag => objectiveFinishFlag;
+    [SerializeField] private string completionStoryFlag;
+    public string CompletionStoryFlag => completionStoryFlag;
+    [SerializeField] private string activationStoryFlag;
+    public string ActivationStoryFlag => string.IsNullOrEmpty(activationStoryFlag)
+        ? completionStoryFlag?.Replace("_Completed", "_Started") : activationStoryFlag;
+    [Header("ストーリー現地報告報酬（結果画面では付与しません）")]
+    [SerializeField, Min(0)] private int storyMoneyReward;
+    public int StoryMoneyReward => Mathf.Max(0, storyMoneyReward);
     [Header("基本情報")]
     [Tooltip("重複しない管理用IDです。空欄でも動作しますが、設定しておくと分かりやすいです")]
     [SerializeField] private string missionId = "mission_id";

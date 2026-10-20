@@ -252,7 +252,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3655022315032134540}
-  - component: {fileID: 3978038586737380079}
   m_Layer: 0
   m_Name: SAN_EnemyManager
   m_TagString: Untagged
@@ -275,46 +274,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6570139893068160557}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3978038586737380079
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2411528735301235825}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 21f520e24d984a54eb6dea27129d5373, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SanityEnemySpawnController
-  sanityController: {fileID: 0}
-  playerTransform: {fileID: 0}
-  playerHealth: {fileID: 0}
-  normalEnemyPrefabs: []
-  mutantEnemyPrefabs: []
-  spawnPoints: []
-  minimumDistanceFromPlayer: 8
-  normalRule:
-    targetAliveEnemyCount: 2
-    spawnInterval: 3.5
-    mutantSpawnChance: 0
-  warningRule:
-    targetAliveEnemyCount: 3
-    spawnInterval: 3
-    mutantSpawnChance: 0
-  lowRule:
-    targetAliveEnemyCount: 5
-    spawnInterval: 2.2
-    mutantSpawnChance: 0.2
-  criticalRule:
-    targetAliveEnemyCount: 7
-    spawnInterval: 1.6
-    mutantSpawnChance: 0.5
-  emptyRule:
-    targetAliveEnemyCount: 9
-    spawnInterval: 1
-    mutantSpawnChance: 0.8
-  showDebugLogs: 0
 --- !u!1 &3536271277288121173
 GameObject:
   m_ObjectHideFlags: 0
@@ -618,9 +577,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MissionManager2D
   inventoryController: {fileID: 5667034517058536840}
   missions:
-  - mission: {fileID: 11400000, guid: 82eb2ac90f640a846b366dcb88491b0a, type: 2}
-    compassTarget: {fileID: 0}
-    targetEnemy: {fileID: 0}
   - mission: {fileID: 11400000, guid: c4ea86f6399d336479c1f7f15f13c35b, type: 2}
     compassTarget: {fileID: 0}
     targetEnemy: {fileID: 0}
@@ -755,6 +711,8 @@ MonoBehaviour:
     gridX: 0
     gridY: 0
     isRotated: 0
+    rotationSteps: 0
+    hasFourWayRotation: 0
     amount: 0
     hasStoredMagazineAmmo: 0
     storedMagazineAmmo: 0
@@ -768,6 +726,8 @@ MonoBehaviour:
     gridX: 0
     gridY: 0
     isRotated: 0
+    rotationSteps: 0
+    hasFourWayRotation: 0
     amount: 0
     hasStoredMagazineAmmo: 0
     storedMagazineAmmo: 0
@@ -1002,7 +962,6 @@ MonoBehaviour:
   equipmentVisualController: {fileID: 0}
   playerDeathHandler: {fileID: 0}
   playerAnimator: {fileID: 0}
-  sanityController: {fileID: 0}
   survivalController: {fileID: 0}
   cinemachineCamera: {fileID: 0}
   targetCamera: {fileID: 0}
@@ -1022,9 +981,7 @@ MonoBehaviour:
   defaultSleepHours: 8
   returnKey: 103
   sleepKey: 113
-  sanityRestorePerGameHour: 10
   foodDecreasePerGameHour: 1
-  waterDecreasePerGameHour: 2
   sleepSecondsPerGameHour: 0.4
   hideCampPanelWhileSleeping: 1
   sleepTriggerName: 
@@ -1156,8 +1113,6 @@ MonoBehaviour:
     amount: 1
   - itemData: {fileID: 11400000, guid: 7af17f442b5ab2a43a5ed823db488555, type: 2}
     amount: 1
-  - itemData: {fileID: 11400000, guid: 13a90d28bfe6bcf43883722037f8db4f, type: 2}
-    amount: 1
   - itemData: {fileID: 11400000, guid: ea7581793bcc8bb46b4e27ace4109183, type: 2}
     amount: 10
   - itemData: {fileID: 11400000, guid: 4cafeaa215a750049a15e45071443cc6, type: 2}
@@ -1171,8 +1126,6 @@ MonoBehaviour:
   - itemData: {fileID: 11400000, guid: 120790cfccc85af4eb9d25cf4e87adc8, type: 2}
     amount: 1
   - itemData: {fileID: 11400000, guid: 5f8b2e8eaf044864d88d1938f048a651, type: 2}
-    amount: 1
-  - itemData: {fileID: 11400000, guid: 553cedf91c84b5746a1ce9b48754a8f7, type: 2}
     amount: 1
   playerHealth: {fileID: 0}
   playerStatusConditions: {fileID: 0}
@@ -1284,4 +1237,6 @@ MonoBehaviour:
   includePlayerInventoryTreasure: 1
   includeRecoveredItemBoxTreasure: 1
   additionalTreasureItems: []
+  expeditionMoneyItem: {fileID: 0}
+  goldPerMoneyItem: 1
   showDebugLogs: 1

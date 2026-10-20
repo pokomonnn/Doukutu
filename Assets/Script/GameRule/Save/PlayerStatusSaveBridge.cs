@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// PlayerのHP・食料・水分・SAN・状態異常・松明残量と、
+/// PlayerのHP・食料・状態異常・松明残量と、
 /// PlayerStatusSessionStoreを橋渡しします。
 ///
 /// 探索シーンのPlayerへ追加してください。
@@ -17,7 +17,6 @@ public class PlayerStatusSaveBridge : MonoBehaviour
     [SerializeField] private CharacterHealth characterHealth;
 
     [SerializeField] private PlayerSurvivalController survivalController;
-    [SerializeField] private PlayerSanityController sanityController;
     [SerializeField]
     private PlayerStatusConditionController statusConditionController;
     [SerializeField] private TorchController torchController;
@@ -54,7 +53,7 @@ public class PlayerStatusSaveBridge : MonoBehaviour
 
         if (restoreOnStart && PlayerStatusSessionStore.HasData)
         {
-            ReloadFromSession();
+            ReloadFromSession(false);
             return;
         }
 
@@ -107,16 +106,6 @@ public class PlayerStatusSaveBridge : MonoBehaviour
             data.HasSurvival = true;
             data.CurrentFood = survivalController.CurrentFood;
             data.MaximumFoodAtSave = survivalController.MaxFood;
-            data.CurrentWater = survivalController.CurrentWater;
-            data.MaximumWaterAtSave = survivalController.MaxWater;
-            capturedAnything = true;
-        }
-
-        if (sanityController != null)
-        {
-            data.HasSanity = true;
-            data.CurrentSanity = sanityController.CurrentSanity;
-            data.MaximumSanityAtSave = sanityController.MaxSanity;
             capturedAnything = true;
         }
 
@@ -152,7 +141,9 @@ public class PlayerStatusSaveBridge : MonoBehaviour
     /// <summary>
     /// セッションへ保存されているPlayer状態を、現在のPlayerへ反映します。
     /// </summary>
-    public bool ReloadFromSession()
+    public bool ReloadFromSession() => ReloadFromSession(true);
+
+    private bool ReloadFromSession(bool explicitLoad)
     {
         FindReferences();
 
@@ -167,7 +158,7 @@ public class PlayerStatusSaveBridge : MonoBehaviour
 
         bool restoredAnything = false;
 
-        // 食料・水分の回復APIは死亡中に動かないため、HPを先に戻します。
+        // 食料の回復APIは死亡中に動かないため、HPを先に戻します。
         if (data.HasHealth && characterHealth != null)
         {
             int restoredHealth = data.CurrentHealth;
@@ -187,13 +178,6 @@ public class PlayerStatusSaveBridge : MonoBehaviour
         if (data.HasSurvival && survivalController != null)
         {
             SetFoodValue(data.CurrentFood);
-            SetWaterValue(data.CurrentWater);
-            restoredAnything = true;
-        }
-
-        if (data.HasSanity && sanityController != null)
-        {
-            sanityController.SetSanity(data.CurrentSanity);
             restoredAnything = true;
         }
 
@@ -208,7 +192,8 @@ public class PlayerStatusSaveBridge : MonoBehaviour
 
         if (data.HasTorch && torchController != null)
         {
-            torchController.SetTorch(data.CurrentTorch);
+            torchController.SetTorch(!explicitLoad && torchController.RefillOnSceneEntry
+                ? torchController.MaximumTorch : data.CurrentTorch);
             restoredAnything = true;
         }
 
@@ -250,21 +235,6 @@ public class PlayerStatusSaveBridge : MonoBehaviour
         else if (difference < 0f)
         {
             survivalController.DrainFood(-difference);
-        }
-    }
-
-    private void SetWaterValue(float targetValue)
-    {
-        float difference = targetValue -
-            survivalController.CurrentWater;
-
-        if (difference > 0f)
-        {
-            survivalController.RestoreWater(difference);
-        }
-        else if (difference < 0f)
-        {
-            survivalController.DrainWater(-difference);
         }
     }
 
@@ -319,18 +289,6 @@ public class PlayerStatusSaveBridge : MonoBehaviour
                 GetComponentInParent<PlayerSurvivalController>();
         }
 
-        if (sanityController == null)
-        {
-            sanityController =
-                GetComponent<PlayerSanityController>();
-        }
-
-        if (sanityController == null)
-        {
-            sanityController =
-                GetComponentInParent<PlayerSanityController>();
-        }
-
         if (statusConditionController == null)
         {
             statusConditionController =
@@ -365,8 +323,6 @@ public class PlayerStatusSaveBridge : MonoBehaviour
         return
             $"HP={data.CurrentHealth}, " +
             $"Food={data.CurrentFood:0.0}, " +
-            $"Water={data.CurrentWater:0.0}, " +
-            $"SAN={data.CurrentSanity:0.0}, " +
             $"Conditions={data.ActiveStatusConditions}, " +
             $"Torch={data.CurrentTorch:0.0}";
     }

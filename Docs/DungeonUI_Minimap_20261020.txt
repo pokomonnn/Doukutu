@@ -1,0 +1,122 @@
+画像指示に基づく会話UI・追跡目標・ミニマップの変更
+更新日：2026-10-20
+
+■ 反映内容
+・stage1 / Doukutu_2 / Doukutu_3 / Doukutu_4 に右上ミニマップを追加。
+・周辺のGroundレイヤーのCollider2Dを灰色、現在地を水色で表示。
+・追跡目標はミニマップの下へ移動。目標と完了通知の背景を透明化。
+・Town_Mainの追跡目標も背景を透明化。町の施設ボタンを避ける処理は継続。
+・DialoguePresenter2Dの会話を、下部の話者名・下端の本文・右側の選択肢へ変更。
+・会話本文の左端は既存のTownボタンを避けて調整。
+・選択肢は背景なし。ホバー／キーボード選択時は文字色を変更。
+・多い選択肢はマウスホイールでスクロール。キーボード選択も表示範囲に追従。
+・NPCの頭上発言を、共通デザインとNpcSpeechCoordinator2Dの調停へ接続。
+・頭上発言の背景、枠、尻尾を非表示。白い文字へ統一。
+・通常会話中は頭上発言を抑制。フィンの治療／搬送メッセージは独り言より優先。
+・既存の会話アクション、クエストフラグ、救出、報酬、保存形式は継続利用。
+
+■ 主なファイル
+新規：
+Assets/Script/Mission/DungeonMinimap2D.cs
+  地形の取得、現在地、ミニマップの描画。地形はキャッシュし0.2秒間隔で位置を確認。
+Assets/CharacterAI2D/Runtime/DialoguePresentationLayout2D.cs
+  背景なしの会話配置、解像度への追従、選択肢スクロール。
+Assets/Script/GameRule/TextOnlyUIStyle2D.cs
+  日本語フォントの共有マテリアルを書き換えず、文字に影を追加。
+Assets/Editor/DungeonUIInstaller.cs
+  既存5シーンへ設定を反映するEditorコマンド。
+Assets/Editor/DungeonUIVisualChecks.cs
+  会話配置、24件の選択肢、発言の抑制／切替の検証。
+
+変更：
+Assets/Script/Mission/MissionHUDSafeArea2D.cs
+Assets/CharacterAI2D/Runtime/DialoguePresenter2D.cs
+Assets/CharacterAI2D/Runtime/DialogueBattleBarkBubble2D.cs
+Assets/Script/GameRule/NpcSpeechCoordinator2D.cs
+Assets/Script/GameRule/NpcSpeechUnifiedBubbleVisual2D.cs
+Assets/Script/GameRule/StoryFinnDelivery.cs
+Assets/Editor/StoryIntegrationBuilder.Objectives.cs
+Assets/Editor/QuestHUDVisualTests.cs
+Assets/Scenes/Town_Main.unity
+Assets/Scenes/stage/stage1.unity
+Assets/Scenes/Doukutu_2.unity
+Assets/Scenes/Doukutu_3.unity
+Assets/Scenes/Doukutu_4.unity
+
+■ Unity側の設定
+既存シーンへの反映は済んでいるため、追加設定なしでPlayできます。
+ダンジョンの StoryIntegration/QuestTrackingHUD の DungeonMinimap2D で設定：
+・Ground Layers：Ground（レイヤー6）。
+・Cell Size：0.75。大きくすると広い範囲を粗く表示。
+・Display Size：320×228。Canvasの基準解像度に応じて拡縮。
+・Top Inset：42。追跡目標はミニマップの下端から18空けて配置。
+・Font：既存のNoto Sans JP。
+新しい地形はGroundレイヤーとCollider2Dが必要です。
+会話レイアウトはPlay開始時に既存Presenterへ接続されます。
+共通NPC設定の旧背景色・画像・枠の項目は互換性のため残りますが、現在は描画しません。
+
+■ ミニマップの範囲
+地形と現在地に加え、NPC・帰還用エレベーター・追跡目標マーカーに対応しました。
+敵マーカーと探索済み領域の保存はありません。
+追加カメラやライトを使わず、周辺の当たり判定から地形を描きます。
+静的地形をキャッシュするため、実行中に地形を破壊／変更する機能を追加するときは
+DungeonMinimap2D.InvalidateTerrain() を呼んで再取得してください。
+
+■ 確認方法
+1. stage1をPlayし、右上の地形と水色の現在地を確認。移動すると周辺地形がスクロールする。
+2. ミッションを追跡し、目標がミニマップの下に背景なしで表示されることを確認。
+3. バルドと会話。名前が下部、本文が下端、選択肢が右側に表示されることを確認。
+4. 選択肢のホバー／選択で色が変わり、既存の受注・報告が実行できることを確認。
+5. フィンを解毒剤で治療。背景なしの「ありがとう、助かったよ」を確認。
+6. フィンをバルドへ搬送。搬送通知と独り言が重ならないことを確認。
+7. インベントリ／ミッション一覧／通常会話中は右上HUDが隠れ、閉じると戻ることを確認。
+8. Gameビューで1280×720、1920×1080、2560×1440、2560×1080、1024×768を切り替える。
+
+■ 検証
+UnityのPlayモード自動検証で、全12クエスト、フィンの治療・搬送、
+所持品満杯、報酬、セーブデータ往復、エンディングと重複実行防止のテストが成功。
+ログ：Logs/DungeonUIStoryRegression.log
+UIの自動検証では5解像度の画面内配置、折り返し、ミニマップと目標の非重複、
+24件の選択肢のスクロール、選択処理、通常会話中の発言抑制、発言切替を確認。
+最終UI検証ログ：Logs/DungeonUIVisualVerified3.log（PASS）
+横長画面のTownボタン回避と背景なしのNPC発言は保存画像でも目視確認済み。
+スクリーンショット：Logs/QuestHUD/
+全ダンジョンの実際の徒歩通しプレイとゲームパッド操作は未実施。
+既存のItemBox Persistent Id重複などの警告は今回のUI変更とは別の未解消事項。
+
+■ 追加：NPC・帰還口・目的地マーカー
+・青い●：NPC（ストーリーの依頼人、フィン、庭の貴族、既存の救出NPC／会話NPC）。
+・緑の■：帰還用エレベーター。範囲外では緑の方向矢印。
+・金色の◇：追跡中の現在目標。範囲外では金色の方向矢印。
+・別エリアの目標はエリア名を表示し、現在地に最も近い帰還口を案内。
+  これは直線距離による案内で、地形を考慮した経路探索ではありません。
+・NPCは範囲内だけ表示。死亡・無効化されたNPCは非表示。
+・マーカーはプレイヤーが停止中でも0.2秒間隔で更新。出現NPCは1秒間隔で再検出。
+・フィン：発見／治療はフィン、搬送／報告はバルドへ切り替わる。
+・複数の入手先がある補給物資は、両方の候補地点を表示。
+・前提クエストの完了が必要な目標は、その前提クエストの現在の目標へ案内。
+・クエスト切替／完了／ロード時も既存の進行フラグから目的地を再判定。
+・会話やメニューで右上HUDが隠れている間は、マーカーも一緒に隠れます。
+
+目的地は各MissionDefinition2DのDisplay Objectives内に追加した項目で設定：
+Minimap Scene：目的地のシーン名。
+Minimap Point Ids：シーン内のStoryInteractionPoint.stepId。複数指定可。
+Minimap Follow Mission Id：前提クエストへ案内する場合のMission ID。
+位置座標を保存しないため、既存NPCや調査地点を移動してもマーカーが追従します。
+地形やNPCの配置、クエストの進行フラグ、セーブ形式は変更していません。
+
+追加スクリプト：
+Assets/Script/Mission/DungeonMinimapMarkers2D.cs（マーカー描画）
+Assets/Script/Mission/MissionMinimapDestination2D.cs（現在目標から目的地を解決）
+Assets/Editor/MissionMinimapDataInstaller.cs（12クエストの目的地設定）
+Assets/Editor/DungeonMinimapMarkerTests.cs（配置と切替の検証）
+既存DungeonMinimap2D、MissionObjectiveDisplay2D、データ生成処理、
+12件のMissionアセット、QuestHUDVisualTestsも拡張。
+
+追加分の検証結果：
+Logs/MinimapMarkersInstall.log：12クエストの目的地と4ダンジョンの配置照合 PASS。
+Logs/MinimapMarkersVisual2.log：静止中のフィン→バルド切替、追跡解除、
+保存状態復元後の町への帰還口案内、前提クエスト解決、5解像度のUI検証 PASS。
+Logs/MinimapMarkersStoryRegression.log：全12クエスト・救出・報酬・セーブ往復 PASS。
+1024×768と1920×1080の保存画像でもNPCマーカー・範囲外矢印・凡例を確認。
+手動の全ステージ通しプレイは未実施。

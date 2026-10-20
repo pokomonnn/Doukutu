@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33ea86acbcf5364d97ad2501b8af980, type: 3}
+  m_Name: Dialogue_valve
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueData2D
+  dialogueId: story_valve
+  displayName: "\u914D\u7BA1\u306E\u5F01"
+  startNodeId: start
+  nodes:
+  - id: start
+    speakerName: 
+    body: "\u914D\u7BA1\u306E\u5F01"
+    onEnterEventId: 
+    nextNodeId: 
+    choices:
+    - label: "\u56DE\u53CE\u3059\u308B"
+      nextNodeId: line0
+      eventId: step/valve
+      conditions:
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S2S03_Completed
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S2S03_Installed
+    - label: "\u4ECA\u306F\u3084\u3081\u3066\u304A\u304F"
+      nextNodeId: 
+      eventId: 
+      conditions: []
+    nextRoutes: []
+  - id: line0
+    speakerName: 
+    body: "\u3010\u6B62\u6C34\u6813\u3011\u3092\u5165\u624B\u3057\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: 
+    choices: []
+    nextRoutes: []
+  startRoutes: []
+  actions:
+  - eventId: step/valve
+    kind: 5
+    missionIndex: 0
+    item: {fileID: 0}
+    amount: 1
+    oncePerRuntime: 0

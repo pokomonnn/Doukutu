@@ -1642,17 +1642,6 @@ Animator:
   m_CorrespondingSourceObject: {fileID: 624081966487689268, guid: e4f9170dfca79a545b540dbb952f3975, type: 3}
   m_PrefabInstance: {fileID: 8519354185895446000}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &76742666 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2629674874419213332, guid: e4f9170dfca79a545b540dbb952f3975, type: 3}
-  m_PrefabInstance: {fileID: 8519354185895446000}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 14ebea6cbd0aa154e817092989052639, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerSanityController
 --- !u!114 &76742669 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 9140815255896050091, guid: e4f9170dfca79a545b540dbb952f3975, type: 3}
@@ -8161,7 +8150,6 @@ MonoBehaviour:
   hitReaction: {fileID: 0}
   dropTable: {fileID: 0}
   rangedAttack: {fileID: 0}
-  sanityAura: {fileID: 0}
   additionalBehavioursToDisable: []
   deathTriggerName: 
   enableDeathSlide: 1
@@ -8280,6 +8268,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 100
+  preventDeath: 0
   invincibilityDuration: 0.5
   enableDamageDebugLog: 1
   includePlayerDamageInDebugLog: 0
@@ -132575,6 +132564,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 20
+  preventDeath: 0
   invincibilityDuration: 0.5
   enableDamageDebugLog: 1
   includePlayerDamageInDebugLog: 0
@@ -132636,7 +132626,6 @@ MonoBehaviour:
   enemyRigidbody: {fileID: 742504661}
   enemyChaser: {fileID: 742504659}
   rangedAttack: {fileID: 0}
-  sanityAura: {fileID: 0}
   isMovingBoolName: IsMoving
   hasTargetBoolName: HasTarget
   moveSpeedFloatName: MoveSpeed
@@ -132722,7 +132711,6 @@ MonoBehaviour:
   hitReaction: {fileID: 742504657}
   dropTable: {fileID: 742504656}
   rangedAttack: {fileID: 0}
-  sanityAura: {fileID: 0}
   additionalBehavioursToDisable: []
   deathTriggerName: 
   enableDeathSlide: 1
@@ -146056,7 +146044,6 @@ GameObject:
   - component: {fileID: 1693494737}
   - component: {fileID: 1693494741}
   - component: {fileID: 1693494740}
-  - component: {fileID: 1693494738}
   - component: {fileID: 1693494742}
   m_Layer: 13
   m_Name: TestBox
@@ -146081,27 +146068,6 @@ Transform:
   - {fileID: 1316799776}
   m_Father: {fileID: 951164214}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}
---- !u!114 &1693494738
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1693494736}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1146ee63c06a1a34a9438f7938219f2d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RopePullTarget
-  targetRigidbody: {fileID: 1693494740}
-  carryableObject: {fileID: 0}
-  ropeAttachmentPoint: {fileID: 1316799776}
-  interactionPoint: {fileID: 0}
-  interactionText: {fileID: 8709476586407377091}
-  applyPromptLocalPosition: 1
-  promptLocalPosition: {x: 0, y: 1.1, z: 0}
-  forceDynamicBodyOnAwake: 1
-  showDebugLogs: 0
 --- !u!50 &1693494740
 Rigidbody2D:
   serializedVersion: 5
@@ -148012,11 +147978,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6906430139353736426, guid: 8c97d3c818fb9e74baa765fe694f198d, type: 3}
       propertyPath: startingItems.Array.size
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6906430139353736426, guid: 8c97d3c818fb9e74baa765fe694f198d, type: 3}
       propertyPath: startingItems.Array.data[0].amount
-      value: 3
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6906430139353736426, guid: 8c97d3c818fb9e74baa765fe694f198d, type: 3}
       propertyPath: startingItems.Array.data[1].amount
@@ -148025,7 +147991,7 @@ PrefabInstance:
     - target: {fileID: 6906430139353736426, guid: 8c97d3c818fb9e74baa765fe694f198d, type: 3}
       propertyPath: startingItems.Array.data[0].itemData
       value: 
-      objectReference: {fileID: 11400000, guid: 59d3f0fec4f9cde41820b132c33ef8ea, type: 2}
+      objectReference: {fileID: 11400000, guid: 3205782f1c2790e40ae9c3c4bbd8c445, type: 2}
     - target: {fileID: 6906430139353736426, guid: 8c97d3c818fb9e74baa765fe694f198d, type: 3}
       propertyPath: startingItems.Array.data[1].itemData
       value: 
@@ -407747,7 +407713,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3436935188747125334}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -409473,7 +409439,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1909696056839784969}
-  - component: {fileID: 2237567840741540714}
   m_Layer: 0
   m_Name: SAN_EnemyManager
   m_TagString: Untagged
@@ -409649,23 +409614,6 @@ RectTransform:
   m_AnchoredPosition: {x: -634, y: 348}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &765712764702874145
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3240773940657437829}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bcb61739bce564a409e86600f9aba9a8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SanityBarUI
-  sanityController: {fileID: 76742666}
-  sanitySlider: {fileID: 647172611152689266}
-  sanityText: {fileID: 6317049787026327149}
-  showMaxSanity: 1
-  label: SAN
 --- !u!114 &777092014089326417
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -410771,23 +410719,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1088153279907356724
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1294413744250331128}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bcb61739bce564a409e86600f9aba9a8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SanityBarUI
-  sanityController: {fileID: 76742666}
-  sanitySlider: {fileID: 3644341882311072804}
-  sanityText: {fileID: 8375459426091351974}
-  showMaxSanity: 1
-  label: SAN
 --- !u!1 &1094945829700942812
 GameObject:
   m_ObjectHideFlags: 0
@@ -411109,9 +411040,6 @@ MonoBehaviour:
   - mission: {fileID: 11400000, guid: c4ea86f6399d336479c1f7f15f13c35b, type: 2}
     compassTarget: {fileID: 6394677455136154941, guid: 3f8bd33432172b6488fbe3e8d4c52a70, type: 3}
     targetEnemy: {fileID: 0}
-  - mission: {fileID: 11400000, guid: 82eb2ac90f640a846b366dcb88491b0a, type: 2}
-    compassTarget: {fileID: 0}
-    targetEnemy: {fileID: 0}
   - mission: {fileID: 11400000, guid: e4c4c9e4b9a85514086ba143d21ce4f4, type: 2}
     compassTarget: {fileID: 0}
     targetEnemy: {fileID: 0}
@@ -411379,14 +411307,13 @@ GameObject:
   m_Component:
   - component: {fileID: 3944454402484850149}
   - component: {fileID: 3644341882311072804}
-  - component: {fileID: 1088153279907356724}
   m_Layer: 5
   m_Name: Slider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1308404157743624821
 RectTransform:
   m_ObjectHideFlags: 0
@@ -411809,7 +411736,6 @@ MonoBehaviour:
   equipmentVisualController: {fileID: 76742657}
   playerDeathHandler: {fileID: 76742654}
   playerAnimator: {fileID: 76742664}
-  sanityController: {fileID: 76742666}
   survivalController: {fileID: 76742662}
   cinemachineCamera: {fileID: 1962956900}
   targetCamera: {fileID: 519420031}
@@ -411829,9 +411755,7 @@ MonoBehaviour:
   defaultSleepHours: 8
   returnKey: 103
   sleepKey: 113
-  sanityRestorePerGameHour: 10
   foodDecreasePerGameHour: 1
-  waterDecreasePerGameHour: 2
   sleepSecondsPerGameHour: 0.4
   hideCampPanelWhileSleeping: 1
   sleepTriggerName: 
@@ -414684,46 +414608,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &2237567840741540714
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 670716968902163956}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 21f520e24d984a54eb6dea27129d5373, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SanityEnemySpawnController
-  sanityController: {fileID: 76742666}
-  playerTransform: {fileID: 76742651}
-  playerHealth: {fileID: 76742653}
-  normalEnemyPrefabs: []
-  mutantEnemyPrefabs: []
-  spawnPoints: []
-  minimumDistanceFromPlayer: 8
-  normalRule:
-    targetAliveEnemyCount: 2
-    spawnInterval: 3.5
-    mutantSpawnChance: 0
-  warningRule:
-    targetAliveEnemyCount: 3
-    spawnInterval: 3
-    mutantSpawnChance: 0
-  lowRule:
-    targetAliveEnemyCount: 5
-    spawnInterval: 2.2
-    mutantSpawnChance: 0.2
-  criticalRule:
-    targetAliveEnemyCount: 7
-    spawnInterval: 1.6
-    mutantSpawnChance: 0.5
-  emptyRule:
-    targetAliveEnemyCount: 9
-    spawnInterval: 1
-    mutantSpawnChance: 0.8
-  showDebugLogs: 0
 --- !u!1 &2243034206881371476
 GameObject:
   m_ObjectHideFlags: 0
@@ -416434,11 +416318,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6906430139353736426, guid: 8c97d3c818fb9e74baa765fe694f198d, type: 3}
       propertyPath: startingItems.Array.size
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6906430139353736426, guid: 8c97d3c818fb9e74baa765fe694f198d, type: 3}
       propertyPath: startingItems.Array.data[0].amount
-      value: 3
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6906430139353736426, guid: 8c97d3c818fb9e74baa765fe694f198d, type: 3}
       propertyPath: startingItems.Array.data[1].amount
@@ -416447,7 +416331,7 @@ PrefabInstance:
     - target: {fileID: 6906430139353736426, guid: 8c97d3c818fb9e74baa765fe694f198d, type: 3}
       propertyPath: startingItems.Array.data[0].itemData
       value: 
-      objectReference: {fileID: 11400000, guid: 59d3f0fec4f9cde41820b132c33ef8ea, type: 2}
+      objectReference: {fileID: 11400000, guid: 3205782f1c2790e40ae9c3c4bbd8c445, type: 2}
     - target: {fileID: 6906430139353736426, guid: 8c97d3c818fb9e74baa765fe694f198d, type: 3}
       propertyPath: startingItems.Array.data[1].itemData
       value: 
@@ -418504,28 +418388,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 548706694165168336}
   m_CullTransparentMesh: 1
---- !u!114 &3153937540363770196
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3436935188747125334}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 11cf877875348094b8219309da6da376, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WaterVignetteUI
-  survivalController: {fileID: 76742662}
-  vignetteImage: {fileID: 117230913015935984}
-  darkenStartWaterPercent: 0.5
-  maxDarknessAlpha: 0.95
-  fadeSpeed: 4
-  createVignetteSpriteAtRuntime: 1
-  innerClearArea: 0.2
-  gradientPower: 0.45
-  textureSize: 254
-  vignetteColor: {r: 0, g: 0, b: 0, a: 1}
 --- !u!222 &3157314988415008225
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -418924,14 +418786,13 @@ GameObject:
   m_Component:
   - component: {fileID: 84638386913075759}
   - component: {fileID: 647172611152689266}
-  - component: {fileID: 765712764702874145}
   m_Layer: 5
   m_Name: Slider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!222 &3241591461849154197
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -419458,14 +419319,13 @@ GameObject:
   - component: {fileID: 3157357609210091364}
   - component: {fileID: 3108511510602975308}
   - component: {fileID: 117230913015935984}
-  - component: {fileID: 3153937540363770196}
   m_Layer: 5
   m_Name: FoodVignetteOverlay
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3439291640209050031
 RectTransform:
   m_ObjectHideFlags: 0
@@ -419739,7 +419599,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &3523272193446400416
 GameObject:
   m_ObjectHideFlags: 0
@@ -422810,7 +422670,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &4347243719291556162
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -426496,7 +426356,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!222 &5485955912235172184
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -426567,9 +426427,6 @@ MonoBehaviour:
   foodSlider: {fileID: 4455864727046766730}
   foodText: {fileID: 2458331674975671506}
   foodFillImage: {fileID: 0}
-  waterSlider: {fileID: 5308184160491580111}
-  waterText: {fileID: 2355693079712606961}
-  waterFillImage: {fileID: 0}
   normalColor: {r: 0.25, g: 0.85, b: 0.35, a: 1}
   warningColor: {r: 0.95, g: 0.8, b: 0.2, a: 1}
   lowColor: {r: 1, g: 0.5, b: 0.15, a: 1}
@@ -426939,7 +426796,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &5616084640565130280
 RectTransform:
   m_ObjectHideFlags: 0
@@ -427695,9 +427552,6 @@ MonoBehaviour:
   foodSlider: {fileID: 9181467824429253956}
   foodText: {fileID: 777092014089326417}
   foodFillImage: {fileID: 0}
-  waterSlider: {fileID: 8050514014948136150}
-  waterText: {fileID: 2428398980735661730}
-  waterFillImage: {fileID: 0}
   normalColor: {r: 0.25, g: 0.85, b: 0.35, a: 1}
   warningColor: {r: 0.95, g: 0.8, b: 0.2, a: 1}
   lowColor: {r: 1, g: 0.5, b: 0.15, a: 1}
@@ -428228,7 +428082,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!222 &6064357388229247400
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -432719,7 +432573,7 @@ RectTransform:
   m_Father: {fileID: 2516796558358891307}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0.578, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 10, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -432779,6 +432633,14 @@ MonoBehaviour:
   collectFormat: '{0} {1} / {2}'
   deliverFormat: "\u7D0D\u54C1  {0}  {1} / {2}"
   defeatFormat: "\u8A0E\u4F10 {0} / {1}"
+  objectiveGroup: {fileID: 0}
+  completionGroup: {fileID: 0}
+  completionText: {fileID: 0}
+  fadeSeconds: 0.3
+  completionHoldSeconds: 2.5
+  audioSource: {fileID: 0}
+  objectiveCompletedSound: {fileID: 0}
+  soundVolume: 0.25
 --- !u!1 &7326162543189174194
 GameObject:
   m_ObjectHideFlags: 0
@@ -433111,8 +432973,6 @@ MonoBehaviour:
   - itemData: {fileID: 11400000, guid: 11c331010ee72424c961567b1df5b508, type: 2}
     amount: 1
   - itemData: {fileID: 11400000, guid: 7af17f442b5ab2a43a5ed823db488555, type: 2}
-    amount: 1
-  - itemData: {fileID: 11400000, guid: 13a90d28bfe6bcf43883722037f8db4f, type: 2}
     amount: 1
   - itemData: {fileID: 11400000, guid: ea7581793bcc8bb46b4e27ace4109183, type: 2}
     amount: 10
@@ -438490,7 +438350,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &8669816203807704928
 GameObject:
   m_ObjectHideFlags: 0
@@ -439334,7 +439194,7 @@ RectTransform:
   m_Father: {fileID: 4832205467930169650}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 3.800003, y: 2}
   m_SizeDelta: {x: 17.3501, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}

@@ -360,12 +360,16 @@ public enum TownConversationChoiceAction
     UpgradeFacility,
 
     // 既存Actionの数値を変えないため、必ず末尾へ追加する。
-    OpenWeaponRepair
+    OpenWeaponRepair,
+    StoryCampaign
 }
 
 [Serializable]
 public class TownConversationChoice
 {
+    public string storyEventId;
+    public List<DialogueCondition2D> storyConditions = new List<DialogueCondition2D>();
+    public bool IsAvailable => DialogueConditions2D.AllMatch(storyConditions, null);
     [Header("表示")]
     [SerializeField] private string choiceText = "選択肢";
 

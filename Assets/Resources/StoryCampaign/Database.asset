@@ -1,0 +1,479 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abbcdafbd75d3964c9d23bfd1b3ce2f4, type: 3}
+  m_Name: Database
+  m_EditorClassIdentifier: Assembly-CSharp::StoryCampaignDatabase
+  quests:
+  - id: S1M01
+    story: {fileID: 11400000, guid: 66be64688be8e424bbbd0b9254ccbc1c, type: 2}
+    mission: {fileID: 11400000, guid: 252e31a511dddbf478d9a8801631a4dc, type: 2}
+  - id: S1S01
+    story: {fileID: 11400000, guid: 8e3685eea41455340bc77423234ab873, type: 2}
+    mission: {fileID: 11400000, guid: 27b2b4ecd01714d46b5901f05edc4efb, type: 2}
+  - id: S1S03
+    story: {fileID: 11400000, guid: 82cc13a9dc2ca08449a007263ca2c791, type: 2}
+    mission: {fileID: 11400000, guid: 388eb08170c1ee643b1a6650c5fd34ee, type: 2}
+  - id: S2M01
+    story: {fileID: 11400000, guid: 2a2c4380790eb9548ac001d4e90ed8ef, type: 2}
+    mission: {fileID: 11400000, guid: 42d4f6562bd4e2b4086f323a7cba00c4, type: 2}
+  - id: S2S01
+    story: {fileID: 11400000, guid: 46ea7f8d22362db47a0bea3d9cae37cc, type: 2}
+    mission: {fileID: 11400000, guid: 4cec5935ccbb2824795f4f30a0bc7d04, type: 2}
+  - id: S2S02
+    story: {fileID: 11400000, guid: 3605205865acc9c418a8306256873139, type: 2}
+    mission: {fileID: 11400000, guid: 66436b761af443846b8bcf6ebd5db623, type: 2}
+  - id: S2S03
+    story: {fileID: 11400000, guid: 0ce5cce939e17c449bcdb49b73692b21, type: 2}
+    mission: {fileID: 11400000, guid: 6f12a9be8d0bd4741bc5ccca29009d82, type: 2}
+  - id: S3M01
+    story: {fileID: 11400000, guid: db3f86dbfdb903249bd194b9b6e52a3a, type: 2}
+    mission: {fileID: 11400000, guid: 07eb35a101f1f4146b13691e33a5491f, type: 2}
+  - id: S3S01
+    story: {fileID: 11400000, guid: 69038547d81884d4296684b478195776, type: 2}
+    mission: {fileID: 11400000, guid: 0303cdfee28df104eaf7f099f0cad135, type: 2}
+  - id: S3S02
+    story: {fileID: 11400000, guid: 77ba9e5ca5e974c43869d2d015ed3bb5, type: 2}
+    mission: {fileID: 11400000, guid: 9e923725022374b42ad92b6075b50c32, type: 2}
+  - id: S3S03
+    story: {fileID: 11400000, guid: 5e26de125466413478f32d9625dc499c, type: 2}
+    mission: {fileID: 11400000, guid: f516443897be14646ac4a486c2baaeed, type: 2}
+  - id: S4M01
+    story: {fileID: 11400000, guid: cb4de1c7730d7bd4cbf03dc32024f13e, type: 2}
+    mission: {fileID: 11400000, guid: 8222e2c577155ef42a39d717d947653d, type: 2}
+  steps:
+  - id: diary
+    quest: S1M01
+    title: "\u53E4\u3044\u56F3\u66F8\u5BA4"
+    stage: 1
+    reward: 0
+    requires: []
+    flags:
+    - S1M01_ClueFound
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 8f9071d65452cc64c904b062c08ec76e, type: 2}
+  - id: report1
+    quest: S1M01
+    title: "\u753A\u9577\u306B\u65E5\u8A8C\u3092\u5831\u544A"
+    stage: 0
+    reward: 100
+    requires:
+    - S1M01_ClueFound
+    flags:
+    - S1M01_Completed
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 98eb3e8f9496fe94dae827f5d3a90e16, type: 2}
+  - id: finn
+    quest: S1S01
+    title: "\u6BD2\u306B\u5012\u308C\u305F\u30D5\u30A3\u30F3\uFF08\u6551\u6025\u30AD\u30C3\u30C8\u3067\u6CBB\u7642\uFF09"
+    stage: 1
+    reward: 0
+    requires: []
+    flags: []
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 7f42e833f9f454947b86337d598e9cf9, type: 2}
+  - id: reportFinn
+    quest: S1S01
+    title: "\u30D0\u30EB\u30C9\u304B\u3089\u30D5\u30A3\u30F3\u6551\u52A9\u306E\u5831\u916C\u3092\u53D7\u3051\u53D6\u308B"
+    stage: 1
+    reward: 100
+    requires:
+    - S1S01_Delivered
+    flags:
+    - S1S01_Completed
+    - PlayerBanditTruce
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 56c89410a770d7047ae1b59c05534298, type: 2}
+  - id: blueprint
+    quest: S1S03
+    title: "\u8CC7\u6599\u5BA4\u306E\u8A2D\u8A08\u56F3"
+    stage: 1
+    reward: 0
+    requires: []
+    flags:
+    - S1S03_BlueprintTaken
+    blockedBy: []
+    grantItem: {fileID: 11400000, guid: 63285f377a146ca418c88370706a1512, type: 2}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 72c2b0b5d777548409322cd64ffaba62, type: 2}
+  - id: reportBlueprint
+    quest: S1S03
+    title: "\u30B0\u30EC\u30F3\u306B\u8A2D\u8A08\u56F3\u3092\u6E21\u3059"
+    stage: 1
+    reward: 100
+    requires:
+    - S1S03_BlueprintTaken
+    flags:
+    - S1S03_Completed
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems:
+    - {fileID: 11400000, guid: 63285f377a146ca418c88370706a1512, type: 2}
+    dialogue: {fileID: 11400000, guid: 5369d23aba07d154aa0c41b85658c198, type: 2}
+  - id: machine
+    quest: S2M01
+    title: "\u6A5F\u68B0\u5BA4\u306E\u8A18\u9332\u7BB1"
+    stage: 2
+    reward: 0
+    requires: []
+    flags:
+    - S2M01_ClueFound
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 25f6f004e68a2dd41a03ba73a3a04f22, type: 2}
+  - id: report2
+    quest: S2M01
+    title: "\u753A\u9577\u306B\u8D77\u52D5\u624B\u9806\u3092\u5831\u544A"
+    stage: 0
+    reward: 100
+    requires:
+    - S2M01_ClueFound
+    flags:
+    - S2M01_Completed
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: ef8be08860d8ba741a0b175fc3f5c914, type: 2}
+  - id: original
+    quest: S2S01
+    title: "\u596A\u308F\u308C\u305F\u88DC\u7D66\u7BB1"
+    stage: 2
+    reward: 0
+    requires: []
+    flags:
+    - S2S01_Goods
+    blockedBy: []
+    grantItem: {fileID: 11400000, guid: 2e5c84d96325946478ff35cc98d3e32e, type: 2}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 19f688f0f15e6bd4c8039ae4f1e0ee5f, type: 2}
+  - id: alternative
+    quest: S2S01
+    title: "\u65E7\u914D\u7D66\u6240\u306E\u4EE3\u66FF\u7269\u8CC7"
+    stage: 2
+    reward: 0
+    requires: []
+    flags:
+    - S2S01_Goods
+    blockedBy: []
+    grantItem: {fileID: 11400000, guid: 2e5c84d96325946478ff35cc98d3e32e, type: 2}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: d2f00459c90c65d46abd48c25488751d, type: 2}
+  - id: reportSupply
+    quest: S2S01
+    title: "\u30ED\u30A2\u30F3\u306B\u88DC\u7D66\u7269\u8CC7\u3092\u6E21\u3059"
+    stage: 2
+    reward: 100
+    requires:
+    - S2S01_Goods
+    flags:
+    - S2S01_Completed
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems:
+    - {fileID: 11400000, guid: 2e5c84d96325946478ff35cc98d3e32e, type: 2}
+    dialogue: {fileID: 11400000, guid: a63739251ad84414d8b8fb1756c044cd, type: 2}
+  - id: ledger
+    quest: S2S02
+    title: "\u5009\u5EAB\u306E\u642C\u5165\u8A18\u9332"
+    stage: 2
+    reward: 0
+    requires: []
+    flags:
+    - S2S02_LedgerFound
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 7fa93820d3ad4af42b747f1c2005a08b, type: 2}
+  - id: permit
+    quest: S2S02
+    title: "\u753A\u9577\u3068\u5165\u753A\u8A31\u53EF\u3092\u4EA4\u6E09"
+    stage: 0
+    reward: 0
+    requires:
+    - S2S02_LedgerFound
+    - PlayerBanditTruce
+    flags:
+    - S2S02_PermitIssued
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: e830ab3eb358bd64fb7457b444390932, type: 2}
+  - id: reportPermit
+    quest: S2S02
+    title: "\u30D0\u30EB\u30C9\u306B\u8A31\u53EF\u8A3C\u3092\u6E21\u3059"
+    stage: 2
+    reward: 100
+    requires:
+    - S2S02_PermitIssued
+    flags:
+    - S2S02_Completed
+    - PlayerBanditFriendly
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 78af33f2539ff0242b6f4e6677e9512c, type: 2}
+  - id: bearing
+    quest: S2S03
+    title: "\u6C34\u8ECA\u306E\u8EF8\u53D7\u3051"
+    stage: 2
+    reward: 0
+    requires: []
+    flags:
+    - S2S03_BearingFound
+    blockedBy:
+    - S2S03_Installed
+    grantItem: {fileID: 11400000, guid: 4a07099843acf4744a753c4a182ebaf2, type: 2}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 1c7260b4377ac3445b9414b82c1ffcad, type: 2}
+  - id: valve
+    quest: S2S03
+    title: "\u914D\u7BA1\u306E\u5F01"
+    stage: 2
+    reward: 0
+    requires: []
+    flags:
+    - S2S03_ValveFound
+    blockedBy:
+    - S2S03_Installed
+    grantItem: {fileID: 11400000, guid: e9a97c28b0eca314091a2e5ef7a0f2f1, type: 2}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: e0e61f9314cad054598ddcf18a8bae35, type: 2}
+  - id: gear
+    quest: S2S03
+    title: "\u4E88\u5099\u306E\u6B6F\u8ECA"
+    stage: 2
+    reward: 0
+    requires: []
+    flags:
+    - S2S03_GearFound
+    blockedBy:
+    - S2S03_Installed
+    grantItem: {fileID: 11400000, guid: 0b0fdf00d269ca44188d787a228dfdbc, type: 2}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: fcc01b20882621e40aff7e36d5b485e0, type: 2}
+  - id: install
+    quest: S2S03
+    title: "\u30B0\u30EC\u30F3\u306B\u90E8\u54C1\u3092\u6E21\u3059"
+    stage: 2
+    reward: 0
+    requires:
+    - S2S03_BearingFound
+    - S2S03_ValveFound
+    - S2S03_GearFound
+    flags:
+    - S2S03_Installed
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems:
+    - {fileID: 11400000, guid: 4a07099843acf4744a753c4a182ebaf2, type: 2}
+    - {fileID: 11400000, guid: e9a97c28b0eca314091a2e5ef7a0f2f1, type: 2}
+    - {fileID: 11400000, guid: 0b0fdf00d269ca44188d787a228dfdbc, type: 2}
+    dialogue: {fileID: 11400000, guid: e1a3b532ea6da1f489c6cea6d2be4a8c, type: 2}
+  - id: water
+    quest: S2S03
+    title: "\u4FEE\u7406\u6E08\u307F\u306E\u6C34\u9580"
+    stage: 2
+    reward: 0
+    requires:
+    - S2S03_Installed
+    flags:
+    - S2S03_WaterRestored
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: c4a8cebaae79803408b74052fde637d2, type: 2}
+  - id: reportWater
+    quest: S2S03
+    title: "\u30B0\u30EC\u30F3\u306B\u6C34\u8DEF\u5FA9\u65E7\u3092\u5831\u544A"
+    stage: 2
+    reward: 100
+    requires:
+    - S2S03_WaterRestored
+    flags:
+    - S2S03_Completed
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: a568ffa85c2f8944b9d52e5f42a9adec, type: 2}
+  - id: map
+    quest: S3M01
+    title: "\u5DE1\u793C\u8DEF\u306E\u7D4C\u8DEF\u56F3"
+    stage: 3
+    reward: 0
+    requires: []
+    flags:
+    - S3M01_ClueFound
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 8ffe001a4f99fd940964eb2714baab79, type: 2}
+  - id: report3
+    quest: S3M01
+    title: "\u753A\u9577\u306B\u7D4C\u8DEF\u56F3\u3092\u5831\u544A"
+    stage: 0
+    reward: 100
+    requires:
+    - S3M01_ClueFound
+    flags:
+    - S3M01_Completed
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 7b528aacf0f45bf4aa7522c061f19d7b, type: 2}
+  - id: route
+    quest: S3S01
+    title: "\u88CF\u65B9\u7528\u306E\u901A\u8DEF"
+    stage: 3
+    reward: 0
+    requires: []
+    flags:
+    - S3S01_RouteFound
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: a4d6d31cb10d3a64e87d443eca4e1bf2, type: 2}
+  - id: proposal
+    quest: S3S01
+    title: "\u30ED\u30A2\u30F3\u306B\u8FC2\u56DE\u8DEF\u3092\u63D0\u6848"
+    stage: 3
+    reward: 0
+    requires:
+    - S3S01_RouteFound
+    flags:
+    - S3S01_Proposal
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 7c8d75b29d8cdb545965261b434a5c6a, type: 2}
+  - id: truce
+    quest: S3S01
+    title: "\u30D0\u30EB\u30C9\u3068\u901A\u8DEF\u306E\u505C\u6226\u4EA4\u6E09"
+    stage: 3
+    reward: 0
+    requires:
+    - S3S01_Proposal
+    flags:
+    - S3S01_BaldoAgreed
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 9e417703392daf34abc048f696c1fecc, type: 2}
+  - id: reportTruce
+    quest: S3S01
+    title: "\u30ED\u30A2\u30F3\u306B\u5408\u610F\u3092\u5831\u544A"
+    stage: 3
+    reward: 100
+    requires:
+    - S3S01_BaldoAgreed
+    flags:
+    - S3S01_Completed
+    - faction_adventurer_support
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 0aa7b922eb14c4f4aa7262d8cc2737ce, type: 2}
+  - id: trade
+    quest: S3S02
+    title: "\u5730\u4E0A\u3078\u306E\u4EA4\u6613\u8DEF"
+    stage: 3
+    reward: 0
+    requires: []
+    flags:
+    - S3S02_RouteFound
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 3a21c12f935b2664d946a4a7127b46a9, type: 2}
+  - id: reportTrade
+    quest: S3S02
+    title: "\u30D0\u30EB\u30C9\u306B\u4EA4\u6613\u8DEF\u3092\u5831\u544A"
+    stage: 3
+    reward: 100
+    requires:
+    - S3S02_RouteFound
+    - S2S02_Completed
+    flags:
+    - S3S02_Completed
+    - faction_bandit_support
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 7829c96aee02ded4daf53b44c9116fdd, type: 2}
+  - id: castleLedger
+    quest: S3S03
+    title: "\u53E4\u57CE\u306E\u4FEE\u7E55\u53F0\u5E33"
+    stage: 3
+    reward: 0
+    requires: []
+    flags:
+    - S3S03_LedgerFound
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: f8b823d5dddf0c442b077d5d0571e9dc, type: 2}
+  - id: structure
+    quest: S3S03
+    title: "\u56DE\u5ECA\u306E\u69CB\u9020\u8ABF\u67FB"
+    stage: 3
+    reward: 0
+    requires: []
+    flags:
+    - S3S03_StructureChecked
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: ca157fbb7790edd45b38fded448f4432, type: 2}
+  - id: reportCastle
+    quest: S3S03
+    title: "\u30B0\u30EC\u30F3\u306B\u518D\u5EFA\u8ABF\u67FB\u3092\u5831\u544A"
+    stage: 3
+    reward: 100
+    requires:
+    - S3S03_LedgerFound
+    - S3S03_StructureChecked
+    - S2S03_WaterRestored
+    flags:
+    - S3S03_Completed
+    - faction_dwarf_support
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: cca11f23fb7449842a1337a396574aa8, type: 2}
+  - id: garden
+    quest: S4M01
+    title: "\u5EAD\u306E\u8CB4\u65CF\u3068\u8A71\u3059"
+    stage: 4
+    reward: 0
+    requires: []
+    flags:
+    - S4M01_StorySeen
+    - S4M01_TownTruthTold
+    - S4M01_GoddessMet
+    blockedBy: []
+    grantItem: {fileID: 0}
+    consumeItems: []
+    dialogue: {fileID: 11400000, guid: 68de8feb187470648b2a2c92668f0258, type: 2}
+  stageScenes:
+  - Town_Main
+  - stage1
+  - Doukutu_2
+  - Doukutu_3
+  - Doukutu_4
+  endingReward: 500

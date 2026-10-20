@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33ea86acbcf5364d97ad2501b8af980, type: 3}
+  m_Name: Dialogue_FinnTreated
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueData2D
+  dialogueId: story_FinnTreated
+  displayName: "\u6CBB\u7642\u5F8C\u306E\u30D5\u30A3\u30F3"
+  startNodeId: treated0
+  nodes:
+  - id: treated0
+    speakerName: "\u30D5\u30A3\u30F3"
+    body: "\u3042\u308A\u304C\u3068\u3046\u3001\u52A9\u304B\u3063\u305F\u3088\u3002\u30D0\u30EB\u30C9\u306E\u3068\u3053\u308D\u3078\u904B\u3093\u3067\u304F\u308C\u3002"
+    onEnterEventId: 
+    nextNodeId: 
+    choices: []
+    nextRoutes: []
+  startRoutes: []
+  actions: []

@@ -1,0 +1,137 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33ea86acbcf5364d97ad2501b8af980, type: 3}
+  m_Name: Dialogue_reportCastle
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueData2D
+  dialogueId: story_reportCastle
+  displayName: "\u30B0\u30EC\u30F3\u306B\u518D\u5EFA\u8ABF\u67FB\u3092\u5831\u544A"
+  startNodeId: start
+  nodes:
+  - id: start
+    speakerName: 
+    body: "\u30B0\u30EC\u30F3\u306B\u518D\u5EFA\u8ABF\u67FB\u3092\u5831\u544A"
+    onEnterEventId: 
+    nextNodeId: 
+    choices:
+    - label: "\u8ABF\u3079\u308B\u30FB\u8A71\u3059"
+      nextNodeId: line0
+      eventId: step/reportCastle
+      conditions:
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S3S03_LedgerFound
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S3S03_StructureChecked
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S2S03_WaterRestored
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S3S03_Completed
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/step_reportCastle
+    - label: "\u4ECA\u306F\u3084\u3081\u3066\u304A\u304F"
+      nextNodeId: 
+      eventId: 
+      conditions: []
+    nextRoutes: []
+  - id: line0
+    speakerName: "\u30B0\u30EC\u30F3"
+    body: "\u308F\u3057\u3089\u306B\u983C\u3080\u3063\u3066\u304B\uFF1F \u2026\u2026\u3044\u3044\u5EA6\u80F8\u3058\u3083\u306A\u3044\u304B\u3001\u3042\u3093\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: line1
+    choices: []
+    nextRoutes: []
+  - id: line1
+    speakerName: "\u30B0\u30EC\u30F3"
+    body: "\u3053\u3053\u306B\u306F\u3001\u307E\u3060\u50CD\u3051\u308B\u77F3\u3068\u9244\u304C\u7720\u3063\u3066\u308B\u3002\u3057\u304B\u3082\u3001\u3044\u3044\u4ED5\u4E8B\u304C\u5C71\u307B\u3069\u6B8B\u3063\u3066\u308B\uFF01"
+    onEnterEventId: 
+    nextNodeId: line2
+    choices: []
+    nextRoutes: []
+  - id: line2
+    speakerName: "\u30B0\u30EC\u30F3"
+    body: "\u5132\u3051\u3082\u671F\u5F85\u3067\u304D\u308B\u3002\u8155\u306E\u898B\u305B\u3069\u3053\u308D\u306B\u3082\u306A\u308B\u3002\u65AD\u308B\u7406\u7531\u304C\u898B\u3064\u304B\u3089\u3093\u306A\u3002"
+    onEnterEventId: 
+    nextNodeId: line3
+    choices: []
+    nextRoutes: []
+  - id: line3
+    speakerName: "\u30B0\u30EC\u30F3"
+    body: "\u3082\u3057\u672C\u5F53\u306B\u3001\u3053\u3053\u3078\u4EBA\u304C\u623B\u308B\u65E5\u304C\u6765\u308B\u306A\u3089\u2026\u2026\u305D\u306E\u6642\u306F\u308F\u3057\u3089\u304C\u76F4\u3057\u3066\u3084\u308B\u3002"
+    onEnterEventId: 
+    nextNodeId: line4
+    choices: []
+    nextRoutes: []
+  - id: line4
+    speakerName: "\u30B0\u30EC\u30F3"
+    body: "\u8155\u306E\u3044\u3044\u9023\u4E2D\u3092\u96C6\u3081\u3066\u3084\u308B\u3068\u3082\u3002\u5831\u916C\u306F\u3057\u3063\u304B\u308A\u3082\u3089\u3046\u304C\u306A\uFF01
+      \u306F\u3063\u306F\u3063\u306F\uFF01"
+    onEnterEventId: 
+    nextNodeId: line5
+    choices: []
+    nextRoutes: []
+  - id: line5
+    speakerName: "\u30B0\u30EC\u30F3"
+    body: "\u2026\u2026\u3044\u3084\u3001\u91D1\u306E\u8A71\u3070\u3063\u304B\u308A\u3058\u3083\u306A\u3044\u305E\u3002\u3053\u3093\u306A\u3044\u3044\u9020\u308A\u3092\u3001\u7720\u3089\u305B\u3063\u3071\u306A\u3057\u306B\u3059\u308B\u306E\u306F\u60DC\u3057\u3044\u3002"
+    onEnterEventId: 
+    nextNodeId: line6
+    choices: []
+    nextRoutes: []
+  - id: line6
+    speakerName: "\u30B0\u30EC\u30F3"
+    body: "\u3042\u3093\u305F\u304C\u898B\u305B\u3066\u304F\u308C\u305F\u3093\u3060\u3002\u53E4\u3044\u3082\u306E\u3060\u3063\u3066\u3001\u307E\u3060\u5F79\u306B\u7ACB\u3066\u308B\u3063\u3066\u306A\u3002"
+    onEnterEventId: 
+    nextNodeId: line7
+    choices: []
+    nextRoutes: []
+  - id: line7
+    speakerName: "\u30B0\u30EC\u30F3"
+    body: "\u307B\u3089\u3001\u5831\u916C\u3060\u3002\u3044\u3044\u4ED5\u4E8B\u306B\u306F\u3044\u3044\u5BFE\u4FA1\u3002\u3053\u308C\u304C\u308F\u3057\u306E\u4E3B\u7FA9\u3058\u3083\u3002"
+    onEnterEventId: 
+    nextNodeId: line8
+    choices: []
+    nextRoutes: []
+  - id: line8
+    speakerName: 
+    body: "\u3010\u30B5\u30D6\u30DF\u30C3\u30B7\u30E7\u30F3\uFF1A\u7720\u308C\u308B\u53E4\u57CE\u3011\u3092\u9054\u6210\u3057\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: line9
+    choices: []
+    nextRoutes: []
+  - id: line9
+    speakerName: 
+    body: "\u30C9\u30EF\u30FC\u30D5\u305F\u3061\u304C\u3001\u53E4\u57CE\u306E\u4FEE\u7E55\u30FB\u518D\u5EFA\u3078\u306E\u5354\u529B\u3092\u7D04\u675F\u3057\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: 
+    choices: []
+    nextRoutes: []
+  startRoutes: []
+  actions:
+  - eventId: step/reportCastle
+    kind: 5
+    missionIndex: 0
+    item: {fileID: 0}
+    amount: 1
+    oncePerRuntime: 0

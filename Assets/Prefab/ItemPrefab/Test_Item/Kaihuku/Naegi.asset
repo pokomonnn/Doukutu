@@ -47,7 +47,6 @@ MonoBehaviour:
   canDiscard: 1
   healAmount: 10
   foodRestoreAmount: 0
-  waterRestoreAmount: 0
   torchRestoreAmount: 0
   curedConditions: 2
   slowdownDuration: 3

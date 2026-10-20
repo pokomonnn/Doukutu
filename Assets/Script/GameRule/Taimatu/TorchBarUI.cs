@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// TorchControllerの残量をSliderとTextへ表示します。
+/// TorchControllerの残量を下半円ゲージへ表示します。旧Slider/Text参照はシーン互換用に保持。
 /// </summary>
 [DisallowMultipleComponent]
 public class TorchBarUI : MonoBehaviour
@@ -19,17 +19,45 @@ public class TorchBarUI : MonoBehaviour
     [SerializeField] private bool hideTextWhenEmpty;
 
     private bool isSubscribed;
+    private TorchHalfRingGraphic halfRing;
+
+    private void SetupHalfRing()
+    {
+        if (halfRing == null)
+        {
+            var canvas = GetComponentInParent<Canvas>();
+            if (canvas == null) return;
+            var root = new GameObject("Torch lower half ring", typeof(RectTransform), typeof(CanvasRenderer));
+            var rect = root.GetComponent<RectTransform>();
+            rect.SetParent(canvas.transform, false);
+            rect.anchorMin = rect.anchorMax = new Vector2(.5f, 1);
+            rect.pivot = new Vector2(.5f, 1);
+            rect.sizeDelta = new Vector2(160, 82);
+            rect.anchoredPosition = new Vector2(0, -24);
+            halfRing = root.AddComponent<TorchHalfRingGraphic>();
+            halfRing.raycastTarget = false;
+        }
+        halfRing.gameObject.SetActive(isActiveAndEnabled);
+        if (torchSlider != null)
+        {
+            torchSlider.interactable = false;
+            foreach (var graphic in torchSlider.GetComponentsInChildren<Graphic>(true)) graphic.enabled = false;
+        }
+        if (torchText != null) { torchText.text = string.Empty; torchText.enabled = false; }
+    }
 
     private void Awake()
     {
         FindReferences();
         SetupSlider();
+        SetupHalfRing();
     }
 
     private void OnEnable()
     {
         FindReferences();
         SetupSlider();
+        SetupHalfRing();
         Subscribe();
         RefreshUI();
     }
@@ -44,7 +72,10 @@ public class TorchBarUI : MonoBehaviour
     private void OnDisable()
     {
         Unsubscribe();
+        if (halfRing != null) halfRing.gameObject.SetActive(false);
     }
+
+    private void OnDestroy() { if (halfRing != null) Destroy(halfRing.gameObject); }
 
     public void RefreshUI()
     {
@@ -68,6 +99,13 @@ public class TorchBarUI : MonoBehaviour
         if (torchSlider != null)
         {
             torchSlider.value = percent;
+        }
+
+        if (halfRing != null)
+        {
+            halfRing.SetRemaining(percent);
+            if (torchText != null) torchText.text = string.Empty;
+            return;
         }
 
         if (torchText == null)

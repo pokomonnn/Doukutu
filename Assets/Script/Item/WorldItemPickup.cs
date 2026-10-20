@@ -79,9 +79,6 @@ public class WorldItemPickup : MonoBehaviour
     )]
     [SerializeField] private EquipmentController equipmentController;
 
-    [Tooltip("ロープモード中にEキー拾得を止めるための参照です。未設定なら自動取得します")]
-    [SerializeField] private PlayerRopePullController ropePullController;
-
     [Tooltip("物を持つ操作へEキーを優先するための参照です。未設定なら自動取得します")]
     [SerializeField] private PlayerCarryController2D carryController;
 
@@ -158,6 +155,8 @@ public class WorldItemPickup : MonoBehaviour
             itemId = droppedItem.ItemData.ItemId,
             amount = droppedItem.Amount,
             isRotated = droppedItem.IsRotated,
+            hasFourWayRotation = true,
+            rotationSteps = droppedItem.RotationSteps,
 
             hasStoredMagazineAmmo =
                 droppedItem.HasStoredMagazineAmmo,
@@ -196,11 +195,7 @@ public class WorldItemPickup : MonoBehaviour
             amount
         );
 
-        if (saveData.isRotated &&
-            restoredItem.CanRotate)
-        {
-            restoredItem.TryRotate();
-        }
+        restoredItem.SetRotationSteps(saveData.ResolvedRotationSteps);
 
         if (saveData.hasStoredMagazineAmmo)
         {
@@ -318,17 +313,16 @@ public class WorldItemPickup : MonoBehaviour
         RefreshPlayerInRangeState();
         RefreshPickupPrompt();
 
-        // ロープモード中、または持ち運び操作がEキーを使用している間は、
+        // 持ち運び操作がEキーを使用している間は、
         // 地面アイテムの拾得入力を受け取りません。
-        bool ropeBlocked = IsRopeModeBlockingPickup();
         bool carryBlocked = IsCarryInteractionBlockingPickup();
-        if (ropeBlocked || carryBlocked)
+        if (carryBlocked)
         {
             if (showPickupDebugLogs && isPlayerInRange && Input.GetKeyDown(pickupKey))
             {
                 Debug.LogWarning(
                     $"[WorldPickup][P02] 拾得が別操作によりブロックされています。" +
-                    $" Rope={ropeBlocked} / Carry={carryBlocked} / Item={GetDroppedItemLabel()}",
+                    $" Carry={carryBlocked} / Item={GetDroppedItemLabel()}",
                     this
                 );
             }
@@ -397,7 +391,7 @@ public class WorldItemPickup : MonoBehaviour
     /// <summary>
     /// ItemBoxなど外部Interactableから、
     /// このItemが「今Eで拾える状態か」を確認するための判定です。
-    /// ロープ・運搬・拾得Delayも従来どおり尊重します。
+    /// 運搬・拾得Delayも従来どおり尊重します。
     /// </summary>
     public bool CanReceivePickupInputNow()
     {
@@ -408,7 +402,7 @@ public class WorldItemPickup : MonoBehaviour
                !isPickingUp &&
                IsPlayerInRange &&
                Time.time >= canPickupAfterTime &&
-               !IsRopeModeBlockingPickup() &&
+               
                !IsCarryInteractionBlockingPickup();
     }
 
@@ -1039,19 +1033,6 @@ public class WorldItemPickup : MonoBehaviour
         return other.GetComponentInParent<PlayerMove>() != null;
     }
 
-    private bool IsRopeModeBlockingPickup()
-    {
-        if (ropePullController == null)
-        {
-            ropePullController =
-                FindAnyObjectByType<PlayerRopePullController>();
-        }
-
-        return ropePullController != null &&
-               ropePullController.IsRopeMode;
-    }
-
-
     private bool IsCarryInteractionBlockingPickup()
     {
         if (carryController == null)
@@ -1319,7 +1300,7 @@ public class WorldItemPickup : MonoBehaviour
             !isPickingUp &&
             IsPlayerInRange &&
             canShowAfterDelay &&
-            !IsRopeModeBlockingPickup() &&
+            
             !IsCarryInteractionBlockingPickup();
 
         if (shouldShow)
@@ -1417,8 +1398,6 @@ public class WorldItemPickup : MonoBehaviour
         dropSoundVolume = Mathf.Clamp01(dropSoundVolume);
         pickupSoundVolume = Mathf.Clamp01(pickupSoundVolume);
         soundSpatialBlend = Mathf.Clamp01(soundSpatialBlend);
-
-
 
         if (string.IsNullOrWhiteSpace(stackAmountPrefix))
         {

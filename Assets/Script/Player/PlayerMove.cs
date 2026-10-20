@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
@@ -46,11 +46,6 @@ public class PlayerMove : MonoBehaviour
     // ジャンプ直後、地面から離れるまでは再ジャンプを許可しない
     private bool waitingToLeaveGround = false;
 
-    // ロープから飛び降りた直後だけ、横方向の勢いを保つための状態
-    private bool isExternalLaunchActive;
-    private float externalLaunchHorizontalVelocity;
-    private float externalLaunchEndTime;
-
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -65,7 +60,6 @@ public class PlayerMove : MonoBehaviour
     private void OnDisable()
     {
         jumpRequest = false;
-        ClearExternalLaunch();
     }
 
     private void Update()
@@ -116,17 +110,7 @@ public class PlayerMove : MonoBehaviour
 
         Vector2 velocity = rb.linearVelocity;
 
-        // ロープから飛び出した直後は、入力がない状態でも
-        // 少しだけ横方向の勢いを残す。
-        if (IsExternalLaunchActive())
-        {
-            velocity.x = externalLaunchHorizontalVelocity;
-        }
-        else
-        {
-            // 横移動
-            velocity.x = moveInput * moveSpeed;
-        }
+        velocity.x = moveInput * moveSpeed;
 
         // 着地したらジャンプ可能に戻す
         if (isGrounded && velocity.y <= 0.01f)
@@ -136,8 +120,7 @@ public class PlayerMove : MonoBehaviour
 
         // 地面にいて、ジャンプ可能な時だけジャンプ
         if (jumpRequest && isGrounded && canJump &&
-            !isJumpLocked &&
-            !isExternalLaunchActive)
+            !isJumpLocked)
         {
             velocity.y = jumpPower;
             canJump = false;
@@ -151,54 +134,6 @@ public class PlayerMove : MonoBehaviour
         rb.linearVelocity = velocity;
 
         jumpRequest = false;
-    }
-
-    /// <summary>
-    /// ロープなど外部の移動処理から、プレイヤーを空中へ飛ばします。
-    /// 指定時間だけ横方向の勢いを維持するため、ロープから確実に離れられます。
-    /// </summary>
-    public void LaunchFromRope(
-        Vector2 launchVelocity,
-        float horizontalControlLockDuration)
-    {
-        if (rb == null)
-        {
-            rb = GetComponent<Rigidbody2D>();
-        }
-
-        if (rb == null)
-        {
-            return;
-        }
-
-        rb.linearVelocity = launchVelocity;
-        rb.angularVelocity = 0f;
-
-        jumpRequest = false;
-        canJump = false;
-        waitingToLeaveGround = true;
-        CurrentGroundCollider = null;
-
-        if (Mathf.Abs(launchVelocity.x) > 0.01f)
-        {
-            SetFacingDirection(launchVelocity.x);
-        }
-
-        horizontalControlLockDuration = Mathf.Max(
-            0f,
-            horizontalControlLockDuration
-        );
-
-        if (horizontalControlLockDuration <= 0f)
-        {
-            ClearExternalLaunch();
-            return;
-        }
-
-        isExternalLaunchActive = true;
-        externalLaunchHorizontalVelocity = launchVelocity.x;
-        externalLaunchEndTime = Time.time +
-            horizontalControlLockDuration;
     }
 
     /// <summary>
@@ -230,29 +165,6 @@ public class PlayerMove : MonoBehaviour
         {
             jumpRequest = false;
         }
-    }
-
-    private bool IsExternalLaunchActive()
-    {
-        if (!isExternalLaunchActive)
-        {
-            return false;
-        }
-
-        if (Time.time < externalLaunchEndTime)
-        {
-            return true;
-        }
-
-        ClearExternalLaunch();
-        return false;
-    }
-
-    private void ClearExternalLaunch()
-    {
-        isExternalLaunchActive = false;
-        externalLaunchHorizontalVelocity = 0f;
-        externalLaunchEndTime = 0f;
     }
 
     private void UpdateFacing(float horizontalInput)

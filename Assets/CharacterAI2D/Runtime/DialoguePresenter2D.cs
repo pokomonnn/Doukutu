@@ -23,6 +23,7 @@ public sealed class DialoguePresenter2D : MonoBehaviour
 
     public static DialoguePresenter2D Active { get; private set; }
     public bool IsPlaying => currentData != null;
+    public DialogueActor2D CurrentActor => currentActor;
 
     private DialogueData2D currentData;
     private DialogueActor2D currentActor;
@@ -41,12 +42,25 @@ public sealed class DialoguePresenter2D : MonoBehaviour
             return;
         }
         Active = this;
+        if (panel != null) {
+            var click = panel.GetComponent<DialogueClickAdvance2D>();
+            if (click == null) click = panel.gameObject.AddComponent<DialogueClickAdvance2D>();
+            click.presenter = this;
+        }
+        if (panel != null && speakerText != null && bodyText != null &&
+            choicesRoot != null && choiceButtonTemplate != null && nextButton != null)
+        {
+            var layout = GetComponent<DialoguePresentationLayout2D>();
+            if (layout == null) layout = gameObject.AddComponent<DialoguePresentationLayout2D>();
+            layout.Bind(panel, speakerText, bodyText, choicesRoot, choiceButtonTemplate, nextButton);
+        }
         SetPanelVisible(false);
         if (choiceButtonTemplate != null) choiceButtonTemplate.gameObject.SetActive(false);
         if (nextButton != null)
         {
             nextButton.onClick.RemoveListener(Next);
             nextButton.onClick.AddListener(Next);
+            nextButton.gameObject.SetActive(false);
         }
     }
 
@@ -71,9 +85,12 @@ public sealed class DialoguePresenter2D : MonoBehaviour
             return false;
         }
         currentData = data;
+        NpcSpeechCoordinator2D.Silence();
         currentActor = actor;
         SetPanelVisible(true);
         ShowNode(startId);
+        if (IsPlaying && actor != null)
+            CaveConversationZoom2D.Begin(this, actor.transform);
         return true;
     }
 
@@ -158,7 +175,7 @@ public sealed class DialoguePresenter2D : MonoBehaviour
                 activeChoices.Add(button);
             }
         }
-        nextButton.gameObject.SetActive(visibleChoiceCount == 0);
+        nextButton.gameObject.SetActive(false);
         // STEP4: アイテム/受注/取引の実行は誤発火を防ぐため選択肢クリック限定。
         if (currentData.FindAction(currentNode.OnEnterEventId) == null)
             currentActor?.RaiseDialogueEvent(currentNode.OnEnterEventId);

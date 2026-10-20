@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -21,7 +21,6 @@ public class EnemyAnimator2D : MonoBehaviour
     [SerializeField] private Rigidbody2D enemyRigidbody;
     [SerializeField] private EnemyChaser2D enemyChaser;
     [SerializeField] private EnemyRangedAttack2D rangedAttack;
-    [SerializeField] private EnemySanityAura2D sanityAura;
 
     [Header("移動パラメータ")]
     [Tooltip("空欄なら設定しません。IdleとChaseの切替に使うBoolです")]
@@ -43,7 +42,7 @@ public class EnemyAnimator2D : MonoBehaviour
     [Tooltip("空欄なら遠距離攻撃Triggerは使いません。EnemyRangedAttack2Dの発射時に呼ばれます")]
     [SerializeField] private string rangedAttackTriggerName = "RangedAttack";
 
-    [Tooltip("空欄なら特殊攻撃Triggerは使いません。EnemySanityAura2Dの効果発生時に呼ばれます")]
+    [Tooltip("空欄なら特殊攻撃Triggerは使いません。他の特殊攻撃から呼び出せます")]
     [SerializeField] private string specialAttackTriggerName = "SpecialAttack";
 
     [Tooltip("空欄なら被弾Triggerは使いません。実際にHPが減った時に呼ばれます")]
@@ -295,11 +294,6 @@ public class EnemyAnimator2D : MonoBehaviour
             rangedAttack.RangedAttackPerformed += HandleRangedAttackPerformed;
         }
 
-        if (sanityAura != null)
-        {
-            sanityAura.SpecialEffectPerformed += HandleSpecialEffectPerformed;
-        }
-
         isSubscribed = true;
     }
 
@@ -324,11 +318,6 @@ public class EnemyAnimator2D : MonoBehaviour
         if (rangedAttack != null)
         {
             rangedAttack.RangedAttackPerformed -= HandleRangedAttackPerformed;
-        }
-
-        if (sanityAura != null)
-        {
-            sanityAura.SpecialEffectPerformed -= HandleSpecialEffectPerformed;
         }
 
         isSubscribed = false;
@@ -532,11 +521,6 @@ public class EnemyAnimator2D : MonoBehaviour
         if (rangedAttack == null)
         {
             rangedAttack = GetComponent<EnemyRangedAttack2D>();
-        }
-
-        if (sanityAura == null)
-        {
-            sanityAura = GetComponent<EnemySanityAura2D>();
         }
 
         if (animator == null)

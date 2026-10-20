@@ -1,0 +1,39 @@
+洞窟NPC会話のカメラズーム（2026-10-21）
+
+動作
+洞窟の会話開始時、表示範囲を元の67%（約1.49倍の拡大）へ約0.35秒で変更。
+会話終了後は約0.35秒で元の画角へ戻る。
+プレイヤー追従位置・会話選択肢・クリック送り・ミッション処理は変更していない。
+通常のCameraとCinemachineCameraに対応。
+Cinemachine使用時は実際に表示中の仮想カメラのLensを変更する。
+戻り途中で会話が再開しても、元のサイズを保持し、拡大が積み重ならない。
+コンポーネントの無効化・破棄時は即座に元のサイズへ戻す。
+キャンプ中・キャンプ処理中は新しい会話ズームを開始しない。
+
+適用範囲
+CaveConversationNPCから開始する既存の洞窟会話。
+DialoguePresenter2Dから開始するストーリー会話は、
+話者と同じシーンに有効なCaveExitElevator2Dがある場合だけ適用する。
+町の通常会話は対象外。
+将来、帰還エレベーターを持たない新ダンジョンを追加する場合は判定の拡張が必要。
+
+変更ファイル
+Assets/Script/Talk/New/CaveConversationZoom2D.cs：画角の保存・補間・復元。
+Assets/Script/Talk/New/CaveConversationNPC.cs：会話開始時にズームを依頼。
+Assets/CharacterAI2D/Runtime/DialoguePresenter2D.cs：洞窟のストーリー会話に対応。
+Assets/Editor/CaveConversationZoomTests.cs：既存会話での自動検証。
+
+設定
+既存のMain Cameraに実行時にコンポーネントを追加するため、追加設定は不要。
+倍率・時間をInspectorから永続設定したい場合は、編集モードでMain Cameraに
+CaveConversationZoom2Dを追加し、Size RatioとTransition Secondsを調整してシーンを保存。
+Size Ratioは小さいほど大きく拡大する。
+
+検証
+Unity 6000.4.10f1のstage1でバルドのストーリー会話と既存CaveConversationNPC会話を開始。
+会話中のLensと出力Cameraの拡大、終了時の復元、繰り返し会話、無効化時の復元を確認。
+Logs/CaveConversationZoom2.log：CAVE ZOOM PASS
+通常セーブとは分離した保存先で実行。
+会話開始はAPI呼び出しによる自動検証。手操作での演出・構図の目視確認は未実施。
+Time.timeScale=0ではLensの補間は進むが、Cinemachineの更新設定により
+表示カメラへの反映が再開後になる場合がある。通常会話ではTime.timeScaleを変更しない。

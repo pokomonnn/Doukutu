@@ -890,11 +890,8 @@ GameObject:
   - component: {fileID: 76742661}
   - component: {fileID: 76742660}
   - component: {fileID: 76742662}
-  - component: {fileID: 76742663}
   - component: {fileID: 76742665}
   - component: {fileID: 76742664}
-  - component: {fileID: 76742666}
-  - component: {fileID: 76742667}
   - component: {fileID: 76742668}
   - component: {fileID: 76742669}
   - component: {fileID: 76742670}
@@ -1121,6 +1118,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 100
+  preventDeath: 0
   invincibilityDuration: 0.1
   enableDamageDebugLog: 1
   includePlayerDamageInDebugLog: 0
@@ -1184,6 +1182,8 @@ MonoBehaviour:
   fractureFallDistance: 5
   wallClimbController: {fileID: 0}
   showWallFallDebugLogs: 0
+  teleportFallIgnoreDuration: 0.35
+  showTeleportResetDebugLogs: 0
 --- !u!114 &76742656
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1246,6 +1246,7 @@ MonoBehaviour:
   playerMove: {fileID: 76742649}
   statusConditionController: {fileID: 76742660}
   survivalController: {fileID: 0}
+  medicalKitInventory: {fileID: 0}
   normalWeightLimit: 20
   slightlySlowWeightLimit: 40
   slowWeightLimit: 60
@@ -1400,12 +1401,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSurvivalController
   playerHealth: {fileID: 76742653}
   maxFood: 100
-  maxWater: 100
   startWithFullValues: 0
   startingFood: 100
-  startingWater: 100
   foodDecreasePerMinute: 1.67
-  waterDecreasePerMinute: 5
   warningThreshold: 0.6
   lowThreshold: 0.3
   criticalThreshold: 0.1
@@ -1415,30 +1413,6 @@ MonoBehaviour:
   enableDamageAtZero: 0
   emptyDamageInterval: 5
   foodEmptyDamage: 0
-  waterEmptyDamage: 0
---- !u!114 &76742663
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 76742646}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 00c8175ec62d57441aacd186f188b137, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WaterEnemyVisibilityController
-  survivalController: {fileID: 76742662}
-  enemyLayer:
-    serializedVersion: 2
-    m_Bits: 2048
-  lowWaterVisibilityDistance: 14
-  criticalWaterVisibilityDistance: 8
-  emptyWaterVisibilityDistance: 4
-  fadeInDistance: 4
-  fadeSpeed: 5
-  refreshInterval: 0.5
-  showVisibilityRangeGizmo: 1
 --- !u!95 &76742664
 Animator:
   serializedVersion: 7
@@ -1481,63 +1455,6 @@ MonoBehaviour:
   inventoryController: {fileID: 0}
   inventorySoundPlayer: {fileID: 0}
   showTorchShortcutLogs: 0
---- !u!114 &76742666
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 76742646}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 14ebea6cbd0aa154e817092989052639, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerSanityController
-  playerHealth: {fileID: 76742653}
-  maxSanity: 100
-  startWithFullSanity: 0
-  startingSanity: 1
-  decreaseOverTime: 0
-  sanityDecreasePerMinute: 0
-  warningThreshold: 0.7
-  lowThreshold: 0.4
-  criticalThreshold: 0.15
---- !u!114 &76742667
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 76742646}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ab8df015f27b8564a8e02bdc7ba076a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RopeClimbController
-  playerMove: {fileID: 76742649}
-  playerRigidbody: {fileID: 76742647}
-  playerBodyCollider: {fileID: 76742648}
-  equipmentVisualController: {fileID: 76742657}
-  stoneThrower: {fileID: 76742652}
-  playerAnimator: {fileID: 76742664}
-  climbingBoolName: 
-  climbUpKey: 119
-  climbDownKey: 115
-  requireVerticalKeyToStart: 1
-  climbSpeed: 2.5
-  exitThreshold: 0.06
-  horizontalSnapSpeed: 18
-  jumpOffKey: 32
-  useHorizontalInputForJumpOff: 1
-  jumpOffHorizontalPower: 6
-  jumpOffVerticalPower: 9
-  jumpOffHorizontalOffset: 0.12
-  jumpOffControlLockDuration: 0.12
-  disablePlayerBodyColliderWhileClimbing: 1
-  regrabDelayAfterExit: 0.35
-  lockWeaponControlsWhileClimbing: 1
-  disableStoneThrowWhileClimbing: 1
-  showDebugLogs: 0
 --- !u!114 &76742668
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1575,7 +1492,6 @@ MonoBehaviour:
   playerBodyCollider: {fileID: 76742648}
   equipmentVisualController: {fileID: 76742657}
   stoneThrower: {fileID: 76742652}
-  ropeClimbController: {fileID: 76742667}
   playerHealth: {fileID: 76742653}
   playerAnimator: {fileID: 76742664}
   wallClimbingBoolName: 
@@ -1678,14 +1594,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6afaba96561e51c4392e2ae83875a78e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TorchController
-  sanityController: {fileID: 76742666}
   playerHealth: {fileID: 76742653}
   campModeController: {fileID: 2016282791}
   maximumTorch: 100
   startingTorch: 100
   decreasePerSecond: 0.15
-  sanityDrainDelay: 1
-  sanityDrainPerSecond: 0.2
   pauseDecreaseWhilePlayerIsDead: 1
   pauseDecreaseWhileCamping: 1
   persistBetweenScenes: 0
@@ -1704,7 +1617,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStatusSaveBridge
   characterHealth: {fileID: 76742653}
   survivalController: {fileID: 76742662}
-  sanityController: {fileID: 76742666}
   statusConditionController: {fileID: 76742660}
   torchController: {fileID: 76742673}
   restoreOnStart: 1
@@ -1730,7 +1642,6 @@ MonoBehaviour:
   playerHealth: {fileID: 76742653}
   bodyCollider: {fileID: 76742648}
   wallClimbController: {fileID: 76742669}
-  ropeClimbController: {fileID: 76742667}
   proneKey: 304
   allowRightAlt: 1
   proneMoveSpeedMultiplier: 0.329
@@ -2130,14 +2041,13 @@ GameObject:
   - component: {fileID: 133934592}
   - component: {fileID: 133934595}
   - component: {fileID: 133934594}
-  - component: {fileID: 133934593}
   m_Layer: 5
   m_Name: FoodVignetteOverlay
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &133934592
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2157,28 +2067,6 @@ RectTransform:
   m_AnchoredPosition: {x: -0.000061035, y: 0}
   m_SizeDelta: {x: 1920, y: 1080}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &133934593
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 133934591}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 11cf877875348094b8219309da6da376, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WaterVignetteUI
-  survivalController: {fileID: 76742662}
-  vignetteImage: {fileID: 133934594}
-  darkenStartWaterPercent: 0.5
-  maxDarknessAlpha: 0.95
-  fadeSpeed: 4
-  createVignetteSpriteAtRuntime: 1
-  innerClearArea: 0.2
-  gradientPower: 0.45
-  textureSize: 254
-  vignetteColor: {r: 0, g: 0, b: 0, a: 1}
 --- !u!114 &133934594
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2186,7 +2074,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 133934591}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -24029,7 +23917,6 @@ MonoBehaviour:
   hitReaction: {fileID: 0}
   dropTable: {fileID: 0}
   rangedAttack: {fileID: 0}
-  sanityAura: {fileID: 0}
   additionalBehavioursToDisable: []
   deathTriggerName: 
   enableDeathSlide: 1
@@ -24148,6 +24035,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 100
+  preventDeath: 0
   invincibilityDuration: 0.5
   enableDamageDebugLog: 1
   includePlayerDamageInDebugLog: 0
@@ -24767,9 +24655,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MissionManager2D
   inventoryController: {fileID: 1298597451}
   missions:
-  - mission: {fileID: 11400000, guid: 82eb2ac90f640a846b366dcb88491b0a, type: 2}
-    compassTarget: {fileID: 159515924}
-    targetEnemy: {fileID: 159515913}
   - mission: {fileID: 11400000, guid: c4ea86f6399d336479c1f7f15f13c35b, type: 2}
     compassTarget: {fileID: 159515924}
     targetEnemy: {fileID: 159515913}
@@ -44838,6 +44723,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterHealth
   maxHealth: 20
+  preventDeath: 0
   invincibilityDuration: 0.5
   enableDamageDebugLog: 1
   includePlayerDamageInDebugLog: 0
@@ -44899,7 +44785,6 @@ MonoBehaviour:
   enemyRigidbody: {fileID: 742504661}
   enemyChaser: {fileID: 742504659}
   rangedAttack: {fileID: 0}
-  sanityAura: {fileID: 0}
   isMovingBoolName: IsMoving
   hasTargetBoolName: HasTarget
   moveSpeedFloatName: MoveSpeed
@@ -44985,7 +44870,6 @@ MonoBehaviour:
   hitReaction: {fileID: 742504657}
   dropTable: {fileID: 742504656}
   rangedAttack: {fileID: 0}
-  sanityAura: {fileID: 0}
   additionalBehavioursToDisable: []
   deathTriggerName: 
   enableDeathSlide: 1
@@ -46458,6 +46342,8 @@ MonoBehaviour:
     gridX: 0
     gridY: 0
     isRotated: 0
+    rotationSteps: 0
+    hasFourWayRotation: 0
     amount: 0
     hasStoredMagazineAmmo: 0
     storedMagazineAmmo: 0
@@ -46471,6 +46357,8 @@ MonoBehaviour:
     gridX: 0
     gridY: 0
     isRotated: 0
+    rotationSteps: 0
+    hasFourWayRotation: 0
     amount: 0
     hasStoredMagazineAmmo: 0
     storedMagazineAmmo: 0
@@ -46864,7 +46752,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 945996692}
-  - component: {fileID: 945996693}
   m_Layer: 0
   m_Name: SAN_EnemyManager
   m_TagString: Untagged
@@ -46887,46 +46774,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1241080285}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &945996693
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 945996691}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 21f520e24d984a54eb6dea27129d5373, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SanityEnemySpawnController
-  sanityController: {fileID: 76742666}
-  playerTransform: {fileID: 76742651}
-  playerHealth: {fileID: 76742653}
-  normalEnemyPrefabs: []
-  mutantEnemyPrefabs: []
-  spawnPoints: []
-  minimumDistanceFromPlayer: 8
-  normalRule:
-    targetAliveEnemyCount: 2
-    spawnInterval: 3.5
-    mutantSpawnChance: 0
-  warningRule:
-    targetAliveEnemyCount: 3
-    spawnInterval: 3
-    mutantSpawnChance: 0
-  lowRule:
-    targetAliveEnemyCount: 5
-    spawnInterval: 2.2
-    mutantSpawnChance: 0.2
-  criticalRule:
-    targetAliveEnemyCount: 7
-    spawnInterval: 1.6
-    mutantSpawnChance: 0.5
-  emptyRule:
-    targetAliveEnemyCount: 9
-    spawnInterval: 1
-    mutantSpawnChance: 0.8
-  showDebugLogs: 0
 --- !u!1 &947243289
 GameObject:
   m_ObjectHideFlags: 0
@@ -47078,7 +46925,6 @@ GameObject:
   m_Component:
   - component: {fileID: 979494900}
   - component: {fileID: 979494899}
-  - component: {fileID: 979494898}
   m_Layer: 0
   m_Name: RopePlacement_Cliff01
   m_TagString: Untagged
@@ -47086,45 +46932,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &979494898
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 979494897}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3be79d9d1b4b8045b04cfeb6bcc6647, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RopePlacementZone
-  requiredRopeItem: {fileID: 11400000, guid: 13a90d28bfe6bcf43883722037f8db4f, type: 2}
-  consumeRopeOnPlacement: 1
-  ropeAnchorPoint: {fileID: 1720199065}
-  ropeBottomPoint: {fileID: 1399000171}
-  minimumDropHeight: 0.03
-  ropeVisual: {fileID: 1561095071}
-  ropeSpriteRenderer: {fileID: 1561095072}
-  fitTiledSpriteToPoints: 1
-  ropeVisualWidth: 0.1
-  startPlaced: 0
-  placementKey: 116
-  playerTag: Player
-  playerInventoryController: {fileID: 1298597451}
-  nearbyIcon: {fileID: 749061452}
-  iconWorldOffset: {x: 0, y: 1.35, z: 0}
-  animateIcon: 1
-  iconFloatHeight: 0.08
-  iconFloatSpeed: 2
-  interactionPromptText: {fileID: 1756213473}
-  interactionPrompt: "T: \u30ED\u30FC\u30D7\u3092\u8A2D\u7F6E"
-  promptWorldOffset: {x: 0, y: 1.85, z: 0}
-  audioSource: {fileID: 0}
-  placeRopeSound: {fileID: 0}
-  placeRopeSoundVolume: 0.9
-  showDebugLogs: 0
-  logTriggerEvents: 0
-  logKeyPressOutsideTrigger: 0
 --- !u!61 &979494899
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -48686,10 +48493,6 @@ MonoBehaviour:
     amount: 1
   - itemData: {fileID: 11400000, guid: 4e7046421b99b8d47bd6599f6af96914, type: 2}
     amount: 1
-  - itemData: {fileID: 11400000, guid: 59d3f0fec4f9cde41820b132c33ef8ea, type: 2}
-    amount: 1
-  - itemData: {fileID: 11400000, guid: 13a90d28bfe6bcf43883722037f8db4f, type: 2}
-    amount: 1
   - itemData: {fileID: 11400000, guid: ea7581793bcc8bb46b4e27ace4109183, type: 2}
     amount: 10
   playerHealth: {fileID: 76742653}
@@ -49718,14 +49521,13 @@ GameObject:
   - component: {fileID: 1561095073}
   - component: {fileID: 1561095072}
   - component: {fileID: 1561095075}
-  - component: {fileID: 1561095074}
   m_Layer: 0
   m_Name: RopeVisual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!212 &1561095072
 SpriteRenderer:
   serializedVersion: 2
@@ -49800,29 +49602,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 979494900}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1561095074
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1561095071}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bcab2e5fdba43094890c605cf52a938d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RopeClimbZone
-  ropePlacementZone: {fileID: 979494898}
-  topExitPoint: {fileID: 2108522491}
-  bottomExitPoint: {fileID: 950154157}
-  triggerWidth: 0.7
-  triggerEndPadding: 0.12
-  fallbackTopExitYOffset: 0.45
-  fallbackBottomExitYOffset: 0.45
-  fallbackTopExitHorizontalOffset: 0.55
-  fallbackBottomExitHorizontalOffset: 0.55
-  fallbackTopExitSide: 1
-  fallbackBottomExitSide: 0
 --- !u!61 &1561095075
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -49830,7 +49609,7 @@ BoxCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1561095071}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Density: 1
   m_Material: {fileID: 0}
@@ -51862,6 +51641,14 @@ MonoBehaviour:
   collectFormat: '{0} {1} / {2}'
   deliverFormat: "\u7D0D\u54C1 {0}  {1} / {2}"
   defeatFormat: "\u8A0E\u4F10 {0} / {1}"
+  objectiveGroup: {fileID: 0}
+  completionGroup: {fileID: 0}
+  completionText: {fileID: 0}
+  fadeSeconds: 0.3
+  completionHoldSeconds: 2.5
+  audioSource: {fileID: 0}
+  objectiveCompletedSound: {fileID: 0}
+  soundVolume: 0.25
 --- !u!1 &1836279150
 GameObject:
   m_ObjectHideFlags: 0
@@ -52059,6 +51846,7 @@ MonoBehaviour:
   gameOverPanel: {fileID: 1704072856}
   firstSpawnPoint: {fileID: 142258509}
   playerTag: Player
+  showExpeditionEntrySpawnLogs: 1
   deathBgmSource: {fileID: 1924269943}
   deathBgmClip: {fileID: 8300000, guid: 52f1c5cd7eba1ba47be26cd72f3f75bd, type: 3}
   deathBgmVolume: 0.8
@@ -63715,7 +63503,7 @@ PrefabInstance:
     - target: {fileID: 6025110556996581614, guid: abf8e2edb01967b4f80596485cc91883, type: 3}
       propertyPath: sanityController
       value: 
-      objectReference: {fileID: 76742666}
+      objectReference: {fileID: 0}
     - target: {fileID: 6077177262388703195, guid: abf8e2edb01967b4f80596485cc91883, type: 3}
       propertyPath: healthFullToastUI
       value: 
@@ -63735,7 +63523,7 @@ PrefabInstance:
     - target: {fileID: 6675904207714924373, guid: abf8e2edb01967b4f80596485cc91883, type: 3}
       propertyPath: sanityController
       value: 
-      objectReference: {fileID: 76742666}
+      objectReference: {fileID: 0}
     - target: {fileID: 7901377921448641749, guid: abf8e2edb01967b4f80596485cc91883, type: 3}
       propertyPath: inventoryController
       value: 

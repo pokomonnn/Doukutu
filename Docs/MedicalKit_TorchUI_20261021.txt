@@ -1,0 +1,36 @@
+応急ボックス3枠・松明UI（2026-10-21）
+
+対応
+既存の解毒剤.asset、Naegi.asset（副木）、包帯.assetを再利用しました。新規アイテムの作成は不要でした。
+Player Prefabの旧設定は副木・汎用回復品・空欄で、固定枠のNPC治療用途（毒・骨折・出血）と一致していませんでした。
+0=解毒剤、1=副木、2=包帯へ統一し、ビルド対象シーンのキット・補充店とItemDataDatabaseを確認・登録しました。
+数量はセーブの固定枠0/1/2の値を引き続き使用します。既存セーブの数量を満タンに書き換えません。
+新規開始では3枠とも用意し、既存セーブで包帯が0個なら町の補充店で補充してください。
+既存アイテムの治療効果、ItemId、画像は変更していません。
+
+松明
+TorchBarUIを拡張し、画面上部中央に下半円だけのドーナツ型ゲージを表示。
+薄い下半円を土台に、残量分の帯を描画します。低残量は橙色、残量が多い時は金色。
+旧横スライダーの表示と松明の残量テキストを非表示にしました。
+新しいTorchHalfRingGraphicがUnity UIメッシュで描画するため追加画像は不要です。
+松明の消費・補充・セーブ処理は変更していません。
+
+ファイル
+Assets/Prefab/Player.prefab：応急キット固定3枠。
+Assets/Scenes内の対象シーン：既存のキット設定を同じ3品目へ統一（Inspectorの上書き設定を含む）。
+Assets/Prefab/ItemPrefab/ItemDataDatabase.asset：医療品の登録確認。
+Assets/Script/GameRule/Taimatu/TorchBarUI.cs：下半円ゲージへの接続、旧バー・文字の非表示。
+Assets/Script/GameRule/Taimatu/TorchHalfRingGraphic.cs：下半円の描画。
+Assets/Editor/MedicalKitSetup20261021.cs：設定処理。通常は再実行不要。
+Assets/Editor/MedicalTorchTests.cs：自動検証。
+
+確認
+Logs/MedicalTorchTestsFinal.log：MEDICAL TORCH PASS。
+毒・骨折・出血の3種類を既存の治療APIで処置し、各1個消費することを確認。
+応急キットのセッション数量を保存・復元し、3枠の残数が維持されることを確認。
+1280×720、1024×768、1920×1080で松明100%・20%・0%を撮影し、残量文字が非表示であることを確認。
+通常インベントリ→応急キットの経路で3枠が表示される画像も確認。
+画像はLogs/MedicalTorchUI/に保存。
+今回の数量復元検証はセッションAPIによるもので、ディスク上の全既存セーブを使った検証ではありません。
+
+Unity側での追加設定は不要です。松明の新表示はPlay時に生成されます。

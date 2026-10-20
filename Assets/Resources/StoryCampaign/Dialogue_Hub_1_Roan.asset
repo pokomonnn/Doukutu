@@ -1,0 +1,97 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33ea86acbcf5364d97ad2501b8af980, type: 3}
+  m_Name: Dialogue_Hub_1_Roan
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueData2D
+  dialogueId: story_Hub_1_Roan
+  displayName: "\u30ED\u30A2\u30F3"
+  startNodeId: menu
+  nodes:
+  - id: menu
+    speakerName: "\u30ED\u30A2\u30F3"
+    body: "\u4F9D\u983C\u306B\u3064\u3044\u3066\u8A71\u3059\u3002"
+    onEnterEventId: 
+    nextNodeId: 
+    choices:
+    - label: "\u4F9D\u983C\u3092\u805E\u304F"
+      nextNodeId: offer0
+      eventId: 
+      conditions:
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S1S01_Completed
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S1S01_Started
+    - label: "\u4F9D\u983C\u5185\u5BB9\u3092\u78BA\u8A8D\u3059\u308B"
+      nextNodeId: reminder0
+      eventId: 
+      conditions:
+      - kind: 8
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S1S01_Started
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S1S01_Completed
+    - label: "\u8A71\u3092\u7D42\u3048\u308B"
+      nextNodeId: 
+      eventId: 
+      conditions: []
+    nextRoutes: []
+  - id: offer0
+    speakerName: 
+    body: "\u6BD2\u3067\u52D5\u3051\u306A\u304F\u306A\u3063\u305F\u30D5\u30A3\u30F3\u3092\u63A2\u3057\u3001\u624B\u6301\u3061\u306E\u6551\u6025\u30AD\u30C3\u30C8\u306E\u89E3\u6BD2\u5264\u3067\u6CBB\u7642\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u6CBB\u7642\u5F8C\u306F\u62C5\u3044\u3067\u30D0\u30EB\u30C9\u306E\u3082\u3068\u3078\u904B\u3073\u3001\u5831\u916C\u3092\u53D7\u3051\u53D6\u308C\u307E\u3059\u3002\u5E30\u9084\u30A8\u30EC\u30D9\u30FC\u30BF\u30FC\u3078\u306E\u642C\u5165\u306F\u4E0D\u8981\u3067\u3059\u3002"
+    onEnterEventId: 
+    nextNodeId: 
+    choices:
+    - label: "\u5F15\u304D\u53D7\u3051\u308B"
+      nextNodeId: menu
+      eventId: accept/S1S01
+      conditions:
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S1S01_Completed
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S1S01_Started
+    - label: "\u4ECA\u306F\u3084\u3081\u3066\u304A\u304F"
+      nextNodeId: 
+      eventId: 
+      conditions: []
+    nextRoutes: []
+  - id: reminder0
+    speakerName: 
+    body: "\u6BD2\u3067\u52D5\u3051\u306A\u304F\u306A\u3063\u305F\u30D5\u30A3\u30F3\u3092\u63A2\u3057\u3001\u624B\u6301\u3061\u306E\u6551\u6025\u30AD\u30C3\u30C8\u306E\u89E3\u6BD2\u5264\u3067\u6CBB\u7642\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u6CBB\u7642\u5F8C\u306F\u62C5\u3044\u3067\u30D0\u30EB\u30C9\u306E\u3082\u3068\u3078\u904B\u3073\u3001\u5831\u916C\u3092\u53D7\u3051\u53D6\u308C\u307E\u3059\u3002\u5E30\u9084\u30A8\u30EC\u30D9\u30FC\u30BF\u30FC\u3078\u306E\u642C\u5165\u306F\u4E0D\u8981\u3067\u3059\u3002"
+    onEnterEventId: 
+    nextNodeId: 
+    choices: []
+    nextRoutes: []
+  startRoutes: []
+  actions:
+  - eventId: accept/S1S01
+    kind: 5
+    missionIndex: 0
+    item: {fileID: 0}
+    amount: 1
+    oncePerRuntime: 0

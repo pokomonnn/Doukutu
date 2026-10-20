@@ -15,6 +15,10 @@ public class WorldItemSaveData
 
     // インベントリ内の回転状態
     public bool isRotated;
+    public bool hasFourWayRotation;
+    public int rotationSteps;
+    public int ResolvedRotationSteps => hasFourWayRotation
+        ? ((rotationSteps % 4) + 4) % 4 : (isRotated ? 1 : 0);
 
     // 武器などの個別データ
     public bool hasStoredMagazineAmmo;

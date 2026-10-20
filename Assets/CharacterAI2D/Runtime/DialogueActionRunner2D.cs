@@ -26,6 +26,9 @@ public static class DialogueActionRunner2D
             return false;
         }
 
+        // Story transactions use the saved ledger, not the per-actor runtime guard.
+        if (action.kind == DialogueActionKind2D.StoryCampaign)
+            return StoryCampaignRuntime.TryExecute(action.eventId, out message);
         string key = actor.GetInstanceID() + ":" + action.eventId;
         bool applyOnceGuard = action.oncePerRuntime && action.kind != DialogueActionKind2D.OpenShop;
         if (applyOnceGuard && completed.Contains(key))

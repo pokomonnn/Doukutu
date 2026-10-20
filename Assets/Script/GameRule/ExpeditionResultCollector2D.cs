@@ -45,6 +45,20 @@ public class ExpeditionResultCollector2D : MonoBehaviour
     [SerializeField] private bool showDebugLogs = true;
 
     public ExpeditionResultData LastCollectedResult { get; private set; }
+    public void ConfirmStoryRescuesBeforeDeparture()
+    {
+        if (elevatorCarryReceiver == null || GameSessionManager.Instance == null) return;
+        foreach (var target in elevatorCarryReceiver.GetCargoSnapshot())
+        {
+            if (target == null) continue;
+            if (target.GetComponent<StoryFinnDelivery>() != null) continue;
+            var identity = target.GetComponent<StoryRescueIdentity>();
+            var person = target.GetComponent<RescuePersonTarget2D>();
+            var health = target.GetComponent<CharacterHealth>();
+            if (identity != null && person != null && health != null && !health.IsDead)
+                StoryCampaignRuntime.Set(identity.rescuedFlag);
+        }
+    }
 
     private readonly Dictionary<ItemData, int> treasureTotals =
         new Dictionary<ItemData, int>();

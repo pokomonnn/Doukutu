@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb371076ef9cd4340a781a1f62625080, type: 3}
+  m_Name: Quest_S4M01
+  m_EditorClassIdentifier: Assembly-CSharp::StoryQuestDefinition
+  storyId: story_S4M01
+  displayName: "\u6D88\u3048\u305F\u8CB4\u65CF"
+  storyType: 0
+  description: "\u5EAD\u306E\u8CB4\u65CF\u3068\u8A71\u3059"
+  storyImage: {fileID: 0}
+  automaticallyBecomeAvailable: 1
+  prerequisiteStories: []
+  requiredStoryFlags: []
+  linkedMission: {fileID: 11400000, guid: 8222e2c577155ef42a39d717d947653d, type: 2}
+  completeWhenLinkedMissionCompleted: 1
+  exclusiveGroupId: 
+  exclusiveMode: 0
+  storyFlagsSetOnComplete: []

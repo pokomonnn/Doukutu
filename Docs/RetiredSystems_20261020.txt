@@ -1,0 +1,95 @@
+水分管理・SAN・ロープ機能の廃止
+作業日: 2026-10-20
+
+■ 変更範囲
+水分の減少・回復・脱水ダメージ・視界制限と、水分HUDを廃止。
+SANの増減・画面効果・射撃精度低下・SAN連動の敵スポーン／オーラと、SAN HUDを廃止。
+ロープの設置・昇降・物体への接続・牽引・長さ操作・モード切替を廃止。
+専用コンポーネントをシーン／プレハブから除去した後、専用スクリプト14件を削除。
+水分・SANバーやロープの表示オブジェクトは、共有UIを壊さないよう該当部分を非表示化。
+
+■ 残した機能
+食料管理と食料不足による影響、HP、毒などの状態異常、救急キット、解毒剤。
+松明の残量・照明、キャンプ、飲酒システム。
+通常移動・ジャンプ・壁登り・ほふく・射撃・運搬・帰還エレベーター。
+メイン4件／サブ8件、会話・進行フラグ・目標HUD・報告・報酬・セーブ。
+「止まった水路」の調査・部品・修理は、水分管理とは別のクエストなので保持。
+フィンの毒治療・バルドへの搬送も既存の医療／運搬処理を使用。
+
+■ 削除したデータ
+Assets/Prefab/ItemPrefab/Test_Item/Kaihuku/Water.asset
+Assets/Prefab/ItemPrefab/Test_Item/RopeItemData.asset
+Assets/Prefab/ItemPrefab/SkillCardData/節水.asset
+Assets/Prefab/ItemPrefab/SkillCardData/強靭な精神.asset
+Assets/Prefab/ItemPrefab/SkillCardData/狂気との共存.asset
+Assets/Prefab/ItemPrefab/SkillCardData/闇に慣れた者.asset
+Assets/Mission/ステージクエスト/2飲み水の確保.asset
+
+店舗・初期所持品・ドロップ・ミッション報酬・アイテム一覧などから上記への参照を除去。
+解毒剤・ワインなどは削除せず、水分回復の設定のみ除去。
+旧「飲み水の確保」はメイン4件／サブ8件とは別の旧ミッション。
+SAN／水分専用スキルは別効果へ置き換えず廃止。
+
+■ 主な変更スクリプト
+Assets/Script/Player/PlayerSurvivalController.cs: 食料のみ管理。
+Assets/Script/Player/SurvivalBarUI.cs: 食料バーのみ更新。
+Assets/Script/Item/ConsumableItemData.cs: 水分回復設定を除去。
+Assets/Script/Inventry/InventoryController.cs: 水分回復と水分満タン判定を除去。
+Assets/Script/Gun/GunShooter.cs: SAN精度ペナルティを除去。耐久・散弾等は保持。
+Assets/Script/Camp/CampModeController.cs: 水分消費・SAN回復を除去。
+Assets/Script/GameRule/Taimatu/TorchController.cs: 消灯時のSAN減少を除去。
+Assets/Script/GameRule/Save/PlayerStatusSaveBridge.cs: 水分・SANを読み書きするゲーム処理を除去。
+Assets/Script/GameRule/SkillCardData.cs: 廃止条件は反転設定でも発動しない。
+Assets/Script/Player/PlayerMove.cs: ロープ離脱専用の移動処理を除去。
+Assets/Script/Player/WallClimbController.cs
+Assets/Script/Player/PlayerProneController.cs
+Assets/Script/GameRule/PlayerCarryController2D.cs
+Assets/Script/GameRule/CarryableObject2D.cs
+Assets/Script/Item/WorldItemPickup.cs: ロープに関する操作競合処理のみ除去。
+Assets/Script/Enemy/EnemyAnimator2D.cs
+Assets/Script/Enemy/EnemyDeathHandler2D.cs: SANオーラの参照を除去。
+Assets/Editor/CharacterStudioWindow2D.cs
+Assets/Editor/EnemyStudioWindow2D.cs: 廃止したSANオーラの設定欄・自動配線を除去。
+Assets/Editor/StoryIntegrationBuilder.Scenes.cs: 削除したSAN型への参照を除去。
+
+■ セーブ互換
+保存形式のバージョンと既存の列挙値の順番は変更していません。
+SaveGameDataの旧水分・SANフィールドと、スキル／使用結果の旧列挙値は互換枠として残しています。
+水分・SANが0の旧データを読んでも、現在のHPや食料へ脱水・SANの影響は適用しません。
+削除したアイテムは旧セーブからの復元時にスキップされます。所持水・ロープや廃止カードは復元されません。
+他のアイテムや進行データは引き続き既存処理で復元します。ミッションはIDで対応付けます。
+実際のユーザーのセーブファイルは書き換えていません。
+
+検査中に解毒剤（kaihuku_017）がItemDataDatabaseへ未登録と分かったため追加しました。
+これにより、通常インベントリに保存した解毒剤も復元対象になります。
+
+■ Unityでの設定
+通常の再インポート／コンパイルのみで反映されます。手動の再配線は不要です。
+既存のプレイヤーやUIを作り直す必要はありません。
+Assets/Editor/RetiredSystemsMigration.cs は実施済みの移行処理で、自動実行しません。
+Tools/audit_retired_references.py は削除済みファイルへの参照が残っていないかを調べる読み取り専用の検査です。
+
+■ 検証ログ
+Logs/RetiredSystemsMigration.log
+Logs/RetiredSystemsMigrationFinal.log
+Logs/RetiredReferenceAudit.txt
+Logs/RetiredSystemsTests.log
+Logs/RetiredSystemsHUD.log
+
+確認済み:
+・削除したスクリプト／アイテム／旧ミッション計21件のGUID参照残存なし。
+・旧水分／SANが0の状態から、HPと食料を正しく復元。
+・旧水アイテムの安全なスキップ、解毒剤の復元、食料の消費／回復。
+・4方向回転、箱・地面アイテム、旧保存形式、報酬配置、医療品JSONの既存互換性テスト。
+・全12クエストの進行、実アイテム／満杯時処理、フィンの治療と運搬、報告・報酬、
+  メモリ上のセーブ／ロード、各結末と重複報酬防止のPlayModeテスト。
+・Town_Main／stage1のクエストHUDを5解像度で検査。文字の収まり・画面内配置・
+  ボタンとの重なり・メニュー表示中の非表示／復帰を確認。
+・1920×1080の画面画像でも水分／SAN表示の撤去とクエストHUDを確認。
+
+■ 手動確認が必要な点
+Town_Mainからの通しプレイで、買い物・通常戦闘・食事・松明・キャンプが従来どおり動くこと。
+フィンへ到達し、救急キットで毒を治療してバルドへ運び、報告・報酬を確認すること。
+ロープを配置していた崖などで、残っている地形と壁登りだけで必要な場所へ到達できること。
+自動テストは会話・フラグ・治療・運搬処理を検証しますが、全マップの徒歩経路を踏破するテストではありません。
+必要であれば、到達できなくなった地形は足場などで別途調整してください。

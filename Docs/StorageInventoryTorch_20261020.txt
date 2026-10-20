@@ -1,0 +1,61 @@
+保管箱・所持品・松明の修正（2026-10-20）
+
+原因と修正
+1. 箱の保存ID
+配置された複数の箱に同じpersistentIdが付いており、従来の保存時には同一IDの2箱目以降が記録されませんでした。
+persistentIdを直接変更する案は既存セーブとの照合リスクにより自動承認レビューで拒否されたため実行していません。
+旧persistentIdをそのまま残し、配置ごとのplacementSaveKeyを追加しました。保存時はSaveKeyを使い、旧セーブの読み取りでは旧persistentIdも照合します。
+古い重複IDのデータは旧版と同じ列挙順の最後の箱へ1回だけ復元します。複数の箱へ複製することはありません。
+次に保存した時から各箱の内容が個別のキーで保持されます。旧セーブに記録されなかった箱の中身は復元できません。
+Assets/Scenes/stage/Start_Doukustu.unity、Assets/Scenes/Doukutu_3.unity、Assets/Scenes/stage/stage1.unity内の計26配置にキーを追加。
+元のアイテム設定、Prefabの旧ID、実ユーザーのセーブファイルは変更していません。
+対応表：Docs/StorageIdentity_Migration_20261020.txt
+
+2. 町の保管箱
+初期復元前の変更イベントによる上書きを抑止し、セーブ前の箱→セッション同期とロード後のセッション→箱反映を明示しました。
+専用保管箱データがある場合、古いワールド箱データより優先します。専用データが無い旧セーブはワールド欄からの復元を維持します。
+破棄時に箱やセッションが既に消えている場合は再保存を行わず、正常な終了時の「保管箱を保存できません」警告を防止。
+通常の保存で参照がない場合の警告は残しています。
+
+3. プレイヤー所持品
+町から洞窟へ移動すると、重複GameSessionManagerのGameObject破棄にシーン専用InventoryManagerが巻き込まれていました。
+GameSessionManagerの子にあるInventoryController/MissionManager2Dを含む管理オブジェクトは、参照を保ったままシーンルートへ移し、シーンと同じ寿命にしました。
+帰還時はPlayer本体の旧InventoryControllerではなく、通常のPlayerInventorySessionBridgeから明示保存します。
+保存できない場合はシーン遷移を止めます。所持品の引き継ぎはセッションへの保存です。手動セーブは従来どおりSaveManagerが担当します。
+
+4. 松明
+新しいシーンでTorchControllerが生成された時は最大値（通常100%）から開始。
+PlayerStatusSaveBridgeのシーン開始時復元でも古い松明値を適用しないようにしました。
+同じシーンでセーブデータをロードした時は、そのセーブの残量を復元します。
+既存セーブの松明フィールドは削除していません。
+
+変更スクリプト（Assets/Script/GameRule/以下）
+GameSessionManager.cs：シーン専用Inventory/Missionの寿命を修正。
+CaveExitElevator2D.cs：帰還直前に正しいBridgeから保存し、失敗時の遷移を中止。
+TownPlayerItemBoxSessionBridge.cs：初期化・復元・破棄時の保存順序を修正。
+Save/SaveManager.cs：保管箱の明示同期、Editorテストの隔離保存先を初期化。
+Save/ItemBoxSaveIdentity.cs：旧IDと別の配置保存キーを追加。
+Save/WorldStateSaveBridge.cs：配置キーで保存、旧IDでの互換読み取り、専用保管箱の優先。
+Save/PlayerStatusSaveBridge.cs、Taimatu/TorchController.cs：シーン入場時の松明補充。
+Editor補助：Assets/Editor/StorageIdentityAudit.cs、StorageReturnIntegrationTests.csを追加。
+Assets/Editor/ResultReturnIntegrationTests.csは検証用保存先初期化の競合を修正。
+
+確認結果
+Logs/StoragePlacementKeys.log：STORAGE KEYS PASS。ビルド対象シーンの保存キー重複なし。
+Logs/StorageReturnIntegration3.log：STORAGE RETURN PASS。
+・町の保管箱に確認用アイテムを入れて出発。
+・stage1の所持品にも確認用アイテムを追加し、既存エレベーターから帰還。
+・町で所持品と保管箱の中身を確認。
+・隔離セーブを書き、箱からアイテムを取り除いてロードし、中身が戻ることを確認。
+・再びstage1へ移動して所持品を確認。20%だった松明が再入場時に100%（その後の自然減少は許容）へ回復。
+・同じシーンのセーブ／ロードでは20%の残量復元を確認。
+・旧ID形式のテストデータを読み込み、その後新キーで保存・再復元してアイテムが維持されることを確認。
+・箱のSave Key重複、保管箱保存失敗の警告は上記ログにありません。
+Logs/StorageStoryRegression.log：全12クエスト・救出・セーブ往復・エンディングの既存テストPASS。
+Logs/StorageResultRegression.log：報酬加算・結果再読み込み時の二重加算防止・町への帰還PASS。
+
+設定と制限
+追加のUnity設定は不要です。通常はstage1を単体再生するだけでなくTown_Mainから出発して確認してください。
+テストはUnity Playモードの自動操作です。移動・治療済み状態・アイテムの準備を自動化しており、手操作での全探索ではありません。
+実ユーザーの全過去セーブを読み込んだ検証ではありません。旧形式の箱データを使った互換テストです。
+旧セーブに未記録のアイテムや過去に消失した所持品の復旧は、この修正では行っていません。

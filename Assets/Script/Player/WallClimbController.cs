@@ -6,7 +6,6 @@ using UnityEngine;
 /// Groundレイヤーの垂直な壁に張り付きます。
 /// 壁へ張り付く時だけ「壁方向 + W」を使い、
 /// 張り付いた後はWだけで上昇、Sだけで下降できます。
-/// ロープとは別機能ですが、同時操作にならないようRopeClimbControllerとも連携します。
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(PlayerMove))]
@@ -26,9 +25,6 @@ public class WallClimbController : MonoBehaviour
 
     [Tooltip("壁登り中は石投げも止めたい場合に設定します。未設定なら自動取得します")]
     [SerializeField] private StoneThrower stoneThrower;
-
-    [Tooltip("ロープ上り下りと同時に開始しないために使います。未設定なら自動取得します")]
-    [SerializeField] private RopeClimbController ropeClimbController;
 
     [Tooltip("死亡中に壁登りを開始しないために使います。未設定なら自動取得します")]
     [SerializeField] private CharacterHealth playerHealth;
@@ -131,9 +127,6 @@ public class WallClimbController : MonoBehaviour
 
     private bool wasStoneThrowerEnabledBeforeClimb;
     private bool hasDisabledStoneThrower;
-
-    private bool wasRopeClimbEnabledBeforeWallClimb;
-    private bool hasDisabledRopeClimb;
 
     private float regrabAllowedTime;
     private bool jumpOffRequested;
@@ -273,11 +266,6 @@ public class WallClimbController : MonoBehaviour
             return;
         }
 
-        if (ropeClimbController != null && ropeClimbController.IsClimbing)
-        {
-            return;
-        }
-
         // 張り付き開始だけは、従来どおり壁方向 + W を使う。
         // 右側の壁ならD + W、左側の壁ならA + W。
         if (!upHeld)
@@ -320,7 +308,7 @@ public class WallClimbController : MonoBehaviour
         isWallClimbing = true;
 
         CacheAndDisableMovement();
-        CacheAndDisableRopeClimb();
+
         CachePhysics();
         LockOtherActions();
         SetWallClimbAnimation(true);
@@ -423,7 +411,6 @@ public class WallClimbController : MonoBehaviour
             isWallClimbing ||
             hasDisabledPlayerMove ||
             hasDisabledStoneThrower ||
-            hasDisabledRopeClimb ||
             hasCachedPhysics;
 
         if (!wasUsingWall)
@@ -438,7 +425,7 @@ public class WallClimbController : MonoBehaviour
         }
 
         UnlockOtherActions();
-        RestoreRopeClimb();
+
         RestoreMovement();
         SetWallClimbAnimation(false);
 
@@ -567,43 +554,6 @@ public class WallClimbController : MonoBehaviour
         hasDisabledPlayerMove = false;
     }
 
-    private void CacheAndDisableRopeClimb()
-    {
-        if (ropeClimbController == null || hasDisabledRopeClimb)
-        {
-            return;
-        }
-
-        // 念のため同時にロープを掴んでいた場合は、先にロープ処理を安全に終了する。
-        if (ropeClimbController.IsClimbing)
-        {
-            ropeClimbController.StopClimbingNow();
-        }
-
-        wasRopeClimbEnabledBeforeWallClimb =
-            ropeClimbController.enabled;
-
-        hasDisabledRopeClimb = true;
-        ropeClimbController.enabled = false;
-    }
-
-    private void RestoreRopeClimb()
-    {
-        if (!hasDisabledRopeClimb)
-        {
-            return;
-        }
-
-        if (ropeClimbController != null &&
-            wasRopeClimbEnabledBeforeWallClimb)
-        {
-            ropeClimbController.enabled = true;
-        }
-
-        wasRopeClimbEnabledBeforeWallClimb = false;
-        hasDisabledRopeClimb = false;
-    }
-
     private void LockOtherActions()
     {
         if (lockWeaponControlsWhileClimbing &&
@@ -704,11 +654,6 @@ public class WallClimbController : MonoBehaviour
         if (stoneThrower == null)
         {
             stoneThrower = GetComponent<StoneThrower>();
-        }
-
-        if (ropeClimbController == null)
-        {
-            ropeClimbController = GetComponent<RopeClimbController>();
         }
 
         if (playerHealth == null)

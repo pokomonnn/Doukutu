@@ -1,0 +1,47 @@
+応急ボックスUIの参照修正・開閉検証（2026-10-21）
+
+原因と修正
+stage1のMedicalKitUIControllerで、Panel RootがPlayerMedicalItemsRoot、
+Main Inventory PanelがMedicalKitPanelになっていた。
+Panel RootをCanvas/Inventorys/MedicalKitPanel、
+Main Inventory PanelをCanvas/Inventorysに修正してシーンに保存した。
+コントローラー自体は既存のCanvas/MedicalKitUIControllerに残している。
+
+従来の自動補正はコントローラーと開くボタンの共通祖先Canvasを選んでいた。
+Canvasはインベントリを閉じても有効なので、閉鎖検出に適さない。
+MedicalKitInventoryUI2Dの補正ではInventoryPanelToggleの実際のパネルを優先し、
+そのパネルが取得できる場合、別のオブジェクトを正しい参照として扱わないようにした。
+
+インベントリが閉じていてボタンが非表示なのは正常なので、この場合の警告は出さない。
+インベントリが開いているのにボタンが非表示の場合の警告は維持している。
+参照未設定などの警告も維持している。
+
+変更ファイル
+Assets/Scenes/stage/stage1.unity
+Assets/Script/GameRule/MedicalKitInventoryUI2D.cs
+Assets/Editor/MedicalKitUIFlowTests.cs（Editor専用の自動検証）
+
+検証
+Unity 6000.4.10f1のPlay ModeでMedicalKitUIFlowTests.Runを実行し成功。
+ログ：Logs/MedicalKitUIFlow.log
+MEDICAL UI FLOW PASS
+
+・再生前に保存済みのパネル参照を確認。
+・初期状態でインベントリと応急ボックスが閉じている。
+・インベントリ開閉と応急ボックス開閉を3回繰り返して正常。
+・応急ボックスだけを閉じてもインベントリは開いたまま。
+・インベントリを閉じると応急ボックスも閉じ、再度開いても勝手に表示されない。
+・3種類の医療品を固定スロット→「使用する」ボタン経由でプレイヤーに使用。
+  毒・骨折・出血の解除と各1個の消費を確認。
+・NPC用に開くとまずインベントリが表示され、その後の応急ボックスでNPCが対象になる。
+・NPC治療開始時は未消費。インベントリを閉じると無消費で中断。
+・応急ボックスだけを閉じた場合も無消費で中断。
+・3種類をNPCに使用し、進行ゲージ完了後の安定化と各1個の消費を確認。
+・インベントリを閉じた後にNPC対象が解除され、通常の再開時はプレイヤーが対象になる。
+・検証中のMedicalKitUI警告は0件。
+
+通常のセーブを使わずLogs/MedicalUIFlowSavesに保存先を分離。
+検証では敵の追跡と対象周辺の物理移動を止め、症状・距離をプログラムで準備している。
+ボタンの可視状態・有効状態・raycastTargetとonClick処理を検証した。
+手動のマウス操作、Tab/Tキーの実入力、遮蔽物によるクリック阻害の目視確認は未実施。
+Unityエディターで追加の設定作業は不要。

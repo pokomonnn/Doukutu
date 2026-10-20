@@ -24,14 +24,10 @@ public class ConsumableItemData : ItemData
     [SerializeField, Min(0)]
     private int healAmount = 0;
 
-    [Header("食料・水分回復設定")]
+    [Header("食料回復設定")]
     [Tooltip("使用時に回復する食料値。回復しない場合は0")]
     [SerializeField, Min(0f)]
     private float foodRestoreAmount = 0f;
-
-    [Tooltip("使用時に回復する水分値。回復しない場合は0")]
-    [SerializeField, Min(0f)]
-    private float waterRestoreAmount = 0f;
 
     [Header("松明回復設定")]
     [Tooltip("使用時に回復する松明値。松明アイテムでない場合は0")]
@@ -65,7 +61,7 @@ public class ConsumableItemData : ItemData
     [Header("使用アニメーション")]
     [Tooltip(
     "Player Animatorに作成したTrigger名。" +
-    "例：UseBandage、DrinkWater、EatFood。" +
+    "例：UseBandage、EatFood。" +
     "空欄ならアニメーションは再生しません。"
 )]
     [SerializeField]
@@ -77,8 +73,6 @@ public class ConsumableItemData : ItemData
     public int HealAmount => healAmount;
 
     public float FoodRestoreAmount => foodRestoreAmount;
-
-    public float WaterRestoreAmount => waterRestoreAmount;
 
     public float TorchRestoreAmount => torchRestoreAmount;
 
@@ -99,8 +93,6 @@ public class ConsumableItemData : ItemData
     public bool CanHealHealth => healAmount > 0;
 
     public bool CanRestoreFood => foodRestoreAmount > 0f;
-
-    public bool CanRestoreWater => waterRestoreAmount > 0f;
 
     public bool CanRestoreTorch => torchRestoreAmount > 0f;
 
@@ -123,11 +115,6 @@ public class ConsumableItemData : ItemData
         foodRestoreAmount = Mathf.Max(
             0f,
             foodRestoreAmount
-        );
-
-        waterRestoreAmount = Mathf.Max(
-            0f,
-            waterRestoreAmount
         );
 
         torchRestoreAmount = Mathf.Max(

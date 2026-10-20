@@ -14,11 +14,6 @@ public class SurvivalBarUI : MonoBehaviour
     [SerializeField] private TMP_Text foodText;
     [SerializeField] private Image foodFillImage;
 
-    [Header("水分UI")]
-    [SerializeField] private Slider waterSlider;
-    [SerializeField] private TMP_Text waterText;
-    [SerializeField] private Image waterFillImage;
-
     [Header("バーの色")]
     [SerializeField]
     private Color normalColor =
@@ -75,13 +70,7 @@ public class SurvivalBarUI : MonoBehaviour
             survivalController.MaxFood
         );
 
-        UpdateWater(
-            survivalController.CurrentWater,
-            survivalController.MaxWater
-        );
-
         UpdateFoodColor(survivalController.FoodState);
-        UpdateWaterColor(survivalController.WaterState);
     }
 
     private void UpdateFood(float currentFood, float maxFood)
@@ -103,35 +92,10 @@ public class SurvivalBarUI : MonoBehaviour
         }
     }
 
-    private void UpdateWater(float currentWater, float maxWater)
-    {
-        float percent = maxWater <= 0f
-            ? 0f
-            : Mathf.Clamp01(currentWater / maxWater);
-
-        if (waterSlider != null)
-        {
-            waterSlider.value = percent;
-        }
-
-        if (waterText != null)
-        {
-            waterText.text =
-                $"水分 {Mathf.CeilToInt(currentWater)} / " +
-                $"{Mathf.CeilToInt(maxWater)}";
-        }
-    }
-
     private void HandleFoodStateChanged(
         SurvivalNeedState foodState)
     {
         UpdateFoodColor(foodState);
-    }
-
-    private void HandleWaterStateChanged(
-        SurvivalNeedState waterState)
-    {
-        UpdateWaterColor(waterState);
     }
 
     private void UpdateFoodColor(SurvivalNeedState state)
@@ -142,16 +106,6 @@ public class SurvivalBarUI : MonoBehaviour
         }
 
         foodFillImage.color = GetStateColor(state);
-    }
-
-    private void UpdateWaterColor(SurvivalNeedState state)
-    {
-        if (waterFillImage == null)
-        {
-            return;
-        }
-
-        waterFillImage.color = GetStateColor(state);
     }
 
     private Color GetStateColor(SurvivalNeedState state)
@@ -176,7 +130,6 @@ public class SurvivalBarUI : MonoBehaviour
     private void SetupSliders()
     {
         SetupSlider(foodSlider);
-        SetupSlider(waterSlider);
     }
 
     private void SetupSlider(Slider slider)
@@ -198,13 +151,9 @@ public class SurvivalBarUI : MonoBehaviour
         }
 
         survivalController.FoodChanged += UpdateFood;
-        survivalController.WaterChanged += UpdateWater;
 
         survivalController.FoodStateChanged +=
             HandleFoodStateChanged;
-
-        survivalController.WaterStateChanged +=
-            HandleWaterStateChanged;
 
         isSubscribed = true;
     }
@@ -217,13 +166,9 @@ public class SurvivalBarUI : MonoBehaviour
         }
 
         survivalController.FoodChanged -= UpdateFood;
-        survivalController.WaterChanged -= UpdateWater;
 
         survivalController.FoodStateChanged -=
             HandleFoodStateChanged;
-
-        survivalController.WaterStateChanged -=
-            HandleWaterStateChanged;
 
         isSubscribed = false;
     }
@@ -244,12 +189,5 @@ public class SurvivalBarUI : MonoBehaviour
                 foodSlider.fillRect.GetComponent<Image>();
         }
 
-        if (waterFillImage == null &&
-            waterSlider != null &&
-            waterSlider.fillRect != null)
-        {
-            waterFillImage =
-                waterSlider.fillRect.GetComponent<Image>();
-        }
     }
 }

@@ -6,7 +6,6 @@ using UnityEngine;
 /// <summary>
 /// プレイヤーが手前に持つ、または背負うことができる物体です。
 /// 持ち運び中は物理挙動を一時停止し、落とした時に元の設定へ戻します。
-/// RopePullTargetが付いている場合、持ち上げる前に引っ張りロープを切り離します。
 /// </summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody2D))]
@@ -320,12 +319,6 @@ public class CarryableObject2D : MonoBehaviour
         {
             LogWarning("[Carry診断][TryBeginCarry失敗] Rigidbody2Dが見つかりません。");
             return false;
-        }
-
-        RopePullTarget ropeTarget = GetComponent<RopePullTarget>();
-        if (ropeTarget != null && ropeTarget.CurrentController != null)
-        {
-            ropeTarget.CurrentController.DetachRope();
         }
 
         RestoreIgnoredPlayerCollisions();

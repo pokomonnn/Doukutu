@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e40ccca5d0d395b44b7cd41360470e57, type: 3}
+  m_Name: Mission_S4M01
+  m_EditorClassIdentifier: Assembly-CSharp::MissionDefinition2D
+  displayObjectives:
+  - id: garden
+    minimapScene: Doukutu_4
+    minimapPointIds:
+    - garden
+    minimapFollowMissionId: 
+    text: "\u30B9\u30C6\u30FC\u30B84\u306E\u5EAD\u3067\u8CB4\u65CF\u3068\u8A71\u3057\u3001\u753A\u306E\u3053\u3068\u3092\u4F1D\u3048\u308B"
+    anyOfFlags:
+    - story/S4M01_StorySeen
+    allOfFlags: []
+  - id: ending
+    minimapScene: Doukutu_4
+    minimapPointIds:
+    - garden
+    minimapFollowMissionId: 
+    text: "\u5EAD\u306E\u8CB4\u65CF\u3068\u518D\u3073\u8A71\u3057\u3001\u3053\u308C\u304B\u3089\u306E\u7D50\u672B\u3092\u9078\u3076\uFF08\u4FDD\u7559\u30FB\u518D\u8A2A\u53EF\u80FD\uFF09"
+    anyOfFlags:
+    - story/EndingCommitted
+    allOfFlags: []
+  objectiveFinishFlag: story/S4M01_Completed
+  completionStoryFlag: story/S4M01_Completed
+  activationStoryFlag: story/S4M01_Started
+  storyMoneyReward: 0
+  missionId: story_S4M01
+  displayName: "\u6D88\u3048\u305F\u8CB4\u65CF"
+  description: "\u5EAD\u306E\u8CB4\u65CF\u3068\u8A71\u3059"
+  missionImage: {fileID: 0}
+  objectiveType: 4
+  requiredAmount: 1
+  requiredItem: {fileID: 0}
+  countItemsAlreadyHeldWhenMissionStarts: 0
+  consumeCollectedItemsOnResult: 0
+  targetEnemyId: 
+  targetRescueNpcId: 
+  expeditionMoneyReward: 0
+  expeditionItemRewards: []
+  skillCardRewards: []
+  skillSlotUnlockAmount: 0

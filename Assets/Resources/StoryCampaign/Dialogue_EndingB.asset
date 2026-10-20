@@ -1,0 +1,279 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33ea86acbcf5364d97ad2501b8af980, type: 3}
+  m_Name: Dialogue_EndingB
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueData2D
+  dialogueId: story_EndingB
+  displayName: "\u5EAD\u3067\u306E\u7D50\u672B"
+  startNodeId: B0
+  nodes:
+  - id: B0
+    speakerName: 
+    body: "\u4E3B\u4EBA\u516C\u306F\u3001\u753A\u3067\u5F85\u3064\u4EBA\u3005\u3001\u9589\u307E\u3063\u305F\u5E97\u3001\u9060\u5F81\u304B\u3089\u623B\u3089\u306A\u3044\u8077\u4EBA\u305F\u3061\u306E\u3053\u3068\u3092\u6539\u3081\u3066\u4F1D\u3048\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: B1
+    choices: []
+    nextRoutes: []
+  - id: B1
+    speakerName: "\u8CB4\u65CF"
+    body: "\u2026\u2026\u305D\u3046\u304B\u3002"
+    onEnterEventId: 
+    nextNodeId: B2
+    choices: []
+    nextRoutes: []
+  - id: B2
+    speakerName: "\u8CB4\u65CF"
+    body: "\u541B\u306F\u3001\u79C1\u304C\u8CAC\u4EFB\u3092\u53D6\u3089\u305A\u306B\u3053\u3053\u306B\u3044\u308B\u3053\u3068\u3092\u8A8D\u3081\u306A\u3044\u306E\u3060\u306A\u3002"
+    onEnterEventId: 
+    nextNodeId: B3
+    choices: []
+    nextRoutes: []
+  - id: B3
+    speakerName: "\u8CB4\u65CF"
+    body: "\u2026\u2026\u305D\u306E\u901A\u308A\u3060\u3002\u53CD\u8AD6\u306E\u3057\u3088\u3046\u304C\u306A\u3044\u3002"
+    onEnterEventId: 
+    nextNodeId: B4
+    choices: []
+    nextRoutes: []
+  - id: B4
+    speakerName: "\u8CB4\u65CF"
+    body: "\u3060\u304C\u2026\u2026\u3002"
+    onEnterEventId: 
+    nextNodeId: B5
+    choices: []
+    nextRoutes: []
+  - id: B5
+    speakerName: 
+    body: "\u8CB4\u65CF\u306F\u3001\u59BB\u306E\u307B\u3046\u3078\u624B\u3092\u4F38\u3070\u3057\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: B6
+    choices: []
+    nextRoutes: []
+  - id: B6
+    speakerName: "\u8CB4\u65CF"
+    body: "\u3088\u3046\u3084\u304F\u3001\u3053\u306E\u624B\u306B\u89E6\u308C\u3089\u308C\u305F\u3093\u3060\u3002"
+    onEnterEventId: 
+    nextNodeId: B7
+    choices: []
+    nextRoutes: []
+  - id: B7
+    speakerName: "\u8CB4\u65CF"
+    body: "\u3082\u3046\u4E8C\u5EA6\u3068\u4F1A\u3048\u306A\u3044\u3068\u3001\u4F55\u5EA6\u3082\u601D\u3063\u3066\u3044\u305F\u306E\u306B\u2026\u2026\u3002"
+    onEnterEventId: 
+    nextNodeId: B8
+    choices: []
+    nextRoutes: []
+  - id: B8
+    speakerName: "\u59BB"
+    body: "\u2026\u2026\u3048\u3048\u3002\u79C1\u3082\u3001\u96E2\u308C\u305F\u304F\u306F\u306A\u3044\u3002"
+    onEnterEventId: 
+    nextNodeId: B9
+    choices: []
+    nextRoutes: []
+  - id: B9
+    speakerName: "\u59BB"
+    body: "\u3067\u3082\u3001\u3042\u306A\u305F\u304C\u3053\u306E\u5148\u305A\u3063\u3068\u3001\u753A\u306E\u4EBA\u305F\u3061\u3092\u6C17\u306B\u3057\u3066\u904E\u3054\u3059\u306E\u3082\u2026\u2026\u304D\u3063\u3068\u3064\u3089\u3044\u3067\u3057\u3087\u3046\u3002"
+    onEnterEventId: 
+    nextNodeId: B10
+    choices: []
+    nextRoutes: []
+  - id: B10
+    speakerName: "\u59BB"
+    body: "\u3042\u306E\u306D\u3002\u3042\u306A\u305F\u304C\u521D\u3081\u3066\u9818\u4E3B\u306B\u306A\u3063\u305F\u65E5\u3001\u4F55\u3066\u8A00\u3063\u305F\u304B\u899A\u3048\u3066\u308B\uFF1F"
+    onEnterEventId: 
+    nextNodeId: B11
+    choices: []
+    nextRoutes: []
+  - id: B11
+    speakerName: "\u8CB4\u65CF"
+    body: "\u2026\u2026\u307F\u3093\u306A\u304C\u5B89\u5FC3\u3057\u3066\u66AE\u3089\u305B\u308B\u5834\u6240\u3092\u5B88\u308A\u305F\u3044\u3001\u3068\u3002"
+    onEnterEventId: 
+    nextNodeId: B12
+    choices: []
+    nextRoutes: []
+  - id: B12
+    speakerName: "\u59BB"
+    body: "\u305D\u3046\u3002\u3042\u306E\u8A00\u8449\u304C\u3001\u79C1\u306F\u5927\u597D\u304D\u3060\u3063\u305F\u306E\u3002"
+    onEnterEventId: 
+    nextNodeId: B13
+    choices: []
+    nextRoutes: []
+  - id: B13
+    speakerName: "\u59BB"
+    body: "\u79C1\u306B\u4F1A\u3044\u306B\u6765\u3066\u304F\u308C\u305F\u3053\u3068\u3082\u3001\u5B09\u3057\u304B\u3063\u305F\u3002\u5B09\u3057\u304F\u3066\u3001\u3069\u3046\u3057\u3066\u3044\u3044\u304B\u5206\u304B\u3089\u306A\u304B\u3063\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: B14
+    choices: []
+    nextRoutes: []
+  - id: B14
+    speakerName: "\u59BB"
+    body: "\u3060\u304B\u3089\u4ECA\u5EA6\u306F\u3001\u3042\u306A\u305F\u304C\u5927\u5207\u306B\u3057\u3066\u304D\u305F\u5834\u6240\u3092\u3001\u3082\u3046\u4E00\u5EA6\u898B\u3066\u304D\u3066\u3002"
+    onEnterEventId: 
+    nextNodeId: B15
+    choices: []
+    nextRoutes: []
+  - id: B15
+    speakerName: "\u8CB4\u65CF"
+    body: "\u2026\u2026\u541B\u306F\u3001\u3044\u3064\u3082\u79C1\u3088\u308A\u5F37\u3044\u306A\u3002"
+    onEnterEventId: 
+    nextNodeId: B16
+    choices: []
+    nextRoutes: []
+  - id: B16
+    speakerName: "\u59BB"
+    body: "\u305D\u3093\u306A\u3053\u3068\u306A\u3044\u308F\u3002\u4ECA\u3060\u3063\u3066\u3001\u6CE3\u304D\u305F\u3044\u304F\u3089\u3044\u3088\u3002"
+    onEnterEventId: 
+    nextNodeId: B17
+    choices: []
+    nextRoutes: []
+  - id: B17
+    speakerName: "\u59BB"
+    body: "\u3067\u3082\u3001\u7B11\u3063\u3066\u9001\u308A\u51FA\u3057\u305F\u3044\u306E\u3002\u2026\u2026\u3060\u3081\uFF1F"
+    onEnterEventId: 
+    nextNodeId: B18
+    choices: []
+    nextRoutes: []
+  - id: B18
+    speakerName: "\u8CB4\u65CF"
+    body: "\u2026\u2026\u3060\u3081\u306A\u3082\u306E\u304B\u3002"
+    onEnterEventId: 
+    nextNodeId: B19
+    choices: []
+    nextRoutes: []
+  - id: B19
+    speakerName: "\u6148\u60B2\u306E\u5973\u795E"
+    body: "\u2026\u2026\u4E8C\u4EBA\u3068\u3082\u3001\u672C\u5F53\u306B\u512A\u3057\u3044\u306E\u306D\u3002"
+    onEnterEventId: 
+    nextNodeId: B20
+    choices: []
+    nextRoutes: []
+  - id: B20
+    speakerName: "\u6148\u60B2\u306E\u5973\u795E"
+    body: "\u5BC2\u3057\u3044\u3068\u304D\u306F\u3001\u5BC2\u3057\u3044\u3063\u3066\u8A00\u3063\u3066\u3044\u3044\u306E\u3088\u3002\u7121\u7406\u306B\u7ACB\u6D3E\u306A\u5225\u308C\u306B\u3057\u306A\u304F\u305F\u3063\u3066\u3002"
+    onEnterEventId: 
+    nextNodeId: B21
+    choices: []
+    nextRoutes: []
+  - id: B21
+    speakerName: 
+    body: "\u6148\u60B2\u306E\u5973\u795E\u306F\u3001\u5C11\u3057\u96E2\u308C\u305F\u3068\u3053\u308D\u3067\u4E8C\u4EBA\u3092\u898B\u5B88\u3063\u3066\u3044\u308B\u3002"
+    onEnterEventId: 
+    nextNodeId: B22
+    choices: []
+    nextRoutes: []
+  - id: B22
+    speakerName: "\u8CB4\u65CF"
+    body: "\u2026\u2026\u79C1\u306F\u3001\u5730\u4E0A\u306B\u623B\u308B\u3002"
+    onEnterEventId: 
+    nextNodeId: B23
+    choices: []
+    nextRoutes: []
+  - id: B23
+    speakerName: "\u8CB4\u65CF"
+    body: "\u9003\u3052\u3066\u3044\u305F\u3064\u3082\u308A\u306F\u306A\u304B\u3063\u305F\u3002\u3060\u304C\u3001\u7D50\u679C\u3068\u3057\u3066\u3001\u591A\u304F\u306E\u4EBA\u3092\u7F6E\u304D\u53BB\u308A\u306B\u3057\u3066\u3057\u307E\u3063\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: B24
+    choices: []
+    nextRoutes: []
+  - id: B24
+    speakerName: "\u8CB4\u65CF"
+    body: "\u541B\u306E\u8A00\u8449\u3092\u3001\u753A\u306B\u6301\u3061\u5E30\u308B\u3088\u3002"
+    onEnterEventId: 
+    nextNodeId: B25
+    choices: []
+    nextRoutes: []
+  - id: B25
+    speakerName: "\u59BB"
+    body: "\u3046\u3093\u3002\u2026\u2026\u3042\u308A\u304C\u3068\u3046\u3002"
+    onEnterEventId: 
+    nextNodeId: B26
+    choices: []
+    nextRoutes: []
+  - id: B26
+    speakerName: "\u6148\u60B2\u306E\u5973\u795E"
+    body: "\u5E30\u308A\u9053\u306B\u306F\u6C17\u3092\u3064\u3051\u3066\u306D\u3002\u6025\u3044\u3067\u8EE2\u3093\u3060\u3089\u3001\u305B\u3063\u304B\u304F\u306E\u6C7A\u5FC3\u304C\u53F0\u7121\u3057\u3060\u3082\u306E\u3002"
+    onEnterEventId: 
+    nextNodeId: B27
+    choices: []
+    nextRoutes: []
+  - id: B27
+    speakerName: 
+    body: "\u5973\u795E\u306F\u3044\u305F\u305A\u3089\u3063\u307D\u304F\u5FAE\u7B11\u3093\u3060\u3002\u5F35\u308A\u8A70\u3081\u3066\u3044\u305F\u7A7A\u6C17\u304C\u3001\u5C11\u3057\u3060\u3051\u3084\u308F\u3089\u3050\u3002"
+    onEnterEventId: 
+    nextNodeId: B28
+    choices: []
+    nextRoutes: []
+  - id: B28
+    speakerName: "\u8CB4\u65CF"
+    body: "\u2026\u2026\u541B\u306B\u4F1A\u3048\u3066\u3088\u304B\u3063\u305F\u3002\u672C\u5F53\u306B\u3002"
+    onEnterEventId: 
+    nextNodeId: B29
+    choices: []
+    nextRoutes: []
+  - id: B29
+    speakerName: "\u59BB"
+    body: "\u79C1\u3082\u3088\u3002\u4ECA\u5EA6\u3053\u305D\u3001\u3061\u3083\u3093\u3068\u524D\u3092\u898B\u3066\u6B69\u3044\u3066\u306D\u3002"
+    onEnterEventId: 
+    nextNodeId: B30
+    choices: []
+    nextRoutes: []
+  - id: B30
+    speakerName: "\u8CB4\u65CF"
+    body: "\u3042\u3042\u3002\u7D04\u675F\u3059\u308B\u3002"
+    onEnterEventId: 
+    nextNodeId: B31
+    choices: []
+    nextRoutes: []
+  - id: B31
+    speakerName: 
+    body: "\u4E8C\u4EBA\u306F\u3001\u3082\u3046\u4E00\u5EA6\u3060\u3051\u62B1\u304D\u5408\u3063\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: B32
+    choices: []
+    nextRoutes: []
+  - id: B32
+    speakerName: 
+    body: "\u8CB4\u65CF\u306F\u4F55\u5EA6\u3082\u632F\u308A\u8FD4\u308A\u306A\u304C\u3089\u3001\u4E3B\u4EBA\u516C\u3068\u5EAD\u3092\u3042\u3068\u306B\u3057\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: B33
+    choices: []
+    nextRoutes: []
+  - id: B33
+    speakerName: "\u6148\u60B2\u306E\u5973\u795E"
+    body: "\u2026\u2026\u307E\u305F\u306D\u3002\u3042\u306A\u305F\u305F\u3061\u304C\u7B11\u3063\u3066\u904E\u3054\u305B\u308B\u3088\u3046\u3001\u9858\u3063\u3066\u3044\u308B\u308F\u3002"
+    onEnterEventId: 
+    nextNodeId: B34
+    choices: []
+    nextRoutes: []
+  - id: B34
+    speakerName: "\u8CB4\u65CF"
+    body: "\u2026\u2026\u79C1\u306E\u308F\u304C\u307E\u307E\u306B\u3001\u3069\u308C\u3060\u3051\u306E\u4EBA\u3092\u5DFB\u304D\u8FBC\u3093\u3060\u3093\u3060\u308D\u3046\u306A\u3002"
+    onEnterEventId: 
+    nextNodeId: B35
+    choices: []
+    nextRoutes: []
+  - id: B35
+    speakerName: "\u8CB4\u65CF"
+    body: "\u623B\u3063\u3066\u304B\u3089\u304C\u3001\u79C1\u306E\u672C\u5F53\u306E\u4ED5\u4E8B\u3060\u3002"
+    onEnterEventId: 
+    nextNodeId: B36
+    choices: []
+    nextRoutes: []
+  - id: B36
+    speakerName: "\u8CB4\u65CF"
+    body: "\u541B\u306B\u6765\u3066\u3082\u3089\u3048\u3066\u3001\u3088\u304B\u3063\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: 
+    choices: []
+    nextRoutes: []
+  startRoutes: []
+  actions: []

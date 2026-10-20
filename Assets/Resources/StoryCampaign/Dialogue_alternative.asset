@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c33ea86acbcf5364d97ad2501b8af980, type: 3}
+  m_Name: Dialogue_alternative
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueData2D
+  dialogueId: story_alternative
+  displayName: "\u65E7\u914D\u7D66\u6240\u306E\u4EE3\u66FF\u7269\u8CC7"
+  startNodeId: start
+  nodes:
+  - id: start
+    speakerName: 
+    body: "\u65E7\u914D\u7D66\u6240\u306E\u4EE3\u66FF\u7269\u8CC7"
+    onEnterEventId: 
+    nextNodeId: 
+    choices:
+    - label: "\u56DE\u53CE\u3059\u308B"
+      nextNodeId: line0
+      eventId: step/alternative
+      conditions:
+      - kind: 9
+        threshold: 0
+        factionId: bandits
+        personality: 0
+        storyFlag: story/S2S01_Completed
+    - label: "\u4ECA\u306F\u3084\u3081\u3066\u304A\u304F"
+      nextNodeId: 
+      eventId: 
+      conditions: []
+    nextRoutes: []
+  - id: line0
+    speakerName: 
+    body: "\u3010\u4FDD\u5B58\u98DF\u3068\u6551\u8B77\u7528\u54C1\u3011\u3092\u307E\u3068\u3081\u3066\u6301\u3061\u51FA\u3057\u305F\u3002"
+    onEnterEventId: 
+    nextNodeId: line1
+    choices: []
+    nextRoutes: []
+  - id: line1
+    speakerName: 
+    body: "\u30ED\u30A2\u30F3\u306E\u91CE\u55B6\u5730\u3078\u5C4A\u3051\u3088\u3046\u3002"
+    onEnterEventId: 
+    nextNodeId: 
+    choices: []
+    nextRoutes: []
+  startRoutes: []
+  actions:
+  - eventId: step/alternative
+    kind: 5
+    missionIndex: 0
+    item: {fileID: 0}
+    amount: 1
+    oncePerRuntime: 0
